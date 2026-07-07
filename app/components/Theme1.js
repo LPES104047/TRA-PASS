@@ -1,0 +1,215 @@
+import React, { useState, useEffect, useRef } from "react";
+
+export default function Theme1({ origin, setOrigin, dest, setDest, allStations, validTrains, currentMins }) {
+  const [isOriginOpen, setIsOriginOpen] = useState(false);
+  const [isDestOpen, setIsDestOpen] = useState(false);
+  const originRef = useRef(null);
+  const destRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (originRef.current && !originRef.current.contains(event.target)) {
+        setIsOriginOpen(false);
+      }
+      if (destRef.current && !destRef.current.contains(event.target)) {
+        setIsDestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSwap = () => {
+    const t = origin;
+    setOrigin(dest);
+    setDest(t);
+  };
+
+  const nextTrain = validTrains[0];
+  let diffMins = 0;
+  if (nextTrain) {
+    diffMins = nextTrain.actualDepMins - currentMins;
+  }
+
+  const getTrainDotClass = (type) => {
+    if(type.includes('區間')) return '';
+    if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return 'fast';
+    return 'express';
+  };
+
+  return (
+    <>
+      <style>{`
+        .theme1-root {
+          --bg: #0B132B;
+          --surface: rgba(255, 255, 255, 0.15);
+          --primary: #FFFFFF;
+          --accent: #FFD700;
+          --text-main: #FFFFFF;
+          --text-muted: rgba(255, 255, 255, 0.85);
+          --train-local: #4FACFE;
+          --train-fast: #FFD700;
+          --train-express: #FF6B6B;
+          background: linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%); 
+          background-attachment: fixed; 
+          color: var(--text-main); 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          padding: 20px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .theme1-root * { box-sizing: border-box; }
+        .theme1-root .container { width: 100%; max-width: 500px; margin: 0 auto; }
+        .theme1-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+        
+        .theme1-root .selector { display: flex; align-items: flex-end; gap: 10px; background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); position: relative; z-index: 1000; }
+        .theme1-root .select-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .theme1-root .select-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .theme1-root .custom-select { width: 100%; position: relative; }
+        .theme1-root .select-trigger { 
+            background: var(--surface); color: var(--text-main); border: 1px solid var(--primary); 
+            padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
+        .theme1-root .select-options { 
+            position: absolute; top: calc(100% + 5px); left: 0; right: 0; 
+            background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; 
+            max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 10px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme1-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.05); color: #fff; }
+        .theme1-root .option-item:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
+        
+        .theme1-root .swap-btn { background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin-bottom: 2px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; font-size: 20px; font-weight: bold; }
+        .theme1-root .swap-btn:hover { transform: scale(1.1) rotate(180deg); }
+        
+        .theme1-root .next-train-card { text-align: center; margin-bottom: 40px; }
+        .theme1-root .countdown { font-size: 72px; font-weight: 700; line-height: 1; margin: 5px 0; }
+        .theme1-root .countdown span { font-size: 20px; color: var(--text-muted); font-weight: 400; }
+        .theme1-root .subtitle { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
+        .theme1-root .dest-highlight { color: var(--accent); font-weight: 600; }
+        
+        .theme1-root .schedule-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        .theme1-root .train-card {
+            position: relative; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05)); 
+            padding: 22px 28px; border-radius: 40px 10px 40px 10px; display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.5); 
+            border: 1px solid rgba(255,255,255,0.3); border-left: 0;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+        .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--train-local); border-radius: 6px 0 0 6px; box-shadow: 0 0 15px var(--train-local); }
+        .theme1-root .train-card.fast::before { background: var(--train-fast); box-shadow: 0 0 15px var(--train-fast); }
+        .theme1-root .train-card.express::before { background: var(--train-express); box-shadow: 0 0 15px var(--train-express); }
+        .theme1-root .train-card.express { border-left-color: var(--train-express); }
+        
+        .theme1-root .train-details h3 { margin: 0; font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .theme1-root .train-details p { margin: 8px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; }
+        .theme1-root .duration-badge { background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 6px; font-size: 11px; margin-left: 8px; color: #fff; font-weight: bold; }
+        
+        .theme1-root .train-time { font-size: 22px; font-weight: 800; color: #fff; text-align: right; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .theme1-root .train-time span { display: block; font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .theme1-root .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; }
+        
+        .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
+
+        @media (min-width: 768px) {
+            .theme1-root .container { max-width: 650px; padding: 40px; }
+            .theme1-root .schedule-list { max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
+            .theme1-root .train-card { padding: 30px 45px; justify-content: space-between; }
+            .theme1-root .train-details h3 { font-size: 40px; margin-bottom: 5px; text-align: left; }
+            .theme1-root .train-time { font-size: 40px; text-align: right; }
+            .theme1-root h1 { font-size: 26px; letter-spacing: 3px; }
+            .theme1-root .selector { max-width: 650px; gap: 20px; }
+            .theme1-root .select-trigger { font-size: 18px; padding: 15px 20px; }
+            .theme1-root .train-details p { font-size: 16px; margin-top: 8px; justify-content: flex-start; }
+            .theme1-root .train-time span { font-size: 14px; margin-top: 8px; justify-content: flex-end; }
+            .theme1-root .countdown { font-size: 50px; }
+        }
+      `}</style>
+      
+      <div className="theme1-root">
+        <div className="container">
+            <h1>個人時刻表 Minimalist</h1>
+            
+            <div className="selector">
+                <div className="select-group" ref={originRef}>
+                    <label>出發地 Origin</label>
+                    <div className="custom-select" onClick={() => { setIsOriginOpen(!isOriginOpen); setIsDestOpen(false); }}>
+                        <div className="select-trigger">{origin}</div>
+                        <div className={`select-options ${isOriginOpen ? 'open' : ''}`}>
+                            {allStations.map(s => (
+                                <div key={s} className={`option-item ${s === origin ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setOrigin(s); setIsOriginOpen(false); }}>
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <button className="swap-btn" onClick={handleSwap}>⇅</button>
+                <div className="select-group" ref={destRef}>
+                    <label>目的地 Destination</label>
+                    <div className="custom-select" onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
+                        <div className="select-trigger">{dest}</div>
+                        <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
+                            {allStations.map(s => (
+                                <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {nextTrain ? (
+              <div className="next-train-card">
+                  <div className="subtitle">距離下一班車</div>
+                  <div className="countdown">
+                    {diffMins > 60 ? Math.floor(diffMins/60) : diffMins}
+                    <span>{diffMins > 60 ? 'hr' : 'mins'}</span>
+                    {diffMins > 60 && ` ${diffMins%60}`}
+                    {diffMins > 60 && <span>m</span>}
+                  </div>
+                  <div className="subtitle">開往 <span className="dest-highlight">{dest}</span></div>
+              </div>
+            ) : null}
+
+            <div className="schedule-list">
+              {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
+              {validTrains.map((t, idx) => {
+                let [dh, dm] = t.depTime.split(':').map(Number);
+                let [ah, am] = t.arrTime.split(':').map(Number);
+                let diff = (ah * 60 + am) - (dh * 60 + dm);
+                if (diff < 0) diff += 24 * 60;
+                let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                let waitDiff = t.actualDepMins - currentMins;
+                let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
+                
+                return (
+                  <div key={idx} className={`train-card ${getTrainDotClass(t.type)}`}>
+                      <div className="train-details">
+                          <h3>{t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">車程 {dur}</span></p>
+                      </div>
+                      <div className="train-time">{t.arrTime}<span>抵達 / {waitText} 後</span></div>
+                  </div>
+                )
+              })}
+            </div>
+        </div>
+      </div>
+    </>
+  );
+}
