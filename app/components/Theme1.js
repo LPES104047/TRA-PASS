@@ -168,8 +168,8 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                     </div>
                 </div>
                 <button className="swap-btn" onClick={handleSwap}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
-                        <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8v12M17 20l4-4M17 20l-4-4"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                        <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
                     </svg>
                 </button>
                 <div className="select-group" ref={destRef}>
