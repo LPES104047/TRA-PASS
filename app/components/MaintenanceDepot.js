@@ -40,6 +40,7 @@ export default function MaintenanceDepot({ show }) {
 
         /* 🪚 電焊火花動畫 */
         .spark-particle {
+          transform-box: fill-box;
           transform-origin: center;
           animation: electroSpark 1.5s infinite ease-out;
         }
@@ -54,11 +55,13 @@ export default function MaintenanceDepot({ show }) {
         /* 🧹 旋轉洗車刷 */
         .wash-brush {
           animation: spinBrush 0.6s infinite linear;
-          transform-origin: 397px 92px;
+          transform-origin: 497px 92px;
+          transform-box: fill-box;
         }
         .wash-brush-2 {
-          animation: spinBrush 0.6s infinite linear;
-          transform-origin: 397px 118px;
+          animation: spinBrushReverse 0.6s infinite linear;
+          transform-origin: 497px 118px;
+          transform-box: fill-box;
         }
 
         @keyframes spinBrush {
@@ -66,10 +69,16 @@ export default function MaintenanceDepot({ show }) {
           to { transform: rotate(360deg); }
         }
 
+        @keyframes spinBrushReverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+
         /* 💦 洗車噴水滴 */
         .water-drop {
           animation: waterSpray 0.8s infinite ease-in;
           transform-origin: center;
+          transform-box: fill-box;
         }
 
         @keyframes waterSpray {
@@ -147,65 +156,110 @@ export default function MaintenanceDepot({ show }) {
           <line x1="20" y1="20" x2="780" y2="20" stroke="#222" strokeWidth="4" />
 
           {/* TRACK 1 (TOP) - EMU3000 Parking */}
-          <rect x="0" y="42" width="800" height="2" fill="#555" />
-          <rect x="0" y="44" width="800" height="1" fill="#777" />
+          {/* Sleepers (Ties) */}
+          <line x1="0" y1="45" x2="800" y2="45" stroke="#252528" strokeWidth="4" strokeDasharray="2, 6" />
+          {/* Rails */}
+          <line x1="0" y1="41" x2="800" y2="41" stroke="#55555d" strokeWidth="1" />
+          <line x1="0" y1="42" x2="800" y2="42" stroke="#88888f" strokeWidth="0.5" />
           
-          {/* EMU3000 Train Car (3D design) */}
-          <g transform="translate(220, 20)">
-            {/* Under-frame & Wheels */}
-            <rect x="15" y="21" width="190" height="3" fill="#222" />
-            <circle cx="35" cy="24" r="3.5" fill="#333" />
-            <circle cx="50" cy="24" r="3.5" fill="#333" />
-            <circle cx="170" cy="24" r="3.5" fill="#333" />
-            <circle cx="185" cy="24" r="3.5" fill="#333" />
+          {/* EMU3000 Train Car (High-detail) */}
+          <g transform="translate(220, 18)">
+            {/* Pantograph (Folded, realistic) */}
+            <path d="M 45,6 L 50,2 L 60,2 L 65,6" stroke="#555" strokeWidth="0.8" fill="none" />
+            <path d="M 50,2 L 58,5" stroke="#444" strokeWidth="0.5" />
+            {/* AC Units on Roof */}
+            <rect x="75" y="4" width="18" height="2" fill="#777" rx="0.5" />
+            <rect x="145" y="4" width="18" height="2" fill="#777" rx="0.5" />
+            
+            {/* Bogies & Wheels (Concentric, detailed) */}
+            <rect x="25" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="29" cy="23.5" r="2.5" fill="#111" /> <circle cx="29" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="47" cy="23.5" r="2.5" fill="#111" /> <circle cx="47" cy="23.5" r="1" fill="#7f8c8d" />
+            
+            <rect x="155" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="159" cy="23.5" r="2.5" fill="#111" /> <circle cx="159" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="177" cy="23.5" r="2.5" fill="#111" /> <circle cx="177" cy="23.5" r="1" fill="#7f8c8d" />
 
             {/* Main Body */}
-            <path d="M 10,6 L 210,6 Q 212,6 212,8 L 212,21 L 10,21 Q 5,20 5,14 L 6,10 Q 7,6 10,6 Z" fill="url(#emu3000Body)" />
-            {/* Matte black top window mask */}
-            <path d="M 9,7 L 212,7 L 212,13 L 9,13 Z" fill="#1A1A1A" opacity="0.95" />
-            {/* Red accent line of EMU3000 */}
-            <rect x="15" y="14" width="197" height="1.2" fill="#E74C3C" />
-            {/* Windows glow */}
-            <rect x="25" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            <rect x="52" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            <rect x="85" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            <rect x="112" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            <rect x="145" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            <rect x="172" y="8" width="22" height="4" fill="#333" rx="0.5" />
-            {/* Windshield */}
-            <path d="M 6,10 L 15,10 L 15,13 L 9,13 Z" fill="#2C3E50" stroke="#000" strokeWidth="0.5" />
-            <path d="M 7,10 L 12,10 L 10,13 L 8,13 Z" fill="rgba(255,255,255,0.18)" />
+            <path d="M 10,6 L 205,6 Q 208,6 208,8 L 208,21 L 10,21 Q 4,20 4,14 L 5,10 Q 6,6 10,6 Z" fill="url(#emu3000Body)" />
+            {/* Windows Mask */}
+            <path d="M 9,7 L 208,7 L 208,13 L 9,13 Z" fill="#111" />
+            {/* Window Glass Panels with Reflections */}
+            <g fill="#2c3e50">
+              <rect x="22" y="8" width="22" height="4.5" rx="0.5" />
+              <rect x="52" y="8" width="22" height="4.5" rx="0.5" />
+              <rect x="82" y="8" width="22" height="4.5" rx="0.5" />
+              <rect x="112" y="8" width="22" height="4.5" rx="0.5" />
+              <rect x="142" y="8" width="22" height="4.5" rx="0.5" />
+              <rect x="172" y="8" width="22" height="4.5" rx="0.5" />
+            </g>
+            {/* Glossy Slash Reflections */}
+            <path d="M 23,8.5 L 30,8.5 L 24,12 Z" fill="rgba(255,255,255,0.25)" />
+            <path d="M 53,8.5 L 60,8.5 L 54,12 Z" fill="rgba(255,255,255,0.25)" />
+            <path d="M 83,8.5 L 90,8.5 L 84,12 Z" fill="rgba(255,255,255,0.25)" />
+            <path d="M 113,8.5 L 120,8.5 L 114,12 Z" fill="rgba(255,255,255,0.25)" />
+            <path d="M 143,8.5 L 150,8.5 L 144,12 Z" fill="rgba(255,255,255,0.25)" />
+            <path d="M 173,8.5 L 180,8.5 L 174,12 Z" fill="rgba(255,255,255,0.25)" />
+            {/* Red Accent Stripe */}
+            <rect x="12" y="14" width="196" height="1.5" fill="#E74C3C" />
+            {/* Passenger Doors (seams) */}
+            <g stroke="#555" strokeWidth="0.5">
+              <line x1="48" y1="6" x2="48" y2="21" />
+              <line x1="138" y1="6" x2="138" y2="21" />
+            </g>
+            {/* Front windshield */}
+            <path d="M 5,10 L 14,10 L 14,13 L 8,13 Z" fill="#1a252f" stroke="#000" strokeWidth="0.5" />
+            <path d="M 6,10.5 L 11,10.5 L 8,12.5 Z" fill="rgba(255,255,255,0.3)" />
+            {/* Red tail light (Parked) */}
+            <circle cx="5" cy="17" r="1" fill="#FF3333" />
           </g>
 
 
           {/* TRACK 2 (MIDDLE) - EMU900 Washing Facility */}
-          <rect x="0" y="107" width="800" height="2" fill="#555" />
-          <rect x="0" y="109" width="800" height="1" fill="#777" />
+          {/* Sleepers (Ties) */}
+          <line x1="0" y1="110" x2="800" y2="110" stroke="#252528" strokeWidth="4" strokeDasharray="2, 6" />
+          {/* Rails */}
+          <line x1="0" y1="106" x2="800" y2="106" stroke="#55555d" strokeWidth="1" />
+          <line x1="0" y1="107" x2="800" y2="107" stroke="#88888f" strokeWidth="0.5" />
           
           {/* EMU900 Train in Washing (undergoing wash Move) */}
-          <g className="depot-emu900" transform="translate(280, 85)">
-            {/* Under-frame & Wheels */}
-            <rect x="15" y="21" width="190" height="3" fill="#222" />
-            <circle cx="35" cy="24" r="3.5" fill="#333" />
-            <circle cx="50" cy="24" r="3.5" fill="#333" />
-            <circle cx="170" cy="24" r="3.5" fill="#333" />
-            <circle cx="185" cy="24" r="3.5" fill="#333" />
+          <g className="depot-emu900" transform="translate(280, 83)">
+            {/* Rooftop details */}
+            <rect x="75" y="4" width="18" height="2" fill="#666" rx="0.5" />
+            <rect x="145" y="4" width="18" height="2" fill="#666" rx="0.5" />
+            
+            {/* Bogies & Wheels */}
+            <rect x="25" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="29" cy="23.5" r="2.5" fill="#111" /> <circle cx="29" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="47" cy="23.5" r="2.5" fill="#111" /> <circle cx="47" cy="23.5" r="1" fill="#7f8c8d" />
+            
+            <rect x="155" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="159" cy="23.5" r="2.5" fill="#111" /> <circle cx="159" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="177" cy="23.5" r="2.5" fill="#111" /> <circle cx="177" cy="23.5" r="1" fill="#7f8c8d" />
 
             {/* Main Body */}
-            <path d="M 10,6 L 210,6 Q 212,6 212,8 L 212,21 L 10,21 Q 5,20 5,14 L 6,10 Q 7,6 10,6 Z" fill="url(#emu900Body)" />
-            {/* Green smile wave line */}
-            <path d="M 5,17 Q 20,17 40,19 L 212,19 L 212,20.5 L 40,20.5 Q 20,18.5 5,18 Z" fill="#00A859" />
+            <path d="M 10,6 L 205,6 Q 208,6 208,8 L 208,21 L 10,21 Q 4,20 4,14 L 5,10 Q 6,6 10,6 Z" fill="url(#emu900Body)" />
+            {/* Green smiley wave line */}
+            <path d="M 4,17 Q 15,17 35,19 L 208,19 L 208,20.2 L 35,20.2 Q 15,18.2 4,17.5 Z" fill="#00A859" />
             {/* Windows (warm glow during washing) */}
-            <rect x="25" y="9" width="24" height="6" fill="#F9E79F" rx="1" stroke="#333" strokeWidth="0.5" />
-            <rect x="55" y="9" width="24" height="6" fill="#F9E79F" rx="1" stroke="#333" strokeWidth="0.5" />
-            <rect x="95" y="9" width="24" height="6" fill="#F9E79F" rx="1" stroke="#333" strokeWidth="0.5" />
-            <rect x="125" y="9" width="24" height="6" fill="#F9E79F" rx="1" stroke="#333" strokeWidth="0.5" />
-            <rect x="165" y="9" width="24" height="6" fill="#F9E79F" rx="1" stroke="#333" strokeWidth="0.5" />
+            <g fill="#F9E79F" stroke="#111" strokeWidth="0.5">
+              <rect x="22" y="8" width="24" height="6.5" rx="0.5" />
+              <rect x="52" y="8" width="24" height="6.5" rx="0.5" />
+              <rect x="92" y="8" width="24" height="6.5" rx="0.5" />
+              <rect x="122" y="8" width="24" height="6.5" rx="0.5" />
+              <rect x="162" y="8" width="24" height="6.5" rx="0.5" />
+            </g>
+            <path d="M 23,8.5 L 30,8.5 L 24,14 Z" fill="rgba(255,255,255,0.4)" />
+            <path d="M 53,8.5 L 60,8.5 L 54,14 Z" fill="rgba(255,255,255,0.4)" />
+            <path d="M 93,8.5 L 100,8.5 L 94,14 Z" fill="rgba(255,255,255,0.4)" />
+            
             {/* Front windshield and visor */}
-            <path d="M 5,9 L 18,9 L 18,14 L 6,14 Z" fill="#1A1A1A" />
-            <path d="M 6,10 L 15,10 L 14,13 L 7,13 Z" fill="#2C3E50" />
-            {/* Front light */}
-            <circle cx="5" cy="16" r="1.5" fill="#FFF" />
+            <path d="M 4,9 L 17,9 L 17,14 L 5,14 Z" fill="#111" />
+            <path d="M 5,9.5 L 14,9.5 L 13,12.5 L 6,12.5 Z" fill="#1a252f" />
+            <path d="M 12,9 L 17,9 C 19,9 20,10 20,12 C 20,13.5 19,14 17,14 L 13,14 Z" fill="none" stroke="#00FF66" strokeWidth="1" strokeLinecap="round" />
+            {/* Front headlight glowing */}
+            <circle cx="4" cy="16" r="1.2" fill="#FFF" />
+            <circle cx="4" cy="16" r="3" fill="rgba(255,255,255,0.3)" />
           </g>
 
           {/* Spinning washing brushes overlay & water drops */}
@@ -220,6 +274,10 @@ export default function MaintenanceDepot({ show }) {
             {/* Gantry supporting wash system */}
             <rect x="494" y="65" width="6" height="70" fill="url(#gantryBeam)" rx="1" />
             
+            {/* Recycling system label (♻️ 水資源循環洗車) */}
+            <text x="497" y="55" fill="#2ecc71" fontSize="5.5" fontWeight="bold" textAnchor="middle" style={{ fontFamily: 'sans-serif', letterSpacing: '0.2px' }}>♻️ 水資源循環洗車</text>
+            <text x="497" y="61" fill="#2ecc71" fontSize="4.5" textAnchor="middle" style={{ fontFamily: 'sans-serif' }}>WATER RECYCLING</text>
+
             {/* Spin Brush 1 (Top of Train Body) */}
             <g className="wash-brush" style={{ transformOrigin: '497px 92px' }}>
               <rect x="490" y="80" width="14" height="24" fill="#3498DB" opacity="0.8" rx="3" />
@@ -233,48 +291,81 @@ export default function MaintenanceDepot({ show }) {
             </g>
           </g>
 
+          {/* Washing Operator Silhouette & Control Panel */}
+          <g transform="translate(460, 110)">
+            <rect x="-12" y="-12" width="10" height="12" fill="#555" stroke="#333" strokeWidth="0.5" />
+            <rect x="-10" y="-18" width="6" height="5" fill="#1abc9c" />
+            <line x1="-3" y1="0" x2="-4" y2="5" stroke="#111" strokeWidth="1.5" />
+            <line x1="-1" y1="0" x2="-1" y2="5" stroke="#111" strokeWidth="1.5" />
+            <rect x="-4" y="-8" width="4" height="8" fill="#e67e22" rx="1" />
+            <circle cx="-2" cy="-11" r="1.5" fill="#f1c40f" />
+            <path d="M -3.5,-11.5 Q -2,-13 -0.5,-11.5 Z" fill="#f1c40f" />
+          </g>
+
 
           {/* TRACK 3 (BOTTOM) - EMU800 Maintenance & Welding */}
-          <rect x="0" y="172" width="800" height="2" fill="#555" />
-          <rect x="0" y="174" width="800" height="1" fill="#777" />
+          {/* Sleepers (Ties) */}
+          <line x1="0" y1="175" x2="800" y2="175" stroke="#252528" strokeWidth="4" strokeDasharray="2, 6" />
+          {/* Rails */}
+          <line x1="0" y1="171" x2="800" y2="171" stroke="#55555d" strokeWidth="1" />
+          <line x1="0" y1="172" x2="800" y2="172" stroke="#88888f" strokeWidth="0.5" />
 
-          {/* EMU800 Train Car */}
-          <g transform="translate(100, 150)">
-            {/* Under-frame & Wheels */}
-            <rect x="15" y="21" width="190" height="3" fill="#222" />
-            <circle cx="35" cy="24" r="3.5" fill="#333" />
-            <circle cx="50" cy="24" r="3.5" fill="#333" />
-            <circle cx="170" cy="24" r="3.5" fill="#333" />
-            <circle cx="185" cy="24" r="3.5" fill="#333" />
+          {/* EMU800 Train Car (High-detail) */}
+          <g transform="translate(100, 148)">
+            {/* Roof details */}
+            <rect x="75" y="4" width="18" height="2" fill="#555" rx="0.5" />
+            <rect x="145" y="4" width="18" height="2" fill="#555" rx="0.5" />
+            
+            {/* Bogies & Wheels */}
+            <rect x="25" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="29" cy="23.5" r="2.5" fill="#111" /> <circle cx="29" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="47" cy="23.5" r="2.5" fill="#111" /> <circle cx="47" cy="23.5" r="1" fill="#7f8c8d" />
+            
+            <rect x="155" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
+            <circle cx="159" cy="23.5" r="2.5" fill="#111" /> <circle cx="159" cy="23.5" r="1" fill="#7f8c8d" />
+            <circle cx="177" cy="23.5" r="2.5" fill="#111" /> <circle cx="177" cy="23.5" r="1" fill="#7f8c8d" />
 
             {/* Main Body */}
-            <path d="M 10,6 L 210,6 Q 212,6 212,8 L 212,21 L 10,21 Q 5,20 5,14 L 6,10 Q 7,6 10,6 Z" fill="url(#emu800Body)" />
+            <path d="M 10,6 L 205,6 Q 208,6 208,8 L 208,21 L 10,21 Q 4,20 4,14 L 5,10 Q 6,6 10,6 Z" fill="url(#emu800Body)" />
             {/* Yellow front face of EMU800 */}
-            <path d="M 5,14 L 20,14 L 20,21 L 10,21 Q 5,20 5,14 Z" fill="#F1C40F" />
+            <path d="M 4,14 L 18,14 L 18,21 L 10,21 Q 4,20 4,14 Z" fill="#F1C40F" />
             {/* Blue accent side stripe */}
-            <rect x="20" y="16" width="192" height="2" fill="#2980B9" />
-            {/* Windows (Dark) */}
-            <rect x="30" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
-            <rect x="60" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
-            <rect x="90" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
-            <rect x="120" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
-            <rect x="150" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
-            <rect x="180" y="9" width="22" height="5" fill="#1A1A1A" rx="0.5" />
+            <rect x="18" y="16" width="190" height="2" fill="#2980B9" />
+            {/* Windows */}
+            <g fill="#151d24" stroke="#111" strokeWidth="0.5">
+              <rect x="28" y="9" width="22" height="5" rx="0.5" />
+              <rect x="58" y="9" width="22" height="5" rx="0.5" />
+              <rect x="88" y="9" width="22" height="5" rx="0.5" />
+              <rect x="118" y="9" width="22" height="5" rx="0.5" />
+              <rect x="148" y="9" width="22" height="5" rx="0.5" />
+              <rect x="178" y="9" width="22" height="5" rx="0.5" />
+            </g>
+            <path d="M 29,9.5 L 34,9.5 L 30,13.5 Z" fill="rgba(255,255,255,0.15)" />
+            <path d="M 59,9.5 L 64,9.5 L 60,13.5 Z" fill="rgba(255,255,255,0.15)" />
             {/* Windshield */}
-            <path d="M 5,9 L 18,9 L 18,13 L 6,13 Z" fill="#1A1A1A" />
-            <path d="M 6,10 L 15,10 L 14,12 L 7,12 Z" fill="#34495E" />
+            <path d="M 4,9 L 16,9 L 16,13 L 5,13 Z" fill="#111" />
+            <path d="M 5,9.5 L 13,9.5 L 12,12 L 6,12 Z" fill="#1a252f" />
           </g>
 
           {/* Spark generator (Welding Effect under EMU800 wheels/chassis) */}
-          <g transform="translate(220, 172)">
+          <g transform="translate(129, 172)">
             {/* Welding Glow */}
-            <circle cx="0" cy="2" r="10" fill="rgba(241, 196, 15, 0.15)" />
+            <circle cx="0" cy="0" r="12" fill="rgba(0, 240, 255, 0.25)" />
             {/* Spark particles with CSS delay and offsets */}
-            <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#F39C12" style={{ '--dx': '-10px', '--dy': '-12px' }} />
-            <circle className="spark-particle" cx="0" cy="0" r="1.2" fill="#F1C40F" style={{ '--dx': '8px', '--dy': '-15px' }} />
-            <circle className="spark-particle" cx="0" cy="0" r="2.0" fill="#FFF" style={{ '--dx': '-4px', '--dy': '-8px' }} />
-            <circle className="spark-particle" cx="0" cy="0" r="1.0" fill="#E67E22" style={{ '--dx': '12px', '--dy': '-10px' }} />
-            <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#FFF" style={{ '--dx': '-12px', '--dy': '-4px' }} />
+            <circle className="spark-particle" cx="0" cy="0" r="1.2" fill="#00F0FF" style={{ '--dx': '-12px', '--dy': '-10px' }} />
+            <circle className="spark-particle" cx="0" cy="0" r="0.9" fill="#FFF" style={{ '--dx': '10px', '--dy': '-12px' }} />
+            <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#00F0FF" style={{ '--dx': '-4px', '--dy': '-6px' }} />
+            <circle className="spark-particle" cx="0" cy="0" r="0.8" fill="#FFF" style={{ '--dx': '8px', '--dy': '-8px' }} />
+            <circle className="spark-particle" cx="0" cy="0" r="1.2" fill="#00F0FF" style={{ '--dx': '-8px', '--dy': '-4px' }} />
+          </g>
+
+          {/* Welder Operator kneeling next to Track 3 */}
+          <g transform="translate(142, 172)">
+            <path d="M 0,-4 L 3,3 L 6,3" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+            <path d="M -2,-12 L 2,-12 L 1,-4 L -1,-4 Z" fill="#e67e22" stroke="#d35400" strokeWidth="0.5" />
+            <path d="M -2,-10 L -13,-4" fill="none" stroke="#2c3e50" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="0" cy="-15" r="2.5" fill="#f1c40f" />
+            <rect x="-3" y="-17" width="3" height="4.5" fill="#2c3e50" rx="0.5" />
           </g>
 
 

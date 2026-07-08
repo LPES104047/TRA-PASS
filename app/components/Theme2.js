@@ -76,12 +76,12 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme2-root #originContainer { 
             border-top-left-radius: 20px; border-bottom-left-radius: 20px; 
             border-top-right-radius: 0; border-bottom-right-radius: 0; 
-            padding: 0 30px 0 20px; 
+            padding: 0 25px; 
         }
         .theme2-root #destContainer { 
             border-top-right-radius: 20px; border-bottom-right-radius: 20px; 
             border-top-left-radius: 0; border-bottom-left-radius: 0; 
-            padding: 0 20px 0 30px; 
+            padding: 0 25px; 
         }
         .theme2-root .custom-select:hover { background: #F8FAFC; }
         .theme2-root #originContainer::before { content: "出發 Origin"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }

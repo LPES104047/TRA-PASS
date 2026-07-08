@@ -127,7 +127,7 @@ export default function Home() {
 
   const now = new Date();
   // 記住這位置！記住記住記住！
-  const currentMins = 3 * 60; // 為了開發，固定在半夜 3:00 (無車狀態)
+  const currentMins = 23 * 60 + 59; // 為了開發，固定在半夜 23:59 (收班無車狀態)
   // const currentMins = now.getHours() * 60 + now.getMinutes();
   
   let validTrains = [];
@@ -247,7 +247,7 @@ export default function Home() {
       {theme === 2 && <Theme2 {...props} />}
       {theme === 3 && <Theme3 {...props} />}
       <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
-      <MaintenanceDepot show={validTrains.length === 0} />
+      <MaintenanceDepot show={theme !== 1 && validTrains.length === 0} />
 
       {activeTrain && (
         <TrainJourneyModal

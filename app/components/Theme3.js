@@ -255,7 +255,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
               color: '#fff',
               boxShadow: '0 0 15px rgba(0, 240, 255, 0.15)',
               backdropFilter: 'blur(10px)',
-              margin: '10px 0 20px 70px' /* Align to Dashboard offset */
+              margin: '10px 0 20px 0' /* Centered */
             }}>
               <div style={{
                 display: 'inline-flex',
