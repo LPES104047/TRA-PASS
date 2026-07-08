@@ -3,6 +3,38 @@ import React from 'react';
 export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
   if (!isAnimating) return null;
 
+  const renderPassengers = (pos) => {
+    const passengers = [];
+    // Deterministic hash based on position to keep layouts consistent
+    const hash = Math.abs(pos) % 4;
+
+    if (hash === 1 || hash === 3) {
+      // Passenger 1 (left side of window)
+      const offset = 12;
+      passengers.push(
+        <g key={`p1-${pos}`}>
+          {/* Torso/Shoulders */}
+          <path d={`M ${pos + offset - 7},134 L ${pos + offset - 7},122 C ${pos + offset - 7},115 ${pos + offset + 7},115 ${pos + offset + 7},122 L ${pos + offset + 7},134 Z`} fill="#2C3E50" opacity="0.85" />
+          {/* Head */}
+          <circle cx={pos + offset} cy={108} r={4.5} fill="#2C3E50" />
+        </g>
+      );
+    }
+    if (hash === 2 || hash === 3) {
+      // Passenger 2 (right side of window)
+      const offset = 32;
+      passengers.push(
+        <g key={`p2-${pos}`}>
+          {/* Torso/Shoulders */}
+          <path d={`M ${pos + offset - 7},134 L ${pos + offset - 7},122 C ${pos + offset - 7},115 ${pos + offset + 7},115 ${pos + offset + 7},122 L ${pos + offset + 7},134 Z`} fill="#2C3E50" opacity="0.85" />
+          {/* Head */}
+          <circle cx={pos + offset} cy={108} r={4.5} fill="#2C3E50" />
+        </g>
+      );
+    }
+    return passengers;
+  };
+
   const generateCommuterDetails = () => {
     const details = [];
     // Cars are 450 units long. Loop from -1500 to 1200
@@ -32,18 +64,21 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
       windows.forEach((pos, idx) => {
         details.push(
           <g key={`win-${x}-${idx}`}>
+            {/* Window glass pane (Warm glowing interior) */}
             <rect
               x={pos}
               y={83}
               width={44}
               height={52}
-              fill="#1A1A1A"
+              fill="url(#windowGlow)"
               rx={6}
-              stroke="#BDC3C7"
+              stroke="#555"
               strokeWidth={1.5}
             />
-            {/* Glossy reflection */}
-            <path d={`M ${pos + 4},85 L ${pos + 24},85 L ${pos + 4},115 Z`} fill="rgba(255,255,255,0.12)" />
+            {/* Render passenger silhouettes */}
+            {renderPassengers(pos)}
+            {/* Glossy window reflection */}
+            <path d={`M ${pos + 4},85 L ${pos + 24},85 L ${pos + 4},115 Z`} fill="rgba(255,255,255,0.18)" />
           </g>
         );
       });
@@ -115,11 +150,11 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
         }
 
         .bg-train-container.ltr {
-          animation: trainLtr 3s linear forwards; /* ✨ 改為 3s 以配合進站停靠時間 */
+          animation: trainLtr 3s linear forwards; /* ✨ 3s 配合進站停靠時間 */
         }
 
         .bg-train-container.rtl {
-          animation: trainRtl 3s linear forwards; /* ✨ 改為 3s */
+          animation: trainRtl 3s linear forwards; /* ✨ 3s */
         }
 
         /* 
@@ -164,6 +199,40 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           }
         }
 
+        /* ✨ 物理震動效果：行駛時有高頻微震，煞停在站點時完全靜止 */
+        .bg-train-vibrator {
+          width: 100%;
+          height: 100%;
+          animation: trainVibrate 3s linear forwards;
+          will-change: transform;
+        }
+
+        @keyframes trainVibrate {
+          /* 0% ~ 40%: 進站減速期，高頻震動逐漸減小 */
+          0% { transform: translateY(0px); }
+          5% { transform: translateY(0.8px); }
+          10% { transform: translateY(-0.4px); }
+          15% { transform: translateY(0.6px); }
+          20% { transform: translateY(-0.3px); }
+          25% { transform: translateY(0.5px); }
+          30% { transform: translateY(-0.2px); }
+          35% { transform: translateY(0.3px); }
+          40% { transform: translateY(0px); } /* 煞停，完全停止震動 */
+          
+          /* 40% ~ 60%: 月台停靠期，火車完全靜止 */
+          60% { transform: translateY(0px); }
+          
+          /* 60% ~ 100%: 啟動加速期，震動頻率與幅度逐漸增加 */
+          65% { transform: translateY(0.2px); }
+          70% { transform: translateY(-0.3px); }
+          75% { transform: translateY(0.4px); }
+          80% { transform: translateY(-0.5px); }
+          85% { transform: translateY(0.6px); }
+          90% { transform: translateY(-0.6px); }
+          95% { transform: translateY(0.8px); }
+          100% { transform: translateY(0px); }
+        }
+
         .svg-emu900 {
           width: 100%;
           height: 100%;
@@ -173,66 +242,87 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
 
       <div className="bg-train-root">
         <div className={`bg-train-container ${direction}`}>
-          <svg className="svg-emu900" viewBox="-1500 0 3100 220" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <linearGradient id="emuBody" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#ECEFF1" />
-                <stop offset="35%" stopColor="#CFD8DC" />
-                <stop offset="70%" stopColor="#90A4AE" />
-                <stop offset="100%" stopColor="#455A64" />
-              </linearGradient>
-            </defs>
+          <div className="bg-train-vibrator">
+            <svg className="svg-emu900" viewBox="-1500 0 3100 220" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                {/* Metallic silver steel gradient for the body */}
+                <linearGradient id="emuBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ECEFF1" />
+                  <stop offset="35%" stopColor="#CFD8DC" />
+                  <stop offset="70%" stopColor="#90A4AE" />
+                  <stop offset="100%" stopColor="#455A64" />
+                </linearGradient>
 
-            {/* Rooftop Pantographs (集電弓) */}
-            <g stroke="#7F8C8D" strokeWidth="2" fill="none">
-              {/* Pantograph 1 */}
-              <rect x="-1020" y="46" width="40" height="4" fill="#555" stroke="none" />
-              <line x1="-1015" y1="46" x2="-1000" y2="30" />
-              <line x1="-1000" y1="30" x2="-985" y2="46" />
-              <line x1="-1000" y1="30" x2="-1010" y2="22" />
-              <line x1="-1010" y1="22" x2="-990" y2="22" />
-              <line x1="-1015" y1="22" x2="-985" y2="22" strokeWidth="3" />
+                {/* Warm glowing interior window light gradient */}
+                <linearGradient id="windowGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#FFF2CC" />
+                  <stop offset="40%" stopColor="#FFE599" />
+                  <stop offset="100%" stopColor="#F5B041" />
+                </linearGradient>
 
-              {/* Pantograph 2 */}
-              <rect x="-20" y="46" width="40" height="4" fill="#555" stroke="none" />
-              <line x1="-15" y1="46" x2="0" y2="30" />
-              <line x1="0" y1="30" x2="15" y2="46" />
-              <line x1="0" y1="30" x2="-10" y2="22" />
-              <line x1="-10" y1="22" x2="10" y2="22" />
-              <line x1="-15" y1="22" x2="15" y2="22" strokeWidth="3" />
-            </g>
+                {/* Headlight beam fading gradient */}
+                <linearGradient id="headlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(255, 255, 255, 0.40)" />
+                  <stop offset="25%" stopColor="rgba(255, 255, 255, 0.15)" />
+                  <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
+                </linearGradient>
+              </defs>
 
-            {/* Train body with commuter-style blunt nose */}
-            <path d="M -1500,50 L 1440,50 C 1500,50 1530,70 1535,110 C 1540,140 1530,185 1510,190 L -1500,190 Z" fill="url(#emuBody)" />
-            
-            {/* Top green roofline stripe */}
-            <rect x="-1500" y="58" width="2920" height="4" fill="#00A859" />
+              {/* Static Iron Rail Track (鋼軌) */}
+              <rect x="-1500" y="204" width="3100" height="4" fill="#555" />
+              <rect x="-1500" y="202" width="3100" height="2" fill="#BDC3C7" />
 
-            {/* Bottom green wave belt - sweeping up at the front */}
-            <path d="M -1500,144 L 1360,144 Q 1410,144 1435,153 Q 1460,162 1490,163" fill="none" stroke="#00A859" strokeWidth="8" strokeLinecap="round" />
+              {/* Rooftop Pantographs (集電弓) */}
+              <g stroke="#7F8C8D" strokeWidth="2" fill="none">
+                {/* Pantograph 1 */}
+                <rect x="-1020" y="46" width="40" height="4" fill="#555" stroke="none" />
+                <line x1="-1015" y1="46" x2="-1000" y2="30" />
+                <line x1="-1000" y1="30" x2="-985" y2="46" />
+                <line x1="-1000" y1="30" x2="-1010" y2="22" />
+                <line x1="-1010" y1="22" x2="-990" y2="22" />
+                <line x1="-1015" y1="22" x2="-985" y2="22" strokeWidth="3" />
 
-            {/* Commuter doors and windows */}
-            {generateCommuterDetails()}
+                {/* Pantograph 2 */}
+                <rect x="-20" y="46" width="40" height="4" fill="#555" stroke="none" />
+                <line x1="-15" y1="46" x2="0" y2="30" />
+                <line x1="0" y1="30" x2="15" y2="46" />
+                <line x1="0" y1="30" x2="-10" y2="22" />
+                <line x1="-10" y1="22" x2="10" y2="22" />
+                <line x1="-15" y1="22" x2="15" y2="22" strokeWidth="3" />
+              </g>
 
-            {/* Under-train Bogies and Wheels */}
-            {generateBogiesAndWheels()}
+              {/* Train body with commuter-style blunt nose */}
+              <path d="M -1500,50 L 1440,50 C 1500,50 1530,70 1535,110 C 1540,140 1530,185 1510,190 L -1500,190 Z" fill="url(#emuBody)" />
+              
+              {/* Top green roofline stripe */}
+              <rect x="-1500" y="58" width="2920" height="4" fill="#00A859" />
 
-            {/* Driver visor windshield mask */}
-            <path d="M 1380,75 L 1440,75 C 1490,75 1518,90 1523,115 C 1528,135 1518,158 1495,163 L 1395,160 Z" fill="#1A1A1A" />
+              {/* Bottom green wave belt - sweeping up at the front */}
+              <path d="M -1500,144 L 1360,144 Q 1410,144 1435,153 Q 1460,162 1490,163" fill="none" stroke="#00A859" strokeWidth="8" strokeLinecap="round" />
 
-            {/* Neon green smiley frame around driver shield */}
-            <path d="M 1420,75 C 1480,75 1510,90 1518,115 C 1523,135 1513,158 1490,163" fill="none" stroke="#00FF66" strokeWidth="4.5" strokeLinecap="round" />
+              {/* Commuter doors and windows */}
+              {generateCommuterDetails()}
 
-            {/* Glowing headlight */}
-            <circle cx="1508" cy="148" r="6" fill="rgba(255,255,255,0.4)" />
-            <circle cx="1508" cy="148" r="3" fill="#FFF" />
-            <path d="M 1508,148 L 1750,130 L 1750,185 Z" fill="rgba(255,255,255,0.18)" />
-            <path d="M 1508,148 L 1850,140 L 1850,170 Z" fill="rgba(255,255,255,0.10)" />
+              {/* Under-train Bogies and Wheels */}
+              {generateBogiesAndWheels()}
 
-            {/* Front Coupler (連結器) */}
-            <rect x="1510" y="178" width="25" height="10" fill="#333" rx={2} />
-            <circle cx="1530" cy="183" r="4" fill="#555" />
-          </svg>
+              {/* Driver visor windshield mask */}
+              <path d="M 1380,75 L 1440,75 C 1490,75 1518,90 1523,115 C 1528,135 1518,158 1495,163 L 1395,160 Z" fill="#1A1A1A" />
+
+              {/* Neon green smiley frame around driver shield */}
+              <path d="M 1420,75 C 1480,75 1510,90 1518,115 C 1523,135 1513,158 1490,163" fill="none" stroke="#00FF66" strokeWidth="4.5" strokeLinecap="round" />
+
+              {/* Glowing headlight */}
+              <circle cx="1508" cy="148" r="6" fill="rgba(255,255,255,0.4)" />
+              <circle cx="1508" cy="148" r="3" fill="#FFF" />
+              {/* Fading headlight light beam */}
+              <path d="M 1508,148 L 1800,118 L 1800,188 Z" fill="url(#headlightBeam)" />
+
+              {/* Front Coupler (連結器) */}
+              <rect x="1510" y="178" width="25" height="10" fill="#333" rx={2} />
+              <circle cx="1530" cy="183" r="4" fill="#555" />
+            </svg>
+          </div>
         </div>
       </div>
     </>
