@@ -49,6 +49,21 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme3-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #FFF; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,240,255,0.5); }
         
+        .theme3-root .card {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: all 0.5s ease;
+        }
+        .theme3-root .card.empty {
+            background: rgba(10, 10, 10, 0.2);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 240, 255, 0.1);
+            box-shadow: none;
+        }
+        
         .theme3-root .selector-box { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); display: flex; align-items: center; width: 100%; max-width: 500px; position: relative; z-index: 200; padding: 0; height: 70px; margin-bottom: 30px; }
         .theme3-root .selector-box::after { content: ""; position: absolute; left: 50%; top: 25%; bottom: 25%; width: 1px; background: rgba(255, 255, 255, 0.1); z-index: 1; }
         
@@ -247,14 +262,13 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         <div className="dashboard">
           {validTrains.length === 0 ? (
             <div className="empty-state-card" style={{
-              background: 'rgba(17, 8, 38, 0.7)',
-              border: '1.5px solid #00F0FF',
+              background: 'rgba(17, 8, 38, 0.1)',
+              border: '1.5px solid rgba(0, 240, 255, 0.2)',
               borderRadius: '16px',
               padding: '30px 20px',
               textAlign: 'center',
               color: '#fff',
-              boxShadow: '0 0 15px rgba(0, 240, 255, 0.15)',
-              backdropFilter: 'blur(10px)',
+              boxShadow: '0 0 15px rgba(0, 240, 255, 0.05)',
               margin: '10px 0 20px 0' /* Centered */
             }}>
               <div style={{

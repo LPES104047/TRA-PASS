@@ -97,7 +97,7 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           width: 100vw;
           height: 100vh;
           pointer-events: none;
-          z-index: -1;
+          z-index: 9999;
           overflow: hidden;
           display: flex;
           align-items: center;
