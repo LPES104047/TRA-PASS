@@ -115,24 +115,53 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
         }
 
         .bg-train-container.ltr {
-          animation: trainLtr 2s linear forwards; /* ✨ 縮短至 2.0s 對齊生命週期 */
+          animation: trainLtr 3s linear forwards; /* ✨ 改為 3s 以配合進站停靠時間 */
         }
 
         .bg-train-container.rtl {
-          animation: trainRtl 2s linear forwards; /* ✨ 縮短至 2.0s */
+          animation: trainRtl 3s linear forwards; /* ✨ 改為 3s */
         }
 
         /* 
-          Keyframes: 乾淨的等速平移，移除造成效能低落的 blur 濾鏡
+          Keyframes: 模擬火車進站停靠的真實物理動作
+          - 0% ~ 40%: 快速駛入並流暢減速 (ease-out)
+          - 40% ~ 60%: 在月台中央完全靜止停靠 0.6 秒 (停靠期間進行資料 Swap)
+          - 60% ~ 100%: 從靜止狀態平滑加速駛離 (ease-in)
         */
         @keyframes trainLtr {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
+          0% { 
+            transform: translateX(-100%); 
+            animation-timing-function: ease-out;
+          }
+          40% { 
+            transform: translateX(0%); 
+            animation-timing-function: linear;
+          }
+          60% { 
+            transform: translateX(0%); 
+            animation-timing-function: ease-in;
+          }
+          100% { 
+            transform: translateX(100%); 
+          }
         }
 
         @keyframes trainRtl {
-          0% { transform: translateX(100%) scaleX(-1); }
-          100% { transform: translateX(-100%) scaleX(-1); }
+          0% { 
+            transform: translateX(100%) scaleX(-1); 
+            animation-timing-function: ease-out;
+          }
+          40% { 
+            transform: translateX(0%) scaleX(-1); 
+            animation-timing-function: linear;
+          }
+          60% { 
+            transform: translateX(0%) scaleX(-1); 
+            animation-timing-function: ease-in;
+          }
+          100% { 
+            transform: translateX(-100%) scaleX(-1); 
+          }
         }
 
         .svg-emu900 {

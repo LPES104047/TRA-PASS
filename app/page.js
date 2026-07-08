@@ -161,14 +161,14 @@ export default function Home() {
     if (isAnimating) return; 
     setAnimDirection(direction);
     setIsAnimating(true);
-    // The continuous train takes 2.0s total.
-    // Update state at 1000ms (when train is exactly at the center).
+    // The continuous train takes 3.0s total.
+    // Update state at 1500ms (when train is stopped at the center).
     setTimeout(() => {
       stateUpdateCallback();
-    }, 1000);
+    }, 1500);
     setTimeout(() => {
       setIsAnimating(false);
-    }, 2000);
+    }, 3000);
   };
 
   const getDirectionAnim = (from, to) => {
