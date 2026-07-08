@@ -378,7 +378,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             <div className="ticket-header">
                 <div className="top-row">
                     <div className="logo">🚆 TRA PASS</div>
-                    <div className="date">Valid Today</div>
+                    <div className="date">{isTomorrow ? 'Valid Tomorrow' : 'Valid Today'}</div>
                 </div>
                 <div className="route-row">
                     <div className="station-col">

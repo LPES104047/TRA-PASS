@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -48,146 +48,55 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           --primary: #FFFFFF;
           --accent: #FFD700;
           --text-main: #FFFFFF;
-          --text-muted: rgba(255, 255, 255, 0.7);
-          
-          --train-local: #2ECC71;
-          --train-fast: #F1C40F;
-          --train-express: #E74C3C;
-          
-          min-height: 100vh;
-          color: var(--text-main);
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          padding: 80px 20px 40px 20px;
-          box-sizing: border-box;
+          --text-muted: rgba(255, 255, 255, 0.85);
+          --train-local: #4FACFE;
+          --train-fast: #FFD700;
+          --train-express: #FF6B6B;
+          background: transparent; 
+          color: var(--text-main); 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          padding: 20px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        .theme1-root * { box-sizing: border-box; }
+        .theme1-root .container { width: 100%; max-width: 500px; margin: 0 auto; }
+        .theme1-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
         
-        .theme1-root .container {
-          max-width: 500px;
-          margin: 0 auto;
-          background: rgba(255, 255, 255, 0.08);
-          padding: 30px 20px;
-          border-radius: 40px 10px 40px 10px;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(25px);
-          -webkit-backdrop-filter: blur(25px);
-        }
+        .theme1-root .selector { display: flex; align-items: flex-end; gap: 10px; background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); position: relative; z-index: 1000; }
+        .theme1-root .select-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .theme1-root .select-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
         
-        .theme1-root h1 {
-          font-size: 20px;
-          font-weight: 800;
-          text-align: center;
-          margin: 0 0 30px 0;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-          color: #fff;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .theme1-root .custom-select { width: 100%; position: relative; }
+        .theme1-root .select-trigger { 
+            background: var(--surface); color: var(--text-main); border: 1px solid var(--primary); 
+            padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; position: relative;
         }
+        .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
+        .theme1-root .select-options { 
+            position: absolute; top: calc(100% + 5px); left: 0; right: 0; 
+            background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; 
+            max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 10px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme1-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.05); color: #fff; }
+        .theme1-root .option-item:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
         
-        .theme1-root .selector {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 30px;
-          position: relative;
-        }
-        
-        .theme1-root .select-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          flex: 1;
-        }
-        .theme1-root .select-group label {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--text-muted);
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-left: 15px;
-        }
-        
-        .theme1-root .custom-select {
-          position: relative;
-          cursor: pointer;
-        }
-        .theme1-root .select-trigger {
-          background: var(--surface);
-          padding: 12px 20px;
-          border-radius: 20px;
-          font-weight: 700;
-          font-size: 15px;
-          color: #fff;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border: 1px solid rgba(255,255,255,0.1);
-          transition: all 0.3s;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .theme1-root .select-trigger:hover {
-          background: rgba(255,255,255,0.25);
-          border-color: rgba(255,255,255,0.2);
-        }
-        .theme1-root .select-trigger::after {
-          content: '▼';
-          font-size: 10px;
-          color: var(--accent);
-          transition: transform 0.3s;
-        }
-        
-        .theme1-root .select-options {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: rgba(15, 23, 42, 0.95);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 15px;
-          margin-top: 5px;
-          max-height: 250px;
-          overflow-y: auto;
-          z-index: 100;
-          display: none;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-          backdrop-filter: blur(10px);
-        }
-        .theme1-root .select-options.open {
-          display: block;
-        }
-        .theme1-root .option-item {
-          padding: 12px 20px;
-          font-weight: 600;
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.8);
-          transition: all 0.2s;
-        }
-        .theme1-root .option-item:hover {
-          background: rgba(255,255,255,0.1);
-          color: #fff;
-          padding-left: 25px;
-        }
-        .theme1-root .option-item.selected {
-          background: var(--accent);
-          color: #000;
-        }
-        
-        .theme1-root .swap-btn {
-          background: var(--surface);
-          border: 1px solid rgba(255,255,255,0.15);
-          color: #fff;
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          align-self: center;
-          transform: translateY(10px);
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-          z-index: 5;
+        .theme1-root .swap-btn { 
+            background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; 
+            width: 42px; height: 42px; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; 
+            flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            transition: transform 0.2s;
+            align-self: center;
+            transform: translateY(10px);
         }
         .theme1-root .swap-btn:hover { transform: translateY(10px) scale(1.1) rotate(180deg); }
         
@@ -224,47 +133,10 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
 
-        .theme1-root .date-toggle-container {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 25px;
-          margin-top: 10px;
-        }
-
-        .theme1-root .date-toggle {
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 20px;
-          padding: 3px;
-          display: flex;
-          width: 200px;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        .theme1-root .toggle-btn {
-          flex: 1;
-          border: none;
-          background: transparent;
-          color: rgba(255, 255, 255, 0.7);
-          padding: 6px 12px;
-          border-radius: 17px;
-          font-size: 12px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .theme1-root .toggle-btn.active {
-          background: #ffffff;
-          color: #0B132B;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
         @media (min-width: 768px) {
             .theme1-root .container { max-width: 650px; padding: 40px; }
             .theme1-root .schedule-list { max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
+            .theme1-root .train-card { padding: 30px 45px; justify-content: space-between; }
             .theme1-root .train-details h3 { font-size: 40px; margin-bottom: 5px; text-align: left; }
             .theme1-root .train-time { font-size: 40px; text-align: right; }
             .theme1-root h1 { font-size: 26px; letter-spacing: 3px; }
@@ -275,7 +147,6 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
             .theme1-root .countdown { font-size: 110px; }
             .theme1-root .countdown span { font-size: 32px; }
             .theme1-root .subtitle { font-size: 15px; }
-        }
       `}</style>
       
       <div className="theme1-root">
@@ -316,7 +187,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 </div>
             </div>
 
-            {nextTrain && !isTomorrow ? (
+            {nextTrain ? (
               <div className="next-train-card">
                   <div className="subtitle">距離下一班車</div>
                   <div className="countdown">
@@ -329,43 +200,28 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
               </div>
             ) : null}
 
-            <div className="date-toggle-container">
-              <div className="date-toggle">
-                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
-                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
-              </div>
-            </div>
-
             <div className="schedule-list">
-              {validTrains.length === 0 ? (
-                <div className="empty-state">今日已無班次</div>
-              ) : (
-                validTrains.map((t) => {
-                  let [dh, dm] = t.depTime.split(':').map(Number);
-                  let [ah, am] = t.arrTime.split(':').map(Number);
-                  let diff = (ah * 60 + am) - (dh * 60 + dm);
-                  if (diff < 0) diff += 24 * 60;
-                  let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
-                  let waitDiff = t.actualDepMins - currentMins;
-                  let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
-                  let actualArrMins = (ah * 60 + am) + t.delay;
-                  
-                  return (
-                    <div 
-                      key={t.number} 
-                      className={`train-card ${getTrainDotClass(t.type)}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => onTrainSelect && onTrainSelect(t)}
-                    >
-                        <div className="train-details">
-                            <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
-                            <p>{t.type} {t.number} <span className="duration-badge">{isTomorrow ? '明日發車' : `${waitText} 後發車`}</span></p>
-                        </div>
-                        <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
-                    </div>
-                  )
-                })
-              )}
+              {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
+              {validTrains.map((t) => {
+                let [dh, dm] = t.depTime.split(':').map(Number);
+                let [ah, am] = t.arrTime.split(':').map(Number);
+                let diff = (ah * 60 + am) - (dh * 60 + dm);
+                if (diff < 0) diff += 24 * 60;
+                let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                let waitDiff = t.actualDepMins - currentMins;
+                let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
+                let actualArrMins = (ah * 60 + am) + t.delay;
+                
+                return (
+                  <div key={t.number} className={`train-card ${getTrainDotClass(t.type)}`}>
+                      <div className="train-details">
+                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
+                      </div>
+                      <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
+                  </div>
+                )
+              })}
             </div>
         </div>
       </div>

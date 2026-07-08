@@ -166,10 +166,6 @@ export default function Home() {
 
   const triggerAnimation = (stateUpdateCallback, direction = 'ltr') => {
     if (isAnimating) return; 
-    if (validTrains && validTrains.length === 0) {
-      stateUpdateCallback();
-      return;
-    }
     setAnimDirection(direction);
     setIsAnimating(true);
     // The continuous train takes 4.0s total.
