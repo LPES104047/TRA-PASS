@@ -103,9 +103,25 @@ export default function MaintenanceDepot({ show }) {
           animation: craneMove 25s ease-in-out infinite;
         }
 
+        /* 天車吊索搖晃效果 (物理慣性) */
+        .crane-cable-group {
+          transform-origin: 0px 56px;
+          animation: craneSway 25s ease-in-out infinite;
+        }
+
         @keyframes craneMove {
           0%, 100% { transform: translateX(40px); }
           50% { transform: translateX(620px); }
+        }
+
+        @keyframes craneSway {
+          0% { transform: rotate(-8deg); }
+          15% { transform: rotate(0deg); }
+          45% { transform: rotate(8deg); }
+          50% { transform: rotate(8deg); }
+          65% { transform: rotate(0deg); }
+          95% { transform: rotate(-8deg); }
+          100% { transform: rotate(-8deg); }
         }
 
         /* 天花板燈光呼吸效果 */
@@ -218,13 +234,16 @@ export default function MaintenanceDepot({ show }) {
               {/* Crane Rail Carriage */}
               <rect x="-25" y="46" width="50" height="10" fill="#f39c12" rx="1" />
               <rect x="-15" y="56" width="30" height="8" fill="#2c3e50" rx="1" />
-              {/* Gantry steel cable */}
-              <line x1="0" y1="64" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
-              {/* Hook block and mechanical claw (perfectly centered, no horizontal offset) */}
-              <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
-              <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
-              {/* Dual steel claw hooks */}
-              <path d="M -9,145 Q -9,152 -4,152 Q -1,152 -1,148 Q -1,152 2,152 Q 7,152 7,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Cable & Hook Group (Swaying) */}
+              <g className="crane-cable-group">
+                {/* Gantry steel cable */}
+                <line x1="0" y1="64" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                {/* Hook block and mechanical claw */}
+                <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
+                <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
+                {/* Dual steel claw hooks */}
+                <path d="M -9,145 Q -9,152 -4,152 Q -1,152 -1,148 Q -1,152 2,152 Q 7,152 7,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+              </g>
             </g>
 
             {/* Floor perspectives */}
@@ -239,26 +258,36 @@ export default function MaintenanceDepot({ show }) {
             <line x1="0" y1="226" x2="800" y2="226" stroke="#484d56" strokeWidth="1.5" />
             <line x1="0" y1="227" x2="800" y2="227" stroke="#777c85" strokeWidth="1" />
             
-            {/* Detailed 3-Car EMU3000 Train (White body, red stripe, black window band) - 45px Height */}
+            {/* Highly Detailed 3-Car EMU3000 Train */}
             <g transform="translate(180, 182)">
               {/* Car 1: Left Cab */}
               <g>
                 {/* Coupler */}
                 <rect x="-8" y="38" width="8" height="3" fill="#222" />
-                {/* Body */}
-                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 5,38 -2,32 -2,22 C -2,12 5,4 15,4 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
+                {/* Aerodynamic Body */}
+                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 2,38 -2,32 -2,25 C -2,10 5,4 15,4 Z" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Black window band */}
-                <path d="M 5,6 L 140,6 L 140,18 L 10,18 Z" fill="#111" />
+                <path d="M 5,8 L 140,8 L 140,20 L 8,20 C 5,20 4,18 4,15 C 4,11 4,8 5,8 Z" fill="#111" />
                 {/* Red stripe */}
-                <rect x="25" y="28" width="115" height="3" fill="#E74C3C" />
-                {/* Windows */}
-                <g fill="#2c3e50">
-                  <rect x="40" y="8" width="22" height="8" rx="1" />
-                  <rect x="70" y="8" width="22" height="8" rx="1" />
-                  <rect x="100" y="8" width="22" height="8" rx="1" />
+                <path d="M 2,28 L 140,28 L 140,31 L 2,31 Z" fill="#E74C3C" />
+                {/* Detailed Windows with reflections */}
+                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
+                  <rect x="40" y="10" width="22" height="8" rx="1" />
+                  <rect x="70" y="10" width="22" height="8" rx="1" />
+                  <rect x="100" y="10" width="22" height="8" rx="1" />
                 </g>
-                {/* Cab window */}
-                <path d="M 0,8 L 15,8 L 15,16 L 3,16 Z" fill="#2c3e50" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 42,10 L 52,10 L 48,18 L 40,18 Z" />
+                  <path d="M 72,10 L 82,10 L 78,18 L 70,18 Z" />
+                  <path d="M 102,10 L 112,10 L 108,18 L 100,18 Z" />
+                </g>
+                {/* Hidden Doors */}
+                <line x1="32" y1="4" x2="32" y2="38" stroke="#ccc" strokeWidth="0.5" />
+                <line x1="65" y1="4" x2="65" y2="38" stroke="#ccc" strokeWidth="0.5" />
+                {/* Cab window & Headlight */}
+                <path d="M -1,10 L 15,10 L 15,18 L 2,18 Z" fill="#1a1a1a" />
+                <path d="M -1,10 L 5,10 L 4,18 L -1,18 Z" fill="rgba(255,255,255,0.15)" />
+                <circle cx="-1" cy="26" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
                 {/* Bogies & Wheels */}
                 <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
@@ -267,28 +296,39 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
                 <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
+                {/* Pantograph */}
+                <path d="M 90,4 L 85,-2 L 95,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="80" y1="-2" x2="100" y2="-2" stroke="#333" strokeWidth="1.5" />
               </g>
 
               {/* Gangway Connector 1-2 */}
               <rect x="140" y="6" width="6" height="32" fill="#222" />
+              <rect x="141" y="6" width="4" height="32" fill="#111" />
 
               {/* Car 2: Middle Passenger Car */}
               <g transform="translate(146, 0)">
                 {/* Body */}
-                <rect x="0" y="4" width="120" height="34" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" rx="1" />
+                <rect x="0" y="4" width="120" height="34" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" rx="1" />
                 {/* Black window band */}
-                <rect x="0" y="6" width="120" height="12" fill="#111" />
+                <rect x="0" y="8" width="120" height="12" fill="#111" />
                 {/* Red stripe */}
                 <rect x="0" y="28" width="120" height="3" fill="#E74C3C" />
                 {/* Windows */}
-                <g fill="#2c3e50">
-                  <rect x="12" y="8" width="22" height="8" rx="1" />
-                  <rect x="42" y="8" width="22" height="8" rx="1" />
-                  <rect x="72" y="8" width="22" height="8" rx="1" />
-                  <rect x="102" y="8" width="22" height="8" rx="1" />
+                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
+                  <rect x="12" y="10" width="22" height="8" rx="1" />
+                  <rect x="42" y="10" width="22" height="8" rx="1" />
+                  <rect x="72" y="10" width="22" height="8" rx="1" />
+                  <rect x="102" y="10" width="22" height="8" rx="1" />
                 </g>
-                {/* Passenger Door seams */}
-                <line x1="112" y1="4" x2="112" y2="38" stroke="#888" strokeWidth="0.5" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 14,10 L 24,10 L 20,18 L 12,18 Z" />
+                  <path d="M 44,10 L 54,10 L 50,18 L 42,18 Z" />
+                  <path d="M 74,10 L 84,10 L 80,18 L 72,18 Z" />
+                  <path d="M 104,10 L 114,10 L 110,18 L 102,18 Z" />
+                </g>
+                {/* Hidden Doors */}
+                <line x1="38" y1="4" x2="38" y2="38" stroke="#ccc" strokeWidth="0.5" />
+                <line x1="98" y1="4" x2="98" y2="38" stroke="#ccc" strokeWidth="0.5" />
                 {/* Bogies & Wheels */}
                 <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
@@ -301,23 +341,34 @@ export default function MaintenanceDepot({ show }) {
 
               {/* Gangway Connector 2-3 */}
               <rect x="266" y="6" width="6" height="32" fill="#222" />
+              <rect x="267" y="6" width="4" height="32" fill="#111" />
 
               {/* Car 3: Right Cab */}
               <g transform="translate(272, 0)">
                 {/* Body */}
-                <path d="M 0,4 L 125,4 C 135,4 142,10 142,22 C 142,32 135,38 125,38 L 0,38 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
+                <path d="M 0,4 L 125,4 C 135,4 142,10 142,25 C 142,32 138,38 125,38 L 0,38 Z" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Black window band */}
-                <path d="M 0,6 L 132,6 L 127,18 L 0,18 Z" fill="#111" />
+                <path d="M 0,8 L 132,8 C 133,8 135,11 135,15 C 135,18 134,20 132,20 L 0,20 Z" fill="#111" />
                 {/* Red stripe */}
-                <rect x="0" y="28" width="115" height="3" fill="#E74C3C" />
+                <path d="M 0,28 L 138,28 L 138,31 L 0,31 Z" fill="#E74C3C" />
                 {/* Windows */}
-                <g fill="#2c3e50">
-                  <rect x="15" y="8" width="22" height="8" rx="1" />
-                  <rect x="45" y="8" width="22" height="8" rx="1" />
-                  <rect x="75" y="8" width="22" height="8" rx="1" />
+                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
+                  <rect x="15" y="10" width="22" height="8" rx="1" />
+                  <rect x="45" y="10" width="22" height="8" rx="1" />
+                  <rect x="75" y="10" width="22" height="8" rx="1" />
                 </g>
-                {/* Cab window */}
-                <path d="M 127,8 L 137,8 L 134,16 L 124,16 Z" fill="#2c3e50" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 17,10 L 27,10 L 23,18 L 15,18 Z" />
+                  <path d="M 47,10 L 57,10 L 53,18 L 45,18 Z" />
+                  <path d="M 77,10 L 87,10 L 83,18 L 75,18 Z" />
+                </g>
+                {/* Hidden Doors */}
+                <line x1="70" y1="4" x2="70" y2="38" stroke="#ccc" strokeWidth="0.5" />
+                <line x1="105" y1="4" x2="105" y2="38" stroke="#ccc" strokeWidth="0.5" />
+                {/* Cab window & Headlight */}
+                <path d="M 125,10 L 134,10 C 135,10 136,13 136,14 L 125,18 Z" fill="#1a1a1a" />
+                <path d="M 128,10 L 133,10 L 129,18 L 125,18 Z" fill="rgba(255,255,255,0.15)" />
+                <circle cx="141" cy="26" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
                 {/* Bogies & Wheels */}
                 <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
@@ -326,6 +377,9 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
                 <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
+                {/* Pantograph */}
+                <path d="M 45,4 L 50,-2 L 40,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="35" y1="-2" x2="55" y2="-2" stroke="#333" strokeWidth="1.5" />
                 {/* Coupler */}
                 <rect x="142" y="38" width="8" height="3" fill="#222" />
               </g>
@@ -339,34 +393,51 @@ export default function MaintenanceDepot({ show }) {
             <line x1="0" y1="326" x2="800" y2="326" stroke="#484d56" strokeWidth="1.5" />
             <line x1="0" y1="327" x2="800" y2="327" stroke="#777c85" strokeWidth="1" />
 
-            {/* Slowly moving 3-Car EMU900 Train passing through washing system - 45px Height (sits on y=330) */}
+            {/* Highly Detailed 3-Car EMU900 Train passing through washing system */}
             <g className="train-washing">
               {/* Car 1: Left Cab */}
               <g transform="translate(0, 0)">
-                {/* Body */}
-                <path d="M 15,-45 L 140,-45 L 140,-11 L 15,-11 C 5,-11 -2,-17 -2,-28 C -2,-39 5,-45 15,-45 Z" fill="url(#emu900Body)" />
-                {/* Green stripe */}
+                {/* Coupler */}
+                <rect x="-8" y="-14" width="8" height="3" fill="#222" />
+                {/* Aerodynamic Body */}
+                <path d="M 15,-45 L 140,-45 L 140,-11 L 15,-11 C 5,-11 -2,-17 -2,-28 C -2,-39 5,-45 15,-45 Z" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" />
+                {/* Green stripe top */}
                 <rect x="15" y="-42" width="125" height="3" fill="#00A859" />
-                {/* Green bottom curve */}
+                {/* Green stripe bottom */}
                 <path d="M 2,-22 Q 10,-22 30,-25 L 140,-25" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="35" y="-38" width="22" height="12" rx="2" />
-                  <rect x="65" y="-38" width="22" height="12" rx="2" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="35" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="68" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="101" y="-38" width="18" height="10" rx="1.5" />
                 </g>
-                {/* Glass Door */}
-                <rect x="95" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
-                <rect x="97" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <rect x="111" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <line x1="109" y1="-40" x2="109" y2="-11" stroke="#333" strokeWidth="1" />
-                <circle cx="109" cy="-42" r="1.5" fill="#FFD700" />
-                {/* Cab window */}
-                <path d="M 0,-38 L 12,-38 L 12,-26 L 3,-26 Z" fill="#151d24" />
-                {/* Smiley frame on nose */}
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 37,-38 L 45,-38 L 41,-28 L 35,-28 Z" />
+                  <path d="M 70,-38 L 78,-38 L 74,-28 L 68,-28 Z" />
+                  <path d="M 103,-38 L 111,-38 L 107,-28 L 101,-28 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="25" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="29" y1="-40" x2="29" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="55" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="59" y1="-40" x2="59" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="88" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="92" y1="-40" x2="92" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="122" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="126" y1="-40" x2="126" y2="-13" stroke="#333" strokeWidth="0.5" />
+                
+                {/* Driver Cab details */}
+                {/* Black Mask */}
+                <path d="M 0,-34 C 4,-26 6,-13 18,-11 L 28,-11 C 24,-13 21,-18 20,-26 C 19,-32 22,-38 26,-38 L 12,-38 Z" fill="#111" />
+                {/* Smile neon */}
                 <path d="M -1,-38 C 5,-38 10,-32 10,-28 C 10,-24 5,-18 -1,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
-                {/* Headlight */}
-                <circle cx="-1.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" />
+                <circle cx="-1.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" filter="drop-shadow(0 0 2px #FFF)" />
                 <circle cx="-1.5" cy="-28" r="1.2" fill="#FFF" />
+                {/* Cab window highlight */}
+                <path d="M 0,-38 L 8,-38 L 8,-26 L 3,-26 Z" fill="#151d24" />
+                <path d="M 2,-38 L 6,-38 L 5,-26 L 3,-26 Z" fill="rgba(255,255,255,0.15)" />
+
                 {/* Bogies & Wheels */}
                 <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
@@ -375,30 +446,46 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="95" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="101" cy="-7" r="4.5" fill="#000" /> <circle cx="101" cy="-7" r="1.5" fill="#7f8c8d" />
                 <circle cx="119" cy="-7" r="4.5" fill="#000" /> <circle cx="119" cy="-7" r="1.5" fill="#7f8c8d" />
+                
+                {/* Pantograph */}
+                <path d="M 90,-45 L 85,-51 L 95,-51 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="80" y1="-51" x2="100" y2="-51" stroke="#333" strokeWidth="1.5" />
               </g>
 
               {/* Gangway Connector 1-2 */}
               <rect x="140" y="-38" width="6" height="27" fill="#222" />
+              <rect x="141" y="-38" width="4" height="27" fill="#111" />
 
               {/* Car 2: Middle Passenger Car */}
               <g transform="translate(146, 0)">
                 {/* Body */}
-                <rect x="0" y="-45" width="120" height="34" fill="url(#emu900Body)" rx="1" />
+                <rect x="0" y="-45" width="120" height="34" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" rx="1" />
                 {/* Green stripe */}
                 <rect x="0" y="-42" width="120" height="3" fill="#00A859" />
                 {/* Green bottom curve */}
                 <line x1="0" y1="-25" x2="120" y2="-25" stroke="#00A859" strokeWidth="4" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="10" y="-38" width="22" height="12" rx="2" />
-                  <rect x="40" y="-38" width="22" height="12" rx="2" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="25" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="58" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="91" y="-38" width="18" height="10" rx="1.5" />
                 </g>
-                {/* Glass Door */}
-                <rect x="75" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
-                <rect x="77" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <rect x="91" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <line x1="89" y1="-40" x2="89" y2="-11" stroke="#333" strokeWidth="1" />
-                <circle cx="89" cy="-42" r="1.5" fill="#FFD700" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 27,-38 L 35,-38 L 31,-28 L 25,-28 Z" />
+                  <path d="M 60,-38 L 68,-38 L 64,-28 L 58,-28 Z" />
+                  <path d="M 93,-38 L 101,-38 L 97,-28 L 91,-28 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="12" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="16" y1="-40" x2="16" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="45" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="49" y1="-40" x2="49" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="78" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="82" y1="-40" x2="82" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="110" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="114" y1="-40" x2="114" y2="-13" stroke="#333" strokeWidth="0.5" />
+
                 {/* Bogies & Wheels */}
                 <rect x="15" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="21" cy="-7" r="4.5" fill="#000" /> <circle cx="21" cy="-7" r="1.5" fill="#7f8c8d" />
@@ -411,33 +498,49 @@ export default function MaintenanceDepot({ show }) {
 
               {/* Gangway Connector 2-3 */}
               <rect x="266" y="-38" width="6" height="27" fill="#222" />
+              <rect x="267" y="-38" width="4" height="27" fill="#111" />
 
               {/* Car 3: Right Cab */}
               <g transform="translate(272, 0)">
                 {/* Body */}
-                <path d="M 0,-45 L 125,-45 C 135,-45 142,-39 142,-28 C 142,-17 135,-11 125,-11 L 0,-11 Z" fill="url(#emu900Body)" />
+                <path d="M 0,-45 L 125,-45 C 135,-45 142,-39 142,-28 C 142,-17 135,-11 125,-11 L 0,-11 Z" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Green stripe */}
                 <rect x="0" y="-42" width="115" height="3" fill="#00A859" />
                 {/* Green bottom curve */}
                 <path d="M 0,-25 L 110,-25 Q 125,-22 135,-22" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="45" y="-38" width="22" height="12" rx="2" />
-                  <rect x="75" y="-38" width="22" height="12" rx="2" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="25" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="58" y="-38" width="18" height="10" rx="1.5" />
+                  <rect x="91" y="-38" width="18" height="10" rx="1.5" />
                 </g>
-                {/* Glass Door */}
-                <rect x="10" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
-                <rect x="12" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <rect x="26" y="-36" width="10" height="21" fill="#111" rx="1" />
-                <line x1="24" y1="-40" x2="24" y2="-11" stroke="#333" strokeWidth="1" />
-                <circle cx="24" cy="-42" r="1.5" fill="#FFD700" />
-                {/* Cab window */}
-                <path d="M 128,-38 L 140,-38 L 137,-26 L 128,-26 Z" fill="#151d24" />
-                {/* Smiley frame on nose */}
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 27,-38 L 35,-38 L 31,-28 L 25,-28 Z" />
+                  <path d="M 60,-38 L 68,-38 L 64,-28 L 58,-28 Z" />
+                  <path d="M 93,-38 L 101,-38 L 97,-28 L 91,-28 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="10" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="14" y1="-40" x2="14" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="45" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="49" y1="-40" x2="49" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="78" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="82" y1="-40" x2="82" y2="-13" stroke="#333" strokeWidth="0.5" />
+                <rect x="110" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
+                <line x1="114" y1="-40" x2="114" y2="-13" stroke="#333" strokeWidth="0.5" />
+
+                {/* Driver Cab details */}
+                {/* Black Mask */}
+                <path d="M 125,-11 L 115,-11 C 122,-11 127,-16 130,-22 C 131,-28 128,-36 122,-38 L 140,-38 C 142,-26 142,-13 130,-11 Z" fill="#111" />
+                {/* Smile neon */}
                 <path d="M 141,-38 C 135,-38 130,-32 130,-28 C 130,-24 135,-18 141,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
-                {/* Headlight */}
-                <circle cx="141.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" />
+                <circle cx="141.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" filter="drop-shadow(0 0 2px #FFF)" />
                 <circle cx="141.5" cy="-28" r="1.2" fill="#FFF" />
+                {/* Cab window highlight */}
+                <path d="M 128,-38 L 138,-38 L 134,-26 L 128,-26 Z" fill="#151d24" />
+                <path d="M 132,-38 L 137,-38 L 134,-26 L 130,-26 Z" fill="rgba(255,255,255,0.15)" />
+
                 {/* Bogies & Wheels */}
                 <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
@@ -446,8 +549,13 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="85" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="91" cy="-7" r="4.5" fill="#000" /> <circle cx="91" cy="-7" r="1.5" fill="#7f8c8d" />
                 <circle cx="109" cy="-7" r="4.5" fill="#000" /> <circle cx="109" cy="-7" r="1.5" fill="#7f8c8d" />
+                
+                {/* Pantograph */}
+                <path d="M 45,-45 L 50,-51 L 40,-51 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="35" y1="-51" x2="55" y2="-51" stroke="#333" strokeWidth="1.5" />
+
                 {/* Coupler */}
-                <rect x="142" y="-20" width="8" height="3" fill="#222" />
+                <rect x="142" y="-14" width="8" height="3" fill="#222" />
               </g>
             </g>
 
@@ -483,7 +591,7 @@ export default function MaintenanceDepot({ show }) {
             <line x1="0" y1="416" x2="800" y2="416" stroke="#484d56" strokeWidth="1.5" />
             <line x1="0" y1="417" x2="800" y2="417" stroke="#777c85" strokeWidth="1" />
 
-            {/* Upgraded 3-Car EMU800 Train (Silver, blue stripe, yellow front nose) - 45px Height */}
+            {/* Highly Detailed 3-Car EMU800 Train */}
             <g transform="translate(100, 382)">
               {/* Car 1: Left Cab */}
               <g>
@@ -491,21 +599,41 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="-8" y="38" width="8" height="3" fill="#222" />
                 {/* Body */}
                 <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 5,38 -2,32 -2,22 C -2,12 5,4 15,4 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Yellow front face */}
+                {/* Yellow front face - Smile shape */}
                 <path d="M -2,22 L 20,22 L 20,38 L 12,38 C 5,38 -2,32 -2,22 Z" fill="#F1C40F" />
+                <path d="M 8,24 Q -1,24 -1,22 Q -1,18 8,18" fill="none" stroke="#F1C40F" strokeWidth="4" />
                 {/* Blue stripe */}
                 <rect x="20" y="19" width="120" height="5" fill="#2980B9" />
                 {/* Yellow stripe below blue */}
                 <rect x="20" y="24" width="120" height="2" fill="#F1C40F" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="35" y="8" width="18" height="8" rx="1" />
-                  <rect x="60" y="8" width="22" height="8" rx="1" />
-                  <rect x="88" y="8" width="22" height="8" rx="1" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="35" y="8" width="18" height="10" rx="1" />
+                  <rect x="68" y="8" width="18" height="10" rx="1" />
+                  <rect x="101" y="8" width="18" height="10" rx="1" />
                 </g>
-                {/* Windshield */}
-                <path d="M -2,8 L 15,8 L 15,16 L 0,16 Z" fill="#111" />
-                <path d="M 3,8.5 L 12,8.5 L 11,14.5 L 4,14.5 Z" fill="#1a252f" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 37,8 L 45,8 L 41,18 L 35,18 Z" />
+                  <path d="M 70,8 L 78,8 L 74,18 L 68,18 Z" />
+                  <path d="M 103,8 L 111,8 L 107,18 L 101,18 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="25" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="29" y1="6" x2="29" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="55" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="59" y1="6" x2="59" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="88" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="92" y1="6" x2="92" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="122" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="126" y1="6" x2="126" y2="33" stroke="#555" strokeWidth="0.5" />
+
+                {/* Windshield & Headlight */}
+                <path d="M 0,8 L 15,8 L 15,16 L 3,16 Z" fill="#111" />
+                <path d="M 2,8 L 6,8 L 5,16 L 3,16 Z" fill="rgba(255,255,255,0.15)" />
+                <circle cx="2" cy="28" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
+                <circle cx="-1" cy="34" r="1.5" fill="#F00" />
+                
                 {/* Bogies & Wheels */}
                 <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
@@ -514,10 +642,15 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
                 <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
+
+                {/* Pantograph */}
+                <path d="M 90,4 L 85,-2 L 95,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="80" y1="-2" x2="100" y2="-2" stroke="#333" strokeWidth="1.5" />
               </g>
 
               {/* Gangway Connector 1-2 */}
-              <rect x="140" y="6" width="6" height="32" fill="#222" />
+              <rect x="140" y="8" width="6" height="27" fill="#222" />
+              <rect x="141" y="8" width="4" height="27" fill="#111" />
 
               {/* Car 2: Middle Passenger Car */}
               <g transform="translate(146, 0)">
@@ -527,14 +660,28 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="0" y="19" width="120" height="5" fill="#2980B9" />
                 {/* Yellow stripe */}
                 <rect x="0" y="24" width="120" height="2" fill="#F1C40F" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="15" y="8" width="22" height="8" rx="1" />
-                  <rect x="45" y="8" width="22" height="8" rx="1" />
-                  <rect x="75" y="8" width="22" height="8" rx="1" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="25" y="8" width="18" height="10" rx="1" />
+                  <rect x="58" y="8" width="18" height="10" rx="1" />
+                  <rect x="91" y="8" width="18" height="10" rx="1" />
                 </g>
-                {/* Passenger Door seams */}
-                <line x1="108" y1="4" x2="108" y2="38" stroke="#888" strokeWidth="0.5" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 27,8 L 35,8 L 31,18 L 25,18 Z" />
+                  <path d="M 60,8 L 68,8 L 64,18 L 58,18 Z" />
+                  <path d="M 93,8 L 101,8 L 97,18 L 91,18 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="12" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="16" y1="6" x2="16" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="45" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="49" y1="6" x2="49" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="78" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="82" y1="6" x2="82" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="110" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="114" y1="6" x2="114" y2="33" stroke="#555" strokeWidth="0.5" />
+
                 {/* Bogies & Wheels */}
                 <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
@@ -546,27 +693,48 @@ export default function MaintenanceDepot({ show }) {
               </g>
 
               {/* Gangway Connector 2-3 */}
-              <rect x="266" y="6" width="6" height="32" fill="#222" />
+              <rect x="266" y="8" width="6" height="27" fill="#222" />
+              <rect x="267" y="8" width="4" height="27" fill="#111" />
 
               {/* Car 3: Right Cab */}
               <g transform="translate(272, 0)">
                 {/* Body */}
                 <path d="M 0,4 L 125,4 C 135,4 142,10 142,22 C 142,32 135,38 125,38 L 0,38 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Yellow front face */}
-                <path d="M 142,22 L 124,22 L 124,38 L 132,38 C 137,38 142,32 142,22 Z" fill="#F1C40F" />
+                <path d="M 142,22 L 120,22 L 120,38 L 128,38 C 135,38 142,32 142,22 Z" fill="#F1C40F" />
+                <path d="M 132,24 Q 141,24 141,22 Q 141,18 132,18" fill="none" stroke="#F1C40F" strokeWidth="4" />
                 {/* Blue stripe */}
-                <rect x="0" y="19" width="124" height="5" fill="#2980B9" />
+                <rect x="0" y="19" width="120" height="5" fill="#2980B9" />
                 {/* Yellow stripe below blue */}
-                <rect x="0" y="24" width="124" height="2" fill="#F1C40F" />
-                {/* Windows */}
-                <g fill="#151d24">
-                  <rect x="15" y="8" width="22" height="8" rx="1" />
-                  <rect x="45" y="8" width="22" height="8" rx="1" />
-                  <rect x="75" y="8" width="22" height="8" rx="1" />
+                <rect x="0" y="24" width="120" height="2" fill="#F1C40F" />
+                
+                {/* Windows and Doors */}
+                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
+                  <rect x="25" y="8" width="18" height="10" rx="1" />
+                  <rect x="58" y="8" width="18" height="10" rx="1" />
+                  <rect x="91" y="8" width="18" height="10" rx="1" />
                 </g>
-                {/* Windshield */}
-                <path d="M 142,8 L 129,8 L 129,16 L 141,16 Z" fill="#111" />
-                <path d="M 141,8.5 L 132,8.5 L 133,14.5 L 140,14.5 Z" fill="#1a252f" />
+                <g fill="rgba(255,255,255,0.1)">
+                  <path d="M 27,8 L 35,8 L 31,18 L 25,18 Z" />
+                  <path d="M 60,8 L 68,8 L 64,18 L 58,18 Z" />
+                  <path d="M 93,8 L 101,8 L 97,18 L 91,18 Z" />
+                </g>
+                {/* Doors */}
+                <rect x="10" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="14" y1="6" x2="14" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="45" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="49" y1="6" x2="49" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="78" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="82" y1="6" x2="82" y2="33" stroke="#555" strokeWidth="0.5" />
+                <rect x="110" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
+                <line x1="114" y1="6" x2="114" y2="33" stroke="#555" strokeWidth="0.5" />
+
+                {/* Windshield & Headlight */}
+                <path d="M 140,8 L 125,8 L 125,16 L 137,16 Z" fill="#111" />
+                <path d="M 138,8 L 134,8 L 135,16 L 137,16 Z" fill="rgba(255,255,255,0.15)" />
+                <circle cx="138" cy="28" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
+                <circle cx="141" cy="34" r="1.5" fill="#F00" />
+                
                 {/* Bogies & Wheels */}
                 <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
@@ -575,6 +743,11 @@ export default function MaintenanceDepot({ show }) {
                 <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
                 <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
                 <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
+                
+                {/* Pantograph */}
+                <path d="M 45,4 L 50,-2 L 40,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
+                <line x1="35" y1="-2" x2="55" y2="-2" stroke="#333" strokeWidth="1.5" />
+
                 {/* Coupler */}
                 <rect x="142" y="38" width="8" height="3" fill="#222" />
               </g>

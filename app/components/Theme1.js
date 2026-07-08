@@ -60,6 +60,8 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           align-items: center; 
           padding: 20px;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
         }
         .theme1-root * { box-sizing: border-box; }
         .theme1-root .container { width: 100%; max-width: 500px; margin: 0 auto; }

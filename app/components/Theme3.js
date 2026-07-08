@@ -37,14 +37,16 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
     <>
       <style>{`
         .theme3-root {
-          background: transparent;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
+          background: transparent; 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
           padding: 20px;
-          color: white;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          color: #FFF;
+          font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
         }
         
         .theme3-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #FFF; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,240,255,0.5); }

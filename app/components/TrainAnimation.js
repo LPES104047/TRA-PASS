@@ -8,27 +8,27 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
     // Cars are 450 units long. Loop from -1500 to 1200
     for (let x = -1500; x < 1200; x += 450) {
       // 3 doors per car segment
-      const doors = [x + 40, x + 210, x + 380];
+      const doors = [x + 35, x + 205, x + 375];
       doors.forEach((pos, idx) => {
         details.push(
           <g key={`door-${x}-${idx}`}>
             {/* Door pocket/frame */}
-            <rect x={pos} y={75} width={34} height={112} fill="#7F8C8D" rx={2} />
+            <rect x={pos} y={75} width={50} height={112} fill="#7F8C8D" rx={2} />
             {/* Left and right glass panes */}
-            <rect x={pos + 3} y={83} width={11} height={52} fill="#1A1A1A" rx={2} />
-            <path d={`M ${pos + 3},85 L ${pos + 10},85 L ${pos + 3},110 Z`} fill="rgba(255,255,255,0.12)" />
-            <rect x={pos + 20} y={83} width={11} height={52} fill="#1A1A1A" rx={2} />
-            <path d={`M ${pos + 20},85 L ${pos + 27},85 L ${pos + 20},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <rect x={pos + 4} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 4},85 L ${pos + 15},85 L ${pos + 4},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <rect x={pos + 27} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 27},85 L ${pos + 38},85 L ${pos + 27},110 Z`} fill="rgba(255,255,255,0.12)" />
             {/* Center seam */}
-            <line x1={pos + 17} y1={75} x2={pos + 17} y2={187} stroke="#333" strokeWidth={1} />
+            <line x1={pos + 25} y1={75} x2={pos + 25} y2={187} stroke="#333" strokeWidth={1} />
             {/* Door warning indicator light above the door */}
-            <circle cx={pos + 17} cy={70} r={2} fill="#FFD700" />
+            <circle cx={pos + 25} cy={70} r={2} fill="#FFD700" />
           </g>
         );
       });
 
       // 4 windows per car segment (2 between doors)
-      const windows = [x + 90, x + 145, x + 260, x + 315];
+      const windows = [x + 101, x + 151, x + 271, x + 321];
       windows.forEach((pos, idx) => {
         details.push(
           <g key={`win-${x}-${idx}`}>
@@ -87,6 +87,61 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
     return wheels;
   };
 
+  const generateTrainBodies = () => {
+    const bodies = [];
+    // 6 passenger cars
+    for (let x = -1500; x < 1200; x += 450) {
+      bodies.push(
+        <g key={`body-${x}`}>
+          {/* Passenger Car Body */}
+          <rect x={x} y={50} width={440} height={140} fill="url(#emuBody)" rx={6} />
+          
+          {/* Top green roofline stripe */}
+          <rect x={x} y={58} width={440} height={4} fill="#00A859" />
+
+          {/* Bottom green wave belt */}
+          <rect x={x} y={144} width={440} height={8} fill="#00A859" />
+
+          {/* Subtle gap accent borders to enhance car separation */}
+          <rect x={x} y={50} width={440} height={140} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={1} rx={6} />
+
+          {/* Gangway connector between cars */}
+          {x < 750 && (
+            <g>
+              {/* Dark inner connector */}
+              <rect x={x + 440} y={54} width={10} height={132} fill="#222" />
+              {/* Outer bellows line */}
+              <rect x={x + 442} y={52} width={6} height={136} fill="#111" rx={1} />
+              {/* Horizontal rib lines to simulate accordion bellows */}
+              <line x1={x + 440} y1={65} x2={x + 450} y2={65} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={85} x2={x + 450} y2={85} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={105} x2={x + 450} y2={105} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={125} x2={x + 450} y2={125} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={145} x2={x + 450} y2={145} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={165} x2={x + 450} y2={165} stroke="#333" strokeWidth={1.5} />
+            </g>
+          )}
+        </g>
+      );
+    }
+    
+    // Add gangway connector between the 6th car (ends at 1190) and the head cab (starts at 1200)
+    bodies.push(
+      <g key="gangway-head">
+        <rect x={1190} y={54} width={10} height={132} fill="#222" />
+        <rect x={1192} y={52} width={6} height={136} fill="#111" rx={1} />
+        <line x1={1190} y1={65} x2={1200} y2={65} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={85} x2={1200} y2={85} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={105} x2={1200} y2={105} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={125} x2={1200} y2={125} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={145} x2={1200} y2={145} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={165} x2={1200} y2={165} stroke="#333" strokeWidth={1.5} />
+      </g>
+    );
+
+    return bodies;
+  };
+
   return (
     <>
       <style>{`
@@ -97,7 +152,7 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           width: 100vw;
           height: 100vh;
           pointer-events: none;
-          z-index: 9999;
+          z-index: 2;
           overflow: hidden;
           display: flex;
           align-items: center;
@@ -181,6 +236,10 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
                 <stop offset="70%" stopColor="#90A4AE" />
                 <stop offset="100%" stopColor="#455A64" />
               </linearGradient>
+              <linearGradient id="headlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="rgba(255,255,255,1)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              </linearGradient>
             </defs>
 
             {/* Rooftop Pantographs (集電弓) */}
@@ -202,14 +261,17 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
               <line x1="-15" y1="22" x2="15" y2="22" strokeWidth="3" />
             </g>
 
-            {/* Train body with commuter-style blunt nose */}
-            <path d="M -1500,50 L 1440,50 C 1500,50 1530,70 1535,110 C 1540,140 1530,185 1510,190 L -1500,190 Z" fill="url(#emuBody)" />
-            
-            {/* Top green roofline stripe */}
-            <rect x="-1500" y="58" width="2920" height="4" fill="#00A859" />
+            {/* Segmented Train bodies with gangway connectors */}
+            {generateTrainBodies()}
 
-            {/* Bottom green wave belt - sweeping up at the front */}
-            <path d="M -1500,144 L 1360,144 Q 1410,144 1435,153 Q 1460,162 1490,163" fill="none" stroke="#00A859" strokeWidth="8" strokeLinecap="round" />
+            {/* Head Cab Body */}
+            <path d="M 1200,50 L 1420,50 C 1480,50 1520,70 1535,120 C 1545,155 1525,185 1500,190 L 1200,190 Z" fill="url(#emuBody)" stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+            
+            {/* Top green roofline stripe for Head Cab */}
+            <rect x="1200" y="58" width="210" height="4" fill="#00A859" />
+
+            {/* Bottom green wave belt for Head Cab - sweeping up at the front */}
+            <path d="M 1200,144 L 1380,144 Q 1420,144 1445,153 Q 1470,162 1495,163" fill="none" stroke="#00A859" strokeWidth="8" strokeLinecap="round" />
 
             {/* Commuter doors and windows */}
             {generateCommuterDetails()}
@@ -217,17 +279,29 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
             {/* Under-train Bogies and Wheels */}
             {generateBogiesAndWheels()}
 
-            {/* Driver visor windshield mask */}
-            <path d="M 1380,75 L 1440,75 C 1490,75 1518,90 1523,115 C 1528,135 1518,158 1495,163 L 1395,160 Z" fill="#1A1A1A" />
+            {/* Cab details */}
+            <g>
+              {/* Cab Door */}
+              <rect x="1370" y="75" width="34" height="112" fill="#7F8C8D" rx="2" />
+              <rect x="1375" y="83" width="24" height="52" fill="#1A1A1A" rx="2" />
+              <path d="M 1375,85 L 1385,85 L 1375,110 Z" fill="rgba(255,255,255,0.12)" />
 
-            {/* Neon green smiley frame around driver shield */}
-            <path d="M 1420,75 C 1480,75 1510,90 1518,115 C 1523,135 1513,158 1490,163" fill="none" stroke="#00FF66" strokeWidth="4.5" strokeLinecap="round" />
+              {/* Black Mask (Driver visor & front face) */}
+              <path d="M 1420,60 L 1465,60 C 1490,60 1515,80 1528,120 C 1535,145 1525,170 1505,175 L 1420,175 Z" fill="#111" />
+              
+              {/* Neon green smile profile */}
+              <path d="M 1440,175 L 1505,175 C 1525,170 1535,145 1528,120" fill="none" stroke="#00FF66" strokeWidth="5" strokeLinecap="round" />
+              
+              {/* Cab window highlight */}
+              <path d="M 1430,70 L 1460,70 C 1480,70 1495,85 1502,110 L 1485,110 C 1480,85 1465,75 1445,75 Z" fill="rgba(255,255,255,0.15)" />
+            </g>
 
-            {/* Glowing headlight */}
-            <circle cx="1508" cy="148" r="6" fill="rgba(255,255,255,0.4)" />
-            <circle cx="1508" cy="148" r="3" fill="#FFF" />
-            <path d="M 1508,148 L 1750,130 L 1750,185 Z" fill="rgba(255,255,255,0.18)" />
-            <path d="M 1508,148 L 1850,140 L 1850,170 Z" fill="rgba(255,255,255,0.10)" />
+            {/* Glowing headlights */}
+            <g transform="translate(1523, 148)">
+              <circle cx="0" cy="0" r="5" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+              <circle cx="0" cy="0" r="2.5" fill="#FFF" />
+              <path d="M 0,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" />
+            </g>
 
             {/* Front Coupler (連結器) */}
             <rect x="1510" y="178" width="25" height="10" fill="#333" rx={2} />

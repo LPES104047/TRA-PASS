@@ -65,6 +65,8 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
           padding: 20px;
           color: #333;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
         }
         
         .theme2-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #1B3B6F; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }

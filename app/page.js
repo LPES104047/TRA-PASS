@@ -166,7 +166,7 @@ export default function Home() {
 
   const triggerAnimation = (stateUpdateCallback, direction = 'ltr') => {
     if (isAnimating) return; 
-    const isDepotShown = theme !== 1 && validTrains.length === 0;
+    const isDepotShown = validTrains.length === 0;
     if (isDepotShown) {
       stateUpdateCallback();
       return;
