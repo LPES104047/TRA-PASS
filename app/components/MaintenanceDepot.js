@@ -447,6 +447,7 @@ export default function MaintenanceDepot({ show }) {
           <rect x="0" y="380" width="800" height="20" fill="url(#warningStripes)" />
         </svg>
       </div>
+      </div>
     </>
   );
 }
