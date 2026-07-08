@@ -232,6 +232,8 @@ export default function MaintenanceDepot({ show }) {
             <rect x="25" y="22" width="26" height="3" fill="#2c2c2c" rx="1" />
             <circle cx="29" cy="23.5" r="2.5" fill="#111" /> <circle cx="29" cy="23.5" r="1" fill="#7f8c8d" />
             <circle cx="47" cy="23.5" r="2.5" fill="#111" /> <circle cx="47" cy="23.5" r="1" fill="#7f8c8d" />
+          </g>
+
           {/* Background Wall & Arch Structures */}
           <rect x="0" y="0" width="800" height="250" fill="url(#wallGradient)" />
           
