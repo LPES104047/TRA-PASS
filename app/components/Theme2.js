@@ -107,6 +107,12 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             position: relative;
             overflow: hidden;
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            transition: background 0.5s ease;
+        }
+        .theme2-root .ticket.empty {
+            background: rgba(242, 244, 248, 0.7);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
         .theme2-root .ticket-header { padding: 25px 25px 35px 25px; position: relative; }
         .theme2-root .top-row { display: flex; justify-content: space-between; align-items: center; position: relative; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
@@ -382,7 +388,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
           </div>
         </div>
 
-        <div className="ticket">
+        <div className={`ticket ${validTrains.length === 0 ? 'empty' : ''}`}>
             <div className="ticket-header">
                 <div className="top-row">
                     <div className="logo">🚆 TRA PASS</div>

@@ -88,14 +88,14 @@ export default function MaintenanceDepot({ show }) {
           100% { transform: translate(var(--wx), var(--wy)) scale(1.2); opacity: 0; }
         }
 
-        /* 🚄 EMU900 洗車平移動畫 - 超慢速穿越 */
+        /* 🚄 EMU900 洗車平移動畫 - 超慢速穿越且精準維持在 y=330 軌道 */
         .train-washing {
           animation: washPass 35s linear infinite;
         }
 
         @keyframes washPass {
-          0% { transform: translateX(-450px); }
-          100% { transform: translateX(850px); }
+          0% { transform: translateY(330px) translateX(-450px); }
+          100% { transform: translateY(330px) translateX(850px); }
         }
 
         /* 🏗️ 懸吊天車平移動畫 */
@@ -122,8 +122,8 @@ export default function MaintenanceDepot({ show }) {
         }
 
         @keyframes beamGlow {
-          0% { opacity: 0.1; }
-          100% { opacity: 0.25; }
+          0% { opacity: 0.08; }
+          100% { opacity: 0.2; }
         }
 
         /* Hangar Grid Lines */
@@ -213,18 +213,18 @@ export default function MaintenanceDepot({ show }) {
               <polygon points="560,50 640,50 615,6 585,6" fill="rgba(0, 240, 255, 0.08)" />
             </g>
 
-            {/* Overhead Gantry Crane (Upper part of screen, slides horizontally) */}
+            {/* Overhead Gantry Crane (Centered around x=0, slides horizontally) */}
             <g className="overhead-crane">
               {/* Crane Rail Carriage */}
-              <rect x="0" y="46" width="50" height="10" fill="#f39c12" rx="1" />
-              <rect x="10" y="56" width="30" height="12" fill="#2c3e50" rx="1" />
+              <rect x="-25" y="46" width="50" height="10" fill="#f39c12" rx="1" />
+              <rect x="-15" y="56" width="30" height="8" fill="#2c3e50" rx="1" />
               {/* Gantry steel cable */}
-              <line x1="25" y1="68" x2="25" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
-              {/* Hook block and mechanical claw (industrial look, no longer resembling a train pantograph) */}
-              <rect x="19" y="135" width="12" height="12" fill="#34495e" rx="1" />
-              <circle cx="25" cy="141" r="2.5" fill="#f1c40f" />
+              <line x1="0" y1="64" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+              {/* Hook block and mechanical claw (perfectly centered, no horizontal offset) */}
+              <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
+              <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
               {/* Dual steel claw hooks */}
-              <path d="M 16,145 Q 16,152 21,152 Q 24,152 24,148 Q 24,152 27,152 Q 32,152 32,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M -9,145 Q -9,152 -4,152 Q -1,152 -1,148 Q -1,152 2,152 Q 7,152 7,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
             </g>
 
             {/* Floor perspectives */}
@@ -232,343 +232,356 @@ export default function MaintenanceDepot({ show }) {
             <path d="M 0,270 L 800,270 M 0,285 L 800,285 M 0,310 L 800,310 M 0,350 L 800,350 M 0,400 L 800,400 M 0,460 L 800,460" stroke="#121720" strokeWidth="1" />
 
 
-            {/* ==================== TRACK 1 (TOP, y=280) - EMU3000 Parking ==================== */}
+            {/* ==================== TRACK 1 (TOP, y=230) - EMU3000 Parking ==================== */}
             {/* Sleepers */}
-            <line x1="0" y1="280" x2="800" y2="280" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            <line x1="0" y1="230" x2="800" y2="230" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
-            <line x1="0" y1="276" x2="800" y2="276" stroke="#484d56" strokeWidth="1" />
-            <line x1="0" y1="277" x2="800" y2="277" stroke="#777c85" strokeWidth="0.5" />
+            <line x1="0" y1="226" x2="800" y2="226" stroke="#484d56" strokeWidth="1.5" />
+            <line x1="0" y1="227" x2="800" y2="227" stroke="#777c85" strokeWidth="1" />
             
-            {/* Detailed 3-Car EMU3000 Train (White body, red stripe, black window band) */}
-            <g transform="translate(180, 252)">
+            {/* Detailed 3-Car EMU3000 Train (White body, red stripe, black window band) - 45px Height */}
+            <g transform="translate(180, 182)">
               {/* Car 1: Left Cab */}
               <g>
                 {/* Coupler */}
-                <rect x="-8" y="16" width="8" height="2" fill="#222" />
+                <rect x="-8" y="38" width="8" height="3" fill="#222" />
                 {/* Body */}
-                <path d="M 12,2 L 120,2 C 122,2 123,3 123,5 L 123,20 Q 123,21 120,21 L 12,21 C 2,21 -2,17 -2,12 C -2,7 2,2 12,2 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
+                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 5,38 -2,32 -2,22 C -2,12 5,4 15,4 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
                 {/* Black window band */}
-                <path d="M 3,3 L 123,3 L 123,10 L 5,10 Z" fill="#111" />
+                <path d="M 5,6 L 140,6 L 140,18 L 10,18 Z" fill="#111" />
                 {/* Red stripe */}
-                <rect x="15" y="14" width="108" height="1.5" fill="#E74C3C" />
+                <rect x="25" y="28" width="115" height="3" fill="#E74C3C" />
                 {/* Windows */}
                 <g fill="#2c3e50">
-                  <rect x="25" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="50" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="75" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="100" y="4" width="18" height="5" rx="0.5" />
+                  <rect x="40" y="8" width="22" height="8" rx="1" />
+                  <rect x="70" y="8" width="22" height="8" rx="1" />
+                  <rect x="100" y="8" width="22" height="8" rx="1" />
                 </g>
                 {/* Cab window */}
-                <path d="M 0,4 L 10,4 L 10,9 L 2,9 Z" fill="#2c3e50" />
+                <path d="M 0,8 L 15,8 L 15,16 L 3,16 Z" fill="#2c3e50" />
                 {/* Bogies & Wheels */}
-                <rect x="15" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="20" cy="24" r="3" fill="#000" /> <circle cx="20" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="32" cy="24" r="3" fill="#000" /> <circle cx="32" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="85" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="90" cy="24" r="3" fill="#000" /> <circle cx="90" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="102" cy="24" r="3" fill="#000" /> <circle cx="102" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 1-2 */}
-              <rect x="123" y="4" width="5" height="16" fill="#222" />
-              <rect x="124" y="6" width="3" height="12" fill="#444" />
+              <rect x="140" y="6" width="6" height="32" fill="#222" />
 
               {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(128, 0)">
+              <g transform="translate(146, 0)">
                 {/* Body */}
-                <rect x="0" y="2" width="115" height="19" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" rx="1" />
+                <rect x="0" y="4" width="120" height="34" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" rx="1" />
                 {/* Black window band */}
-                <rect x="0" y="3" width="115" height="7" fill="#111" />
+                <rect x="0" y="6" width="120" height="12" fill="#111" />
                 {/* Red stripe */}
-                <rect x="0" y="14" width="115" height="1.5" fill="#E74C3C" />
+                <rect x="0" y="28" width="120" height="3" fill="#E74C3C" />
                 {/* Windows */}
                 <g fill="#2c3e50">
-                  <rect x="8" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="33" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="58" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="83" y="4" width="18" height="5" rx="0.5" />
+                  <rect x="12" y="8" width="22" height="8" rx="1" />
+                  <rect x="42" y="8" width="22" height="8" rx="1" />
+                  <rect x="72" y="8" width="22" height="8" rx="1" />
+                  <rect x="102" y="8" width="22" height="8" rx="1" />
                 </g>
                 {/* Passenger Door seams */}
-                <line x1="108" y1="2" x2="108" y2="21" stroke="#888" strokeWidth="0.5" />
+                <line x1="112" y1="4" x2="112" y2="38" stroke="#888" strokeWidth="0.5" />
                 {/* Bogies & Wheels */}
-                <rect x="12" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="17" cy="24" r="3" fill="#000" /> <circle cx="17" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="29" cy="24" r="3" fill="#000" /> <circle cx="29" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="39" cy="42" r="4.5" fill="#000" /> <circle cx="39" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="80" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="85" cy="24" r="3" fill="#000" /> <circle cx="85" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="97" cy="24" r="3" fill="#000" /> <circle cx="97" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="90" cy="42" r="4.5" fill="#000" /> <circle cx="90" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="108" cy="42" r="4.5" fill="#000" /> <circle cx="108" cy="42" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 2-3 */}
-              <rect x="243" y="4" width="5" height="16" fill="#222" />
-              <rect x="244" y="6" width="3" height="12" fill="#444" />
+              <rect x="266" y="6" width="6" height="32" fill="#222" />
 
               {/* Car 3: Right Cab */}
-              <g transform="translate(248, 0)">
+              <g transform="translate(272, 0)">
                 {/* Body */}
-                <path d="M 0,2 L 108,2 C 118,2 122,7 122,12 C 122,17 118,21 108,21 L 0,21 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
+                <path d="M 0,4 L 125,4 C 135,4 142,10 142,22 C 142,32 135,38 125,38 L 0,38 Z" fill="#FFFFFF" stroke="#CCCCCC" strokeWidth="0.5" />
                 {/* Black window band */}
-                <path d="M 0,3 L 115,3 L 118,10 L 0,10 Z" fill="#111" />
+                <path d="M 0,6 L 132,6 L 127,18 L 0,18 Z" fill="#111" />
                 {/* Red stripe */}
-                <rect x="0" y="14" width="105" height="1.5" fill="#E74C3C" />
+                <rect x="0" y="28" width="115" height="3" fill="#E74C3C" />
                 {/* Windows */}
                 <g fill="#2c3e50">
-                  <rect x="15" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="40" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="65" y="4" width="18" height="5" rx="0.5" />
-                  <rect x="90" y="4" width="18" height="5" rx="0.5" />
+                  <rect x="15" y="8" width="22" height="8" rx="1" />
+                  <rect x="45" y="8" width="22" height="8" rx="1" />
+                  <rect x="75" y="8" width="22" height="8" rx="1" />
                 </g>
                 {/* Cab window */}
-                <path d="M 120,4 L 110,4 L 110,9 L 118,9 Z" fill="#2c3e50" />
+                <path d="M 127,8 L 137,8 L 134,16 L 124,16 Z" fill="#2c3e50" />
                 {/* Bogies & Wheels */}
-                <rect x="18" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="23" cy="24" r="3" fill="#000" /> <circle cx="23" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="35" cy="24" r="3" fill="#000" /> <circle cx="35" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="82" y="21" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="87" cy="24" r="3" fill="#000" /> <circle cx="87" cy="24" r="1.2" fill="#7f8c8d" />
-                <circle cx="99" cy="24" r="3" fill="#000" /> <circle cx="99" cy="24" r="1.2" fill="#7f8c8d" />
+                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
                 {/* Coupler */}
-                <rect x="122" y="16" width="8" height="2" fill="#222" />
+                <rect x="142" y="38" width="8" height="3" fill="#222" />
               </g>
             </g>
 
 
-            {/* ==================== TRACK 2 (MIDDLE, y=350) - Wash & EMU900 ==================== */}
+            {/* ==================== TRACK 2 (MIDDLE, y=330) - Wash & EMU900 ==================== */}
             {/* Sleepers */}
-            <line x1="0" y1="350" x2="800" y2="350" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            <line x1="0" y1="330" x2="800" y2="330" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
-            <line x1="0" y1="346" x2="800" y2="346" stroke="#484d56" strokeWidth="1" />
-            <line x1="0" y1="347" x2="800" y2="347" stroke="#777c85" strokeWidth="0.5" />
+            <line x1="0" y1="326" x2="800" y2="326" stroke="#484d56" strokeWidth="1.5" />
+            <line x1="0" y1="327" x2="800" y2="327" stroke="#777c85" strokeWidth="1" />
 
-            {/* Slowly moving 3-Car EMU900 Train passing through washing system */}
-            <g className="train-washing" transform="translate(0, 322)">
+            {/* Slowly moving 3-Car EMU900 Train passing through washing system - 45px Height (sits on y=330) */}
+            <g className="train-washing">
               {/* Car 1: Left Cab */}
-              <g>
+              <g transform="translate(0, 0)">
                 {/* Body */}
-                <path d="M 12,2 L 120,2 L 120,20 L 12,20 C 2,20 -2,16 -2,11 C -2,6 2,2 12,2 Z" fill="url(#emu900Body)" />
+                <path d="M 15,-45 L 140,-45 L 140,-11 L 15,-11 C 5,-11 -2,-17 -2,-28 C -2,-39 5,-45 15,-45 Z" fill="url(#emu900Body)" />
                 {/* Green stripe */}
-                <rect x="12" y="3.5" width="108" height="1.5" fill="#00A859" />
+                <rect x="15" y="-42" width="125" height="3" fill="#00A859" />
                 {/* Green bottom curve */}
-                <path d="M 2,12 Q 10,12 25,10.5 L 120,10.5" fill="none" stroke="#00A859" strokeWidth="2.2" strokeLinecap="round" />
+                <path d="M 2,-22 Q 10,-22 30,-25 L 140,-25" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="25" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="50" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="75" y="5.5" width="18" height="7" rx="1" />
+                  <rect x="35" y="-38" width="22" height="12" rx="2" />
+                  <rect x="65" y="-38" width="22" height="12" rx="2" />
                 </g>
-                {/* Door */}
-                <rect x="98" y="4" width="14" height="16" fill="#7F8C8D" rx="0.5" />
-                <line x1="105" y1="4" x2="105" y2="20" stroke="#222" strokeWidth="0.5" />
+                {/* Glass Door */}
+                <rect x="95" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
+                <rect x="97" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <rect x="111" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <line x1="109" y1="-40" x2="109" y2="-11" stroke="#333" strokeWidth="1" />
+                <circle cx="109" cy="-42" r="1.5" fill="#FFD700" />
                 {/* Cab window */}
-                <path d="M 0,5.5 L 10,5.5 L 10,10.5 L 2,10.5 Z" fill="#151d24" />
+                <path d="M 0,-38 L 12,-38 L 12,-26 L 3,-26 Z" fill="#151d24" />
+                {/* Smiley frame on nose */}
+                <path d="M -1,-38 C 5,-38 10,-32 10,-28 C 10,-24 5,-18 -1,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
+                {/* Headlight */}
+                <circle cx="-1.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" />
+                <circle cx="-1.5" cy="-28" r="1.2" fill="#FFF" />
                 {/* Bogies & Wheels */}
-                <rect x="15" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="20" cy="23" r="3" fill="#000" /> <circle cx="20" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="32" cy="23" r="3" fill="#000" /> <circle cx="32" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="-7" r="4.5" fill="#000" /> <circle cx="44" cy="-7" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="85" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="90" cy="23" r="3" fill="#000" /> <circle cx="90" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="102" cy="23" r="3" fill="#000" /> <circle cx="102" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="95" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="101" cy="-7" r="4.5" fill="#000" /> <circle cx="101" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="119" cy="-7" r="4.5" fill="#000" /> <circle cx="119" cy="-7" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 1-2 */}
-              <rect x="120" y="4" width="5" height="16" fill="#222" />
+              <rect x="140" y="-38" width="6" height="27" fill="#222" />
 
               {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(125, 0)">
+              <g transform="translate(146, 0)">
                 {/* Body */}
-                <rect x="0" y="2" width="115" height="18" fill="url(#emu900Body)" rx="1" />
+                <rect x="0" y="-45" width="120" height="34" fill="url(#emu900Body)" rx="1" />
                 {/* Green stripe */}
-                <rect x="0" y="3.5" width="115" height="1.5" fill="#00A859" />
+                <rect x="0" y="-42" width="120" height="3" fill="#00A859" />
                 {/* Green bottom curve */}
-                <line x1="0" y1="10.5" x2="115" y2="10.5" stroke="#00A859" strokeWidth="2.2" />
+                <line x1="0" y1="-25" x2="120" y2="-25" stroke="#00A859" strokeWidth="4" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="10" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="35" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="60" y="5.5" width="18" height="7" rx="1" />
+                  <rect x="10" y="-38" width="22" height="12" rx="2" />
+                  <rect x="40" y="-38" width="22" height="12" rx="2" />
                 </g>
-                {/* Door */}
-                <rect x="88" y="4" width="14" height="16" fill="#7F8C8D" rx="0.5" />
-                <line x1="95" y1="4" x2="95" y2="20" stroke="#222" strokeWidth="0.5" />
+                {/* Glass Door */}
+                <rect x="75" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
+                <rect x="77" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <rect x="91" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <line x1="89" y1="-40" x2="89" y2="-11" stroke="#333" strokeWidth="1" />
+                <circle cx="89" cy="-42" r="1.5" fill="#FFD700" />
                 {/* Bogies & Wheels */}
-                <rect x="12" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="17" cy="23" r="3" fill="#000" /> <circle cx="17" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="29" cy="23" r="3" fill="#000" /> <circle cx="29" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="15" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="21" cy="-7" r="4.5" fill="#000" /> <circle cx="21" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="39" cy="-7" r="4.5" fill="#000" /> <circle cx="39" cy="-7" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="80" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="85" cy="23" r="3" fill="#000" /> <circle cx="85" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="97" cy="23" r="3" fill="#000" /> <circle cx="97" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="80" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="85" cy="-7" r="4.5" fill="#000" /> <circle cx="85" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="103" cy="-7" r="4.5" fill="#000" /> <circle cx="103" cy="-7" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 2-3 */}
-              <rect x="240" y="4" width="5" height="16" fill="#222" />
+              <rect x="266" y="-38" width="6" height="27" fill="#222" />
 
               {/* Car 3: Right Cab */}
-              <g transform="translate(245, 0)">
+              <g transform="translate(272, 0)">
                 {/* Body */}
-                <path d="M 0,2 L 108,2 C 118,2 122,6 122,11 C 122,16 118,20 108,20 L 0,20 Z" fill="url(#emu900Body)" />
+                <path d="M 0,-45 L 125,-45 C 135,-45 142,-39 142,-28 C 142,-17 135,-11 125,-11 L 0,-11 Z" fill="url(#emu900Body)" />
                 {/* Green stripe */}
-                <rect x="0" y="3.5" width="108" height="1.5" fill="#00A859" />
+                <rect x="0" y="-42" width="115" height="3" fill="#00A859" />
                 {/* Green bottom curve */}
-                <path d="M 0,10.5 L 95,10.5 Q 110,12 118,12" fill="none" stroke="#00A859" strokeWidth="2.2" strokeLinecap="round" />
+                <path d="M 0,-25 L 110,-25 Q 125,-22 135,-22" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="15" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="40" y="5.5" width="18" height="7" rx="1" />
-                  <rect x="65" y="5.5" width="18" height="7" rx="1" />
+                  <rect x="45" y="-38" width="22" height="12" rx="2" />
+                  <rect x="75" y="-38" width="22" height="12" rx="2" />
                 </g>
-                {/* Door */}
-                <rect x="88" y="4" width="14" height="16" fill="#7F8C8D" rx="0.5" />
-                <line x1="95" y1="4" x2="95" y2="20" stroke="#222" strokeWidth="0.5" />
+                {/* Glass Door */}
+                <rect x="10" y="-40" width="28" height="29" fill="#7F8C8D" rx="1" />
+                <rect x="12" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <rect x="26" y="-36" width="10" height="21" fill="#111" rx="1" />
+                <line x1="24" y1="-40" x2="24" y2="-11" stroke="#333" strokeWidth="1" />
+                <circle cx="24" cy="-42" r="1.5" fill="#FFD700" />
                 {/* Cab window */}
-                <path d="M 120,5.5 L 110,5.5 L 110,10.5 L 118,10.5 Z" fill="#151d24" />
+                <path d="M 128,-38 L 140,-38 L 137,-26 L 128,-26 Z" fill="#151d24" />
+                {/* Smiley frame on nose */}
+                <path d="M 141,-38 C 135,-38 130,-32 130,-28 C 130,-24 135,-18 141,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
+                {/* Headlight */}
+                <circle cx="141.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" />
+                <circle cx="141.5" cy="-28" r="1.2" fill="#FFF" />
                 {/* Bogies & Wheels */}
-                <rect x="18" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="23" cy="23" r="3" fill="#000" /> <circle cx="23" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="35" cy="23" r="3" fill="#000" /> <circle cx="35" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="-7" r="4.5" fill="#000" /> <circle cx="44" cy="-7" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="82" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="87" cy="23" r="3" fill="#000" /> <circle cx="87" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="99" cy="23" r="3" fill="#000" /> <circle cx="99" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="85" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="91" cy="-7" r="4.5" fill="#000" /> <circle cx="91" cy="-7" r="1.5" fill="#7f8c8d" />
+                <circle cx="109" cy="-7" r="4.5" fill="#000" /> <circle cx="109" cy="-7" r="1.5" fill="#7f8c8d" />
+                {/* Coupler */}
+                <rect x="142" y="-20" width="8" height="3" fill="#222" />
               </g>
             </g>
 
             {/* Washing System Overlay (Layered on top of Track 2) */}
             <g transform="translate(350, 0)">
               {/* Spraying water drops */}
-              <circle className="water-drop" cx="-10" cy="326" r="1.5" fill="#5DADE2" style={{ '--wx': '-25px', '--wy': '-15px' }} />
-              <circle className="water-drop" cx="-8" cy="336" r="1.2" fill="#5DADE2" style={{ '--wx': '-30px', '--wy': '15px' }} />
-              <circle className="water-drop" cx="10" cy="330" r="1.8" fill="#5DADE2" style={{ '--wx': '25px', '--wy': '-10px' }} />
-              <circle className="water-drop" cx="8" cy="348" r="1.5" fill="#5DADE2" style={{ '--wx': '20px', '--wy': '20px' }} />
+              <circle className="water-drop" cx="-12" cy="305" r="1.8" fill="#5DADE2" style={{ '--wx': '-28px', '--wy': '-18px' }} />
+              <circle className="water-drop" cx="-10" cy="320" r="1.5" fill="#5DADE2" style={{ '--wx': '-35px', '--wy': '12px' }} />
+              <circle className="water-drop" cx="12" cy="310" r="2.0" fill="#5DADE2" style={{ '--wx': '28px', '--wy': '-12px' }} />
+              <circle className="water-drop" cx="10" cy="328" r="1.8" fill="#5DADE2" style={{ '--wx': '25px', '--wy': '18px' }} />
 
               {/* Vertical Support Gantry */}
-              <rect x="-3" y="300" width="6" height="60" fill="url(#gantryBeam)" rx="1" />
-              
-              {/* Wash Station Banner */}
-              <text x="0" y="288" fill="#2ecc71" fontSize="5" fontWeight="bold" textAnchor="middle">♻️ 水資源循環洗車</text>
-              <text x="0" y="294" fill="#2ecc71" fontSize="4.2" textAnchor="middle">WATER RECYCLING</text>
+              <rect x="-3" y="275" width="6" height="60" fill="url(#gantryBeam)" rx="1" />
 
-              {/* Brush 1 (Upper) */}
-              <g className="wash-brush" style={{ transformOrigin: '0px 315px' }}>
-                <rect x="-7" y="303" width="14" height="24" fill="#3498DB" opacity="0.85" rx="3" />
-                <line x1="0" y1="303" x2="0" y2="327" stroke="#FFF" strokeWidth="1" />
+              {/* Brush 1 (Upper) - No inline transformOrigin styles to avoid offsets, spins in place */}
+              <g className="wash-brush">
+                <rect x="-7" y="287" width="14" height="22" fill="#3498DB" opacity="0.85" rx="3" />
+                <line x1="0" y1="287" x2="0" y2="309" stroke="#FFF" strokeWidth="1" />
               </g>
 
               {/* Brush 2 (Lower) - reverse spin */}
-              <g className="wash-brush-2" style={{ transformOrigin: '0px 341px' }}>
-                <rect x="-7" y="329" width="14" height="24" fill="#2980B9" opacity="0.85" rx="3" />
-                <line x1="0" y1="329" x2="0" y2="353" stroke="#FFF" strokeWidth="1" />
+              <g className="wash-brush-2">
+                <rect x="-7" y="311" width="14" height="22" fill="#2980B9" opacity="0.85" rx="3" />
+                <line x1="0" y1="311" x2="0" y2="333" stroke="#FFF" strokeWidth="1" />
               </g>
             </g>
 
 
-            {/* ==================== TRACK 3 (BOTTOM, y=420) - EMU800 Maintenance ==================== */}
+            {/* ==================== TRACK 3 (BOTTOM, y=430) - EMU800 Maintenance ==================== */}
             {/* Sleepers */}
             <line x1="0" y1="420" x2="800" y2="420" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
             <line x1="0" y1="416" x2="800" y2="416" stroke="#484d56" strokeWidth="1.5" />
             <line x1="0" y1="417" x2="800" y2="417" stroke="#777c85" strokeWidth="1" />
 
-            {/* Upgraded 3-Car EMU800 Train (Silver, blue stripe, yellow front nose) */}
-            <g transform="translate(100, 392)">
+            {/* Upgraded 3-Car EMU800 Train (Silver, blue stripe, yellow front nose) - 45px Height */}
+            <g transform="translate(100, 382)">
               {/* Car 1: Left Cab */}
               <g>
+                {/* Coupler */}
+                <rect x="-8" y="38" width="8" height="3" fill="#222" />
                 {/* Body */}
-                <path d="M 12,2 L 120,2 C 122,2 123,3 123,5 L 123,20 L 12,20 C 6,20 2,17 2,11 C 2,7 6,2 12,2 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
+                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 5,38 -2,32 -2,22 C -2,12 5,4 15,4 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Yellow front face */}
-                <path d="M 2,11 L 18,11 L 18,20 L 12,20 C 6,20 2,17 2,11 Z" fill="#F1C40F" />
+                <path d="M -2,22 L 20,22 L 20,38 L 12,38 C 5,38 -2,32 -2,22 Z" fill="#F1C40F" />
                 {/* Blue stripe */}
-                <rect x="18" y="10.5" width="105" height="3" fill="#2980B9" />
+                <rect x="20" y="19" width="120" height="5" fill="#2980B9" />
                 {/* Yellow stripe below blue */}
-                <rect x="18" y="13.5" width="105" height="1.5" fill="#F1C40F" />
+                <rect x="20" y="24" width="120" height="2" fill="#F1C40F" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="25" y="4.5" width="15" height="7" rx="1" />
-                  <rect x="45" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="68" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="91" y="4.5" width="15" height="7" rx="1" />
+                  <rect x="35" y="8" width="18" height="8" rx="1" />
+                  <rect x="60" y="8" width="22" height="8" rx="1" />
+                  <rect x="88" y="8" width="22" height="8" rx="1" />
                 </g>
                 {/* Windshield */}
-                <path d="M 2,4.5 L 15,4.5 L 15,9.5 L 3,9.5 Z" fill="#111" />
-                <path d="M 3,5 L 12,5 L 11,8.5 L 4,8.5 Z" fill="#1a252f" />
+                <path d="M -2,8 L 15,8 L 15,16 L 0,16 Z" fill="#111" />
+                <path d="M 3,8.5 L 12,8.5 L 11,14.5 L 4,14.5 Z" fill="#1a252f" />
                 {/* Bogies & Wheels */}
-                <rect x="15" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="20" cy="23" r="3" fill="#000" /> <circle cx="20" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="32" cy="23" r="3" fill="#000" /> <circle cx="32" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="85" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="90" cy="23" r="3" fill="#000" /> <circle cx="90" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="102" cy="23" r="3" fill="#000" /> <circle cx="102" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 1-2 */}
-              <rect x="123" y="4" width="5" height="16" fill="#222" />
+              <rect x="140" y="6" width="6" height="32" fill="#222" />
 
               {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(128, 0)">
+              <g transform="translate(146, 0)">
                 {/* Body */}
-                <rect x="0" y="2" width="115" height="18" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" rx="1" />
+                <rect x="0" y="4" width="120" height="34" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" rx="1" />
                 {/* Blue stripe */}
-                <rect x="0" y="10.5" width="115" height="3" fill="#2980B9" />
+                <rect x="0" y="19" width="120" height="5" fill="#2980B9" />
                 {/* Yellow stripe */}
-                <rect x="0" y="13.5" width="115" height="1.5" fill="#F1C40F" />
+                <rect x="0" y="24" width="120" height="2" fill="#F1C40F" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="10" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="35" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="60" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="85" y="4.5" width="18" height="7" rx="1" />
+                  <rect x="15" y="8" width="22" height="8" rx="1" />
+                  <rect x="45" y="8" width="22" height="8" rx="1" />
+                  <rect x="75" y="8" width="22" height="8" rx="1" />
                 </g>
+                {/* Passenger Door seams */}
+                <line x1="108" y1="4" x2="108" y2="38" stroke="#888" strokeWidth="0.5" />
                 {/* Bogies & Wheels */}
-                <rect x="12" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="17" cy="23" r="3" fill="#000" /> <circle cx="17" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="29" cy="23" r="3" fill="#000" /> <circle cx="29" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="39" cy="42" r="4.5" fill="#000" /> <circle cx="39" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="80" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="85" cy="23" r="3" fill="#000" /> <circle cx="85" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="97" cy="23" r="3" fill="#000" /> <circle cx="97" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="90" cy="42" r="4.5" fill="#000" /> <circle cx="90" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="108" cy="42" r="4.5" fill="#000" /> <circle cx="108" cy="42" r="1.5" fill="#7f8c8d" />
               </g>
 
               {/* Gangway Connector 2-3 */}
-              <rect x="243" y="4" width="5" height="16" fill="#222" />
+              <rect x="266" y="6" width="6" height="32" fill="#222" />
 
               {/* Car 3: Right Cab */}
-              <g transform="translate(248, 0)">
+              <g transform="translate(272, 0)">
                 {/* Body */}
-                <path d="M 0,2 L 108,2 C 114,2 118,7 118,11 C 118,17 114,20 108,20 L 0,20 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
+                <path d="M 0,4 L 125,4 C 135,4 142,10 142,22 C 142,32 135,38 125,38 L 0,38 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
                 {/* Yellow front face */}
-                <path d="M 118,11 L 102,11 L 102,20 L 108,20 C 114,20 118,17 118,11 Z" fill="#F1C40F" />
+                <path d="M 142,22 L 124,22 L 124,38 L 132,38 C 137,38 142,32 142,22 Z" fill="#F1C40F" />
                 {/* Blue stripe */}
-                <rect x="0" y="10.5" width="102" height="3" fill="#2980B9" />
+                <rect x="0" y="19" width="124" height="5" fill="#2980B9" />
                 {/* Yellow stripe below blue */}
-                <rect x="0" y="13.5" width="102" height="1.5" fill="#F1C40F" />
+                <rect x="0" y="24" width="124" height="2" fill="#F1C40F" />
                 {/* Windows */}
                 <g fill="#151d24">
-                  <rect x="15" y="4.5" width="15" height="7" rx="1" />
-                  <rect x="35" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="58" y="4.5" width="18" height="7" rx="1" />
-                  <rect x="81" y="4.5" width="15" height="7" rx="1" />
+                  <rect x="15" y="8" width="22" height="8" rx="1" />
+                  <rect x="45" y="8" width="22" height="8" rx="1" />
+                  <rect x="75" y="8" width="22" height="8" rx="1" />
                 </g>
                 {/* Windshield */}
-                <path d="M 118,4.5 L 105,4.5 L 105,9.5 L 117,9.5 Z" fill="#111" />
-                <path d="M 117,5 L 108,5 L 109,8.5 L 116,8.5 Z" fill="#1a252f" />
+                <path d="M 142,8 L 129,8 L 129,16 L 141,16 Z" fill="#111" />
+                <path d="M 141,8.5 L 132,8.5 L 133,14.5 L 140,14.5 Z" fill="#1a252f" />
                 {/* Bogies & Wheels */}
-                <rect x="18" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="23" cy="23" r="3" fill="#000" /> <circle cx="23" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="35" cy="23" r="3" fill="#000" /> <circle cx="35" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
                 
-                <rect x="82" y="20" width="22" height="3" fill="#2c2c2c" rx="1" />
-                <circle cx="87" cy="23" r="3" fill="#000" /> <circle cx="87" cy="23" r="1.2" fill="#7f8c8d" />
-                <circle cx="99" cy="23" r="3" fill="#000" /> <circle cx="99" cy="23" r="1.2" fill="#7f8c8d" />
+                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
+                <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
+                <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
+                {/* Coupler */}
+                <rect x="142" y="38" width="8" height="3" fill="#222" />
               </g>
             </g>
 
-            {/* Spark generator (Welding Effect under EMU800 at x=120) */}
-            <g transform="translate(120, 415)">
+            {/* Spark generator (Welding Effect under EMU800 at x=219, y=424) */}
+            <g transform="translate(219, 424)">
               <circle cx="0" cy="0" r="15" fill="rgba(0, 240, 255, 0.2)" />
               <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#00F0FF" style={{ '--dx': '-18px', '--dy': '-12px' }} />
               <circle className="spark-particle" cx="0" cy="0" r="1.0" fill="#FFF" style={{ '--dx': '12px', '--dy': '-16px' }} />
@@ -578,8 +591,8 @@ export default function MaintenanceDepot({ show }) {
               <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#FFF" style={{ '--dx': '6px', '--dy': '-18px' }} />
             </g>
 
-            {/* Detailed Welder Operator kneeling next to Track 3 (跪姿雙腿) */}
-            <g transform="translate(136, 415)">
+            {/* Detailed Welder Operator kneeling next to Track 3 (跪姿雙腿) at x=235, y=424 */}
+            <g transform="translate(235, 424)">
               {/* Back leg kneeling (膝蓋著地) */}
               <path d="M 4,-3 L 8,4 L 11,4" fill="none" stroke="#1f2c3d" strokeWidth="2.5" strokeLinecap="round" />
               {/* Front leg planted (另一隻腿支撐) */}

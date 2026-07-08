@@ -265,13 +265,15 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         <div className={`dashboard ${validTrains.length === 0 ? 'empty' : ''}`}>
           {validTrains.length === 0 ? (
             <div className="empty-state-card" style={{
-              background: 'rgba(17, 8, 38, 0.1)',
+              background: 'rgba(17, 8, 38, 0.85)',
               border: '1.5px solid rgba(0, 240, 255, 0.2)',
               borderRadius: '16px',
               padding: '30px 20px',
               textAlign: 'center',
               color: '#fff',
-              boxShadow: '0 0 15px rgba(0, 240, 255, 0.05)',
+              boxShadow: '0 0 15px rgba(0, 240, 255, 0.15)',
+              backdropFilter: 'blur(15px)',
+              WebkitBackdropFilter: 'blur(15px)',
               margin: '10px 0 20px 0' /* Centered */
             }}>
               <div style={{

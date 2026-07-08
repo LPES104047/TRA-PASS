@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -147,6 +147,45 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
             .theme1-root .countdown { font-size: 110px; }
             .theme1-root .countdown span { font-size: 32px; }
             .theme1-root .subtitle { font-size: 15px; }
+            
+            /* 📅 Date Toggle Buttons for Theme 1 */
+            .theme1-root .date-toggle-container {
+              display: flex;
+              justify-content: center;
+              margin-bottom: 25px;
+              margin-top: 10px;
+            }
+
+            .theme1-root .date-toggle {
+              background: rgba(255, 255, 255, 0.2);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              border-radius: 20px;
+              padding: 2px;
+              display: flex;
+              width: 200px;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+              backdrop-filter: blur(10px);
+            }
+
+            .theme1-root .toggle-btn {
+              flex: 1;
+              border: none;
+              background: transparent;
+              color: rgba(255, 255, 255, 0.7);
+              padding: 6px 12px;
+              border-radius: 17px;
+              font-size: 12px;
+              font-weight: bold;
+              cursor: pointer;
+              transition: all 0.3s;
+            }
+
+            .theme1-root .toggle-btn.active {
+              background: #FFFFFF;
+              color: #0072FF;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+          }
       `}</style>
       
       <div className="theme1-root">
@@ -187,6 +226,14 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 </div>
             </div>
 
+            {/* 📅 Date Toggle Buttons */}
+            <div className="date-toggle-container">
+              <div className="date-toggle">
+                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+              </div>
+            </div>
+
             {nextTrain ? (
               <div className="next-train-card">
                   <div className="subtitle">距離下一班車</div>
@@ -201,7 +248,65 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
             ) : null}
 
             <div className="schedule-list">
-              {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
+              {validTrains.length === 0 && (
+                <div className="empty-state" style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '30px 20px',
+                  textAlign: 'center',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  margin: '10px 0 20px 0'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'rgba(255, 215, 0, 0.15)',
+                    border: '1px solid #FFD700',
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    color: '#FFD700',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    marginBottom: '15px'
+                  }}>
+                    <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FFD700', boxShadow: '0 0 6px #FFD700' }}></span>
+                    {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+                  </div>
+                  <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6' }}>
+                    本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+                  </p>
+                  <button 
+                    onClick={() => setIsTomorrow(!isTomorrow)}
+                    style={{
+                      background: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '20px',
+                      color: '#0072FF',
+                      padding: '8px 24px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'transform 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <path d="M16 2v4M8 2v4M2 10h20" />
+                    </svg>
+                    {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
+                  </button>
+                </div>
+              )}
               {validTrains.map((t) => {
                 let [dh, dm] = t.depTime.split(':').map(Number);
                 let [ah, am] = t.arrTime.split(':').map(Number);
