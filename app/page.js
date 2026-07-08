@@ -5,6 +5,7 @@ import Theme2 from "./components/Theme2";
 import Theme3 from "./components/Theme3";
 import TrainAnimation from "./components/TrainAnimation";
 import TrainJourneyModal from "./components/TrainJourneyModal";
+import MaintenanceDepot from "./components/MaintenanceDepot";
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -240,6 +241,7 @@ export default function Home() {
       {theme === 2 && <Theme2 {...props} />}
       {theme === 3 && <Theme3 {...props} />}
       <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
+      <MaintenanceDepot show={validTrains.length === 0} />
 
       {activeTrain && (
         <TrainJourneyModal

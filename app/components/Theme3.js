@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import MaintenanceDepot from "./MaintenanceDepot";
 
 export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
@@ -247,7 +246,65 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
 
         <div className="dashboard">
           {validTrains.length === 0 ? (
-            <MaintenanceDepot isTomorrow={isTomorrow} setIsTomorrow={setIsTomorrow} />
+            <div className="empty-state-card" style={{
+              background: 'rgba(17, 8, 38, 0.7)',
+              border: '1.5px solid #00F0FF',
+              borderRadius: '16px',
+              padding: '30px 20px',
+              textAlign: 'center',
+              color: '#fff',
+              boxShadow: '0 0 15px rgba(0, 240, 255, 0.15)',
+              backdropFilter: 'blur(10px)',
+              margin: '10px 0 20px 70px' /* Align to Dashboard offset */
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255,0,118,0.15)',
+                border: '1px solid #FF0076',
+                padding: '6px 16px',
+                borderRadius: '20px',
+                color: '#FF0076',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                marginBottom: '15px',
+                boxShadow: '0 0 10px rgba(255,0,118,0.2)',
+                textShadow: '0 0 5px rgba(255,0,118,0.5)'
+              }}>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF0076', boxShadow: '0 0 6px #FF0076' }}></span>
+                {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(0, 240, 255, 0.7)', lineHeight: '1.6', textShadow: '0 0 3px rgba(0,240,255,0.1)' }}>
+                本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+              </p>
+              <button 
+                onClick={() => setIsTomorrow(!isTomorrow)}
+                style={{
+                  background: '#00F0FF',
+                  border: 'none',
+                  borderRadius: '20px',
+                  color: '#110826',
+                  padding: '8px 24px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px #00F0FF',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <path d="M16 2v4M8 2v4M2 10h20" />
+                </svg>
+                {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
+              </button>
+            </div>
           ) : (
             validTrains.map((t) => {
               const diffMins = t.actualDepMins - currentMins;
