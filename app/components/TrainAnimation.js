@@ -115,23 +115,23 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
         }
 
         .bg-train-container.ltr {
-          animation: trainLtr 3s linear forwards; /* ✨ 改為 3s 以配合進站停靠時間 */
+          animation: trainLtr 4s linear forwards; /* ✨ 改為 4s 以展示重力感物理動畫 */
         }
 
         .bg-train-container.rtl {
-          animation: trainRtl 3s linear forwards; /* ✨ 改為 3s */
+          animation: trainRtl 4s linear forwards; /* ✨ 改為 4s */
         }
 
         /* 
-          Keyframes: 模擬火車進站停靠的真實物理動作
-          - 0% ~ 40%: 快速駛入並流暢減速 (ease-out)
-          - 40% ~ 60%: 在月台中央完全靜止停靠 0.6 秒 (停靠期間進行資料 Swap)
-          - 60% ~ 100%: 從靜止狀態平滑加速駛離 (ease-in)
+          Keyframes: 模擬火車進站停靠的真實物理動作 (高慣性)
+          - 0% ~ 40%: 進站減速期 (1.6s) - 使用高平滑度 ease-out (0.25, 1, 0.5, 1)
+          - 40% ~ 60%: 月台停靠期 (0.8s) - 完全靜止，進行資料 Swap
+          - 60% ~ 100%: 離站加速期 (1.6s) - 使用高慣性/慢起步 ease-in (0.5, 0, 0.75, 0)
         */
         @keyframes trainLtr {
           0% { 
             transform: translateX(-100%); 
-            animation-timing-function: ease-out;
+            animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); /* ✨ 超滑順漸慢煞車 */
           }
           40% { 
             transform: translateX(0%); 
@@ -139,7 +139,7 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           }
           60% { 
             transform: translateX(0%); 
-            animation-timing-function: ease-in;
+            animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); /* ✨ 重力感慢速起步 */
           }
           100% { 
             transform: translateX(100%); 
@@ -149,7 +149,7 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
         @keyframes trainRtl {
           0% { 
             transform: translateX(100%) scaleX(-1); 
-            animation-timing-function: ease-out;
+            animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); /* ✨ 超滑順漸慢煞車 */
           }
           40% { 
             transform: translateX(0%) scaleX(-1); 
@@ -157,7 +157,7 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           }
           60% { 
             transform: translateX(0%) scaleX(-1); 
-            animation-timing-function: ease-in;
+            animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); /* ✨ 重力感慢速起步 */
           }
           100% { 
             transform: translateX(-100%) scaleX(-1); 
