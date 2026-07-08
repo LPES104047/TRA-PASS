@@ -169,7 +169,8 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         }
         .theme2-root .card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: rgba(27,59,111,0.2); }
         .theme2-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-        .theme2-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 18px); color: #1B3B6F; display: flex; align-items: center; gap: 4px; font-weight: bold; white-space: nowrap; }
+        .theme2-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 18px); color: #1B3B6F; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-weight: bold; white-space: normal; }
+        .theme2-root .card-header h3 > span { white-space: nowrap; display: inline-flex; align-items: baseline; }
         .theme2-root .card-header .type { font-size: 11px; background: rgba(27,59,111,0.1); padding: 4px 8px; border-radius: 4px; color: #1B3B6F; font-weight: bold; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
         .theme2-root .card-body { display: flex; justify-content: space-between; font-size: 13px; color: #555; }
         .theme2-root .arr-time { font-weight: bold; color: #1B3B6F; }

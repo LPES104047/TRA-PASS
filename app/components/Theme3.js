@@ -137,7 +137,8 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         }
         
         .theme3-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-        .theme3-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 24px); font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .theme3-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 24px); font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; white-space: normal; }
+        .theme3-root .card-header h3 > span { white-space: nowrap; display: inline-flex; align-items: baseline; }
         .theme3-root .card-header .type { font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
         
         .theme3-root .card-body { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,0.7); }
