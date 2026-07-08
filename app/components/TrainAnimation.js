@@ -5,7 +5,6 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
 
   const renderPassengers = (pos) => {
     const passengers = [];
-    // Deterministic hash based on position to keep layouts consistent
     const hash = Math.abs(pos) % 4;
 
     if (hash === 1 || hash === 3) {
@@ -44,17 +43,28 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
       doors.forEach((pos, idx) => {
         details.push(
           <g key={`door-${x}-${idx}`}>
-            {/* Door pocket/frame */}
-            <rect x={pos} y={75} width={34} height={112} fill="#7F8C8D" rx={2} />
-            {/* Left and right glass panes */}
-            <rect x={pos + 3} y={83} width={11} height={52} fill="#1A1A1A" rx={2} />
-            <path d={`M ${pos + 3},85 L ${pos + 10},85 L ${pos + 3},110 Z`} fill="rgba(255,255,255,0.12)" />
-            <rect x={pos + 20} y={83} width={11} height={52} fill="#1A1A1A" rx={2} />
-            <path d={`M ${pos + 20},85 L ${pos + 27},85 L ${pos + 20},110 Z`} fill="rgba(255,255,255,0.12)" />
-            {/* Center seam */}
-            <line x1={pos + 17} y1={75} x2={pos + 17} y2={187} stroke="#333" strokeWidth={1} />
+            {/* Door portal background (warm glow inside) */}
+            <rect x={pos + 2} y={77} width={30} height={110} fill="url(#windowGlow)" rx={1} />
+            
+            {/* Left Sliding Leaf Group */}
+            <g className="left-door-leaf">
+              <rect x={pos + 2} y={77} width={15} height={110} fill="#B0BEC5" stroke="#455A64" strokeWidth="0.5" rx={1} />
+              <rect x={pos + 5} y={85} width={9} height={45} fill="#1A1A1A" rx={1} />
+              <path d={`M ${pos + 5},87 L ${pos + 12},87 L ${pos + 5},108 Z`} fill="rgba(255,255,255,0.12)" />
+            </g>
+
+            {/* Right Sliding Leaf Group */}
+            <g className="right-door-leaf">
+              <rect x={pos + 17} y={77} width={15} height={110} fill="#B0BEC5" stroke="#455A64" strokeWidth="0.5" rx={1} />
+              <rect x={pos + 20} y={85} width={9} height={45} fill="#1A1A1A" rx={1} />
+              <path d={`M ${pos + 20},87 L ${pos + 27},87 L ${pos + 20},108 Z`} fill="rgba(255,255,255,0.12)" />
+            </g>
+
+            {/* Outer Door Frame border (fixed, doesn't move) */}
+            <rect x={pos + 1} y={76} width={32} height={112} fill="none" stroke="#37474F" strokeWidth="1.5" rx={2} />
+            
             {/* Door warning indicator light above the door */}
-            <circle cx={pos + 17} cy={70} r={2} fill="#FFD700" />
+            <circle className="door-indicator" cx={pos + 17} cy={70} r={2.5} />
           </g>
         );
       });
@@ -120,6 +130,16 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
       );
     });
     return wheels;
+  };
+
+  const generateSleepers = () => {
+    const sleepers = [];
+    for (let x = -1500; x < 1600; x += 40) {
+      sleepers.push(
+        <rect key={`sleeper-${x}`} x={x - 4} y={205} width={8} height={5} fill="#3A3A3A" rx={1} />
+      );
+    }
+    return sleepers;
   };
 
   return (
@@ -233,6 +253,51 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
           100% { transform: translateY(0px); }
         }
 
+        /* ✨ 車門滑動開關動畫 (左葉) */
+        .left-door-leaf {
+          animation: leftDoorSlide 3s linear forwards;
+          will-change: transform;
+        }
+
+        @keyframes leftDoorSlide {
+          0% { transform: translateX(0px); }
+          40% { transform: translateX(0px); }
+          43% { transform: translateX(-9px); } /* 快速滑動開門 */
+          57% { transform: translateX(-9px); } /* 保持開門狀態 */
+          60% { transform: translateX(0px); }  /* 關門 */
+          100% { transform: translateX(0px); }
+        }
+
+        /* ✨ 車門滑動開關動畫 (右葉) */
+        .right-door-leaf {
+          animation: rightDoorSlide 3s linear forwards;
+          will-change: transform;
+        }
+
+        @keyframes rightDoorSlide {
+          0% { transform: translateX(0px); }
+          40% { transform: translateX(0px); }
+          43% { transform: translateX(9px); }  /* 快速滑動開門 */
+          57% { transform: translateX(9px); }  /* 保持開門狀態 */
+          60% { transform: translateX(0px); }  /* 關門 */
+          100% { transform: translateX(0px); }
+        }
+
+        /* ✨ 車門警示燈動畫：開關門期間閃爍紅色，平常關閉 */
+        .door-indicator {
+          animation: indicatorColor 3s linear forwards;
+        }
+
+        @keyframes indicatorColor {
+          0% { fill: #555; }
+          39% { fill: #555; }
+          40% { fill: #FF3B30; }  /* 門開始開啟，警示燈亮紅燈 */
+          57% { fill: #FF3B30; }
+          60% { fill: #FF3B30; }  /* 門完全關閉 */
+          61% { fill: #555; }
+          100% { fill: #555; }
+        }
+
         .svg-emu900 {
           width: 100%;
           height: 100%;
@@ -268,6 +333,9 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
                 </linearGradient>
               </defs>
 
+              {/* Static Train Sleepers (鐵軌枕木) */}
+              {generateSleepers()}
+
               {/* Static Iron Rail Track (鋼軌) */}
               <rect x="-1500" y="204" width="3100" height="4" fill="#555" />
               <rect x="-1500" y="202" width="3100" height="2" fill="#BDC3C7" />
@@ -294,6 +362,11 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
               {/* Train body with commuter-style blunt nose */}
               <path d="M -1500,50 L 1440,50 C 1500,50 1530,70 1535,110 C 1540,140 1530,185 1510,190 L -1500,190 Z" fill="url(#emuBody)" />
               
+              {/* Metallic body light reflection (太陽光影反射) */}
+              <rect x="-1500" y="50" width="2940" height="15" fill="rgba(255,255,255,0.12)" />
+              {/* Metallic body bottom shadow (車底陰影) */}
+              <rect x="-1500" y="175" width="2920" height="15" fill="rgba(0,0,0,0.08)" />
+
               {/* Top green roofline stripe */}
               <rect x="-1500" y="58" width="2920" height="4" fill="#00A859" />
 
@@ -308,6 +381,12 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
 
               {/* Driver visor windshield mask */}
               <path d="M 1380,75 L 1440,75 C 1490,75 1518,90 1523,115 C 1528,135 1518,158 1495,163 L 1395,160 Z" fill="#1A1A1A" />
+
+              {/* Driver Silhouette & Glowing Dashboard Screen inside driver cab */}
+              <circle cx="1400" cy="115" r="4.5" fill="#333" />
+              <path d="M 1393,130 L 1393,122 C 1393,119 1407,119 1407,122 L 1407,130 Z" fill="#333" />
+              <rect x="1410" y="125" width="6" height="4" fill="#00F0FF" opacity="0.85" />
+              <circle cx="1413" cy="127" r="8" fill="rgba(0,240,255,0.2)" />
 
               {/* Neon green smiley frame around driver shield */}
               <path d="M 1420,75 C 1480,75 1510,90 1518,115 C 1523,135 1513,158 1490,163" fill="none" stroke="#00FF66" strokeWidth="4.5" strokeLinecap="round" />
