@@ -62,13 +62,25 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme2-root .selector-box { background: #FFFFFF; border-radius: 20px; box-shadow: 0 10px 30px rgba(27, 59, 111, 0.08); display: flex; align-items: center; width: 100%; max-width: 500px; position: relative; z-index: 200; padding: 0; height: 70px; margin-bottom: 30px; border: 1px solid rgba(27, 59, 111, 0.05); }
         .theme2-root .selector-box::after { content: ""; position: absolute; left: 50%; top: 20%; bottom: 20%; width: 1px; background: #E2E8F0; z-index: 1; }
         
-        .theme2-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 20px; position: relative; border-radius: 20px; transition: background 0.2s; cursor: pointer; }
+        .theme2-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; position: relative; transition: background 0.2s; cursor: pointer; }
+        .theme2-root #originContainer { 
+            border-top-left-radius: 20px; border-bottom-left-radius: 20px; 
+            border-top-right-radius: 0; border-bottom-right-radius: 0; 
+            padding: 0 30px 0 20px; 
+        }
+        .theme2-root #destContainer { 
+            border-top-right-radius: 20px; border-bottom-right-radius: 20px; 
+            border-top-left-radius: 0; border-bottom-left-radius: 0; 
+            padding: 0 20px 0 30px; 
+        }
         .theme2-root .custom-select:hover { background: #F8FAFC; }
         .theme2-root #originContainer::before { content: "出發 Origin"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
         .theme2-root #destContainer::before { content: "抵達 Destination"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
         .theme2-root .select-trigger { font-size: 18px; font-weight: 800; color: #1B3B6F; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; }
         
-        .theme2-root .select-options { position: absolute; top: 100%; left: 0; width: 100%; background: #FFFFFF; border: 1px solid #E0E5EC; border-radius: 12px; margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 10px; }
+        .theme2-root .select-options { position: absolute; top: 100%; background: #FFFFFF; border: 1px solid #E0E5EC; border-radius: 12px; margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 10px; min-width: 300px; }
+        .theme2-root #originContainer .select-options { left: 0; }
+        .theme2-root #destContainer .select-options { right: 0; left: auto; }
         .theme2-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .theme2-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: background 0.2s; background: #F2F4F8; border: none; color: #1B3B6F; font-weight: 500; }
         .theme2-root .option-item:hover { background: #E0E5EC; }
@@ -151,7 +163,9 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme2-root .card {
             border-radius: 12px;
             position: relative;
-            overflow: hidden; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease; 
+            overflow: hidden; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); 
+            padding: 15px 95px 15px 15px; /* Leave space on the right for 75px stub + 20px padding */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease; 
         }
         .theme2-root .card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: rgba(27,59,111,0.2); }
         .theme2-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
@@ -172,8 +186,27 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         }
 
         .theme2-root .card::after {
-            content: ''; position: absolute; top: 0; bottom: 0; right: 70px;
+            content: ''; position: absolute; top: 0; bottom: 0; right: 75px;
             border-left: 2px dashed rgba(0,0,0,0.1);
+        }
+        .theme2-root .ticket-stub-content {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1B3B6F;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            opacity: 0.2;
+            z-index: 2;
+            pointer-events: none;
         }
 
         /* Desktop Overrides */
@@ -193,7 +226,9 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             .theme2-root .dashboard::before { left: 65px; width: 4px; } /* Center: 67px */
             .theme2-root .train-item::before { left: 56px; width: 18px; height: 18px; border-width: 2px; } /* Total width: 22px, Center: 67px */
             
-            .theme2-root .card { padding: 25px 35px; }
+            .theme2-root .card { padding: 25px 155px 25px 35px; } /* Leave space for 120px stub + 35px padding */
+            .theme2-root .card::after { right: 120px; }
+            .theme2-root .ticket-stub-content { width: 120px; font-size: 13px; letter-spacing: 4px; }
             .theme2-root .card-header h3 { font-size: 32px; }
             .theme2-root .card-body { font-size: 16px; }
             .theme2-root .countdown-text { font-size: 16px; margin-top: 15px; }
@@ -203,7 +238,8 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         @media (max-width: 480px) {
             .theme2-root .selector-box { flex-direction: column; height: auto; padding: 10px 0; border-radius: 16px; }
             .theme2-root .selector-box::after { display: none; }
-            .theme2-root .custom-select { width: 100%; padding: 15px 30px; align-items: center; }
+            .theme2-root #originContainer, .theme2-root #destContainer { border-radius: 16px; padding: 15px 30px; }
+            .theme2-root .custom-select { width: 100%; align-items: center; }
             .theme2-root #originContainer::before, .theme2-root #destContainer::before { text-align: center; }
             .theme2-root .select-trigger { justify-content: center; text-align: center; gap: 8px; }
             .theme2-root .swap-btn { position: relative; left: auto; top: auto; transform: none; margin: -10px auto; border: 4px solid #FFFFFF; }
@@ -216,7 +252,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             .theme2-root .dashboard::before { left: 52px; width: 2px; } /* Center: 53px */
             .theme2-root .train-item::before { left: 46px; width: 10px; height: 10px; border-width: 2px; } /* Total width: 14px, Center: 53px */
             
-            .theme2-root .card { padding: 15px 20px; }
+            .theme2-root .card { padding: 15px 95px 15px 15px; }
             .theme2-root .station-col { min-width: 0; }
             .theme2-root .station-en { font-size: 14px; word-break: break-word; line-height: 1.2; }
             .theme2-root .station-zh { font-size: 15px; margin-top: 2px; }
@@ -237,7 +273,11 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
                     ))}
                 </div>
             </div>
-            <button className="swap-btn" onClick={handleSwap}>⇆</button>
+            <button className="swap-btn" onClick={handleSwap}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                    <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                </svg>
+            </button>
             <div className="custom-select" id="destContainer" ref={destRef} onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
                 <div className="select-trigger">{dest} <span style={{ fontSize: '0.6em', opacity: 0.6 }}>▼</span></div>
                 <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
@@ -290,6 +330,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
                       <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
                           <div className="time-label">{t.depTime}</div>
                           <div className="card" style={{borderLeft: `6px solid ${dotColor}`}}>
+                              <div className="ticket-stub-content">TRA PASS</div>
                               <div className="card-header">
                                   <h3>
                                       <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 

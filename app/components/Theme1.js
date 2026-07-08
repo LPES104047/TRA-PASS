@@ -89,8 +89,16 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme1-root .option-item:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
         .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
         
-        .theme1-root .swap-btn { background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin-bottom: 2px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; font-size: 20px; font-weight: bold; }
-        .theme1-root .swap-btn:hover { transform: scale(1.1) rotate(180deg); }
+        .theme1-root .swap-btn { 
+            background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; 
+            width: 42px; height: 42px; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; 
+            flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            transition: transform 0.2s;
+            align-self: center;
+            transform: translateY(10px);
+        }
+        .theme1-root .swap-btn:hover { transform: translateY(10px) scale(1.1) rotate(180deg); }
         
         .theme1-root .next-train-card { text-align: center; margin-bottom: 45px; margin-top: 10px; }
         .theme1-root .countdown { font-size: 80px; font-weight: 800; line-height: 0.95; margin: 15px 0; color: #FFFFFF; text-shadow: 0 0 25px rgba(255, 255, 255, 0.25); font-variant-numeric: tabular-nums; }
@@ -159,7 +167,11 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                         </div>
                     </div>
                 </div>
-                <button className="swap-btn" onClick={handleSwap}>⇅</button>
+                <button className="swap-btn" onClick={handleSwap}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
+                        <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8v12M17 20l4-4M17 20l-4-4"/>
+                    </svg>
+                </button>
                 <div className="select-group" ref={destRef}>
                     <label>目的地 Destination</label>
                     <div className="custom-select" onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>

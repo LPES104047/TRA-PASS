@@ -52,19 +52,31 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme3-root .selector-box { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); display: flex; align-items: center; width: 100%; max-width: 500px; position: relative; z-index: 200; padding: 0; height: 70px; margin-bottom: 30px; }
         .theme3-root .selector-box::after { content: ""; position: absolute; left: 50%; top: 25%; bottom: 25%; width: 1px; background: rgba(255, 255, 255, 0.1); z-index: 1; }
         
-        .theme3-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 20px; position: relative; border-radius: 16px; transition: background 0.2s; cursor: pointer; }
+        .theme3-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; position: relative; transition: background 0.2s; cursor: pointer; }
+        .theme3-root #originContainer { 
+            border-top-left-radius: 16px; border-bottom-left-radius: 16px; 
+            border-top-right-radius: 0; border-bottom-right-radius: 0; 
+            padding: 0 30px 0 20px; 
+        }
+        .theme3-root #destContainer { 
+            border-top-right-radius: 16px; border-bottom-right-radius: 16px; 
+            border-top-left-radius: 0; border-bottom-left-radius: 0; 
+            padding: 0 20px 0 30px; 
+        }
         .theme3-root .custom-select:hover { background: rgba(255, 255, 255, 0.05); }
         .theme3-root #originContainer::before { content: "DEPARTURE"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
         .theme3-root #destContainer::before { content: "ARRIVAL"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
         .theme3-root .select-trigger { font-size: 18px; font-weight: 700; color: #F8FAFC; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; border: none; background: transparent; padding: 0; }
         
         .theme3-root .select-options {
-            position: absolute; top: calc(100% + 5px); left: 15px; right: 15px;
+            position: absolute; top: calc(100% + 5px);
             background: rgba(30, 15, 60, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
             max-height: 250px; overflow-y: auto; display: none; z-index: 300;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(20px); padding: 10px;
             min-width: 300px; max-width: 100vw;
         }
+        .theme3-root #originContainer .select-options { left: 15px; }
+        .theme3-root #destContainer .select-options { right: 15px; left: auto; }
         .theme3-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .theme3-root .option-item { padding: 10px 5px; text-align: center; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 0.2s; background: rgba(255,255,255,0.05); color: #fff; }
         .theme3-root .option-item:hover { background: rgba(255,255,255,0.1); }
@@ -145,7 +157,8 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
         @media (min-width: 768px) {
             .theme3-root h1 { font-size: 24px; letter-spacing: 4px; margin-bottom: 30px; }
             .theme3-root .selector-box { max-width: 650px; height: 90px; margin: 0 auto 40px auto; }
-            .theme3-root .custom-select { padding: 0 40px; }
+             .theme3-root #originContainer { padding: 0 50px 0 40px; }
+             .theme3-root #destContainer { padding: 0 40px 0 50px; }
             .theme3-root #originContainer::before, .theme3-root #destContainer::before { font-size: 11px; margin-bottom: 4px; }
             .theme3-root .select-trigger { font-size: 24px; }
             .theme3-root .swap-btn { width: 48px; height: 48px; font-size: 20px; }
@@ -166,7 +179,11 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
                     ))}
                 </div>
             </div>
-            <button className="swap-btn" onClick={handleSwap}>⇆</button>
+            <button className="swap-btn" onClick={handleSwap}>
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                     <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                 </svg>
+             </button>
             <div className="custom-select" id="destContainer" ref={destRef} onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
                 <div className="select-trigger">{dest} <span style={{ fontSize: '0.6em', opacity: 0.6, color: '#38BDF8' }}>▼</span></div>
                 <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
