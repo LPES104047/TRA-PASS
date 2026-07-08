@@ -112,6 +112,9 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
             width: 4px; background: linear-gradient(180deg, #00F0FF 0%, #FF00E4 100%);
             border-radius: 2px; z-index: 1; box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
         }
+        .theme3-root .dashboard.empty::before {
+            display: none;
+        }
         .theme3-root .train-item {
             position: relative; margin-bottom: 20px; padding-left: 70px;
         }
@@ -259,7 +262,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
           </div>
         </div>
 
-        <div className="dashboard">
+        <div className={`dashboard ${validTrains.length === 0 ? 'empty' : ''}`}>
           {validTrains.length === 0 ? (
             <div className="empty-state-card" style={{
               background: 'rgba(17, 8, 38, 0.1)',

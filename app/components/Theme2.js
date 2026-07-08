@@ -374,6 +374,14 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             </div>
         </div>
 
+        {/* 📅 Date Toggle Buttons */}
+        <div className="date-toggle-container">
+          <div className="date-toggle">
+            <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+            <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+          </div>
+        </div>
+
         <div className="ticket">
             <div className="ticket-header">
                 <div className="top-row">
@@ -395,13 +403,6 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
                 <div className="punched-line"></div>
             </div>
             
-            {/* 📅 Date Toggle Buttons */}
-            <div className="date-toggle-container">
-              <div className="date-toggle">
-                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
-                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
-              </div>
-            </div>
 
             <div className="ticket-body">
                 <div className="dashboard">

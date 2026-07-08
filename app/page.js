@@ -248,7 +248,7 @@ export default function Home() {
       {theme === 2 && <Theme2 {...props} />}
       {theme === 3 && <Theme3 {...props} />}
       <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
-      <MaintenanceDepot show={theme !== 1 && validTrains.length === 0} />
+      <MaintenanceDepot show={validTrains.length === 0} />
 
       {activeTrain && (
         <TrainJourneyModal
