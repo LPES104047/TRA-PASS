@@ -35,6 +35,9 @@ async function getTdxToken() {
   }
 }
 
+// 記憶體快取，防止使用者狂按 F5 把額度刷爆
+let apiCache = {}; 
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('origin');
@@ -44,6 +47,13 @@ export async function GET(request) {
   }
 
   try {
+    // 檢查記憶體快取：如果距離上次抓取同一站的資料不到 10 秒，直接回傳快取資料
+    const nowMs = Date.now();
+    if (apiCache[origin] && (nowMs - apiCache[origin].timestamp < 10000)) {
+      console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
+      return NextResponse.json({ data: apiCache[origin].data });
+    }
+
     const token = await getTdxToken();
     
     // 如果沒有 Token (沒設定金鑰)，回傳空物件讓前端自動降級
@@ -53,22 +63,12 @@ export async function GET(request) {
 
     // 呼叫 TDX 即時看板 API，過濾出該出發站的資料
     const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$filter=StationName/Zh_tw eq '${encodeURIComponent(origin)}'&$format=JSON`;
-    
-    // 抓取當下的 UTC 時間並換算為台灣時間 (UTC+8)
-    const now = new Date();
-    const taiwanHour = (now.getUTCHours() + 8) % 24;
-
-    let revalidateSeconds = 30; // 白天時段 30 秒快取
-    if (taiwanHour >= 23 || taiwanHour < 5) {
-      revalidateSeconds = 300; // 半夜時段 5 分鐘快取
-    }
 
     const res = await fetch(tdxUrl, {
       headers: {
         'Authorization': `Bearer ${token}`
       },
-      // 動態設定快取秒數
-      next: { revalidate: revalidateSeconds }
+      cache: 'no-store'
     });
 
     if (!res.ok) {
@@ -85,6 +85,13 @@ export async function GET(request) {
       });
     }
 
+    // 更新記憶體快取
+    apiCache[origin] = {
+      data: delayMap,
+      timestamp: nowMs
+    };
+
+    console.log(`[TDX Fetch] Successfully fetched live data for ${origin}`);
     return NextResponse.json({ data: delayMap });
 
   } catch (error) {

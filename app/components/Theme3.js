@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme3({ origin, setOrigin, dest, setDest, allStations, validTrains, currentMins }) {
+export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -19,11 +19,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSwap = () => {
-    const t = origin;
-    setOrigin(dest);
-    setDest(t);
-  };
+
 
   const getDotColor = (type) => {
     if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return '#FF0076';
@@ -31,12 +27,17 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
     return '#00F0FF';
   };
 
+  const formatTime = (mins) => {
+    let h = Math.floor(mins / 60) % 24;
+    let m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
   return (
     <>
       <style>{`
         .theme3-root {
-          background: linear-gradient(135deg, #1A0B2E, #3B1B54, #120822);
-          background-attachment: fixed;
+          background: transparent;
           min-height: 100vh;
           display: flex;
           flex-direction: column;
@@ -56,7 +57,6 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
         .theme3-root #originContainer::before { content: "DEPARTURE"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
         .theme3-root #destContainer::before { content: "ARRIVAL"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
         .theme3-root .select-trigger { font-size: 18px; font-weight: 700; color: #F8FAFC; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; border: none; background: transparent; padding: 0; }
-        .theme3-root .select-trigger::after { content: ""; display: inline-block; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #38BDF8; margin-left: 5px; opacity: 0.8; }
         
         .theme3-root .select-options {
             position: absolute; top: calc(100% + 5px); left: 15px; right: 15px;
@@ -124,9 +124,9 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
             content: ''; position: absolute; top: 0; left: 15px; width: 30px; height: 2px; background: var(--dot-color, #00F0FF);
         }
         
-        .theme3-root .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-        .theme3-root .card-header h3 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
-        .theme3-root .card-header .type { font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; }
+        .theme3-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .theme3-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 24px); font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+        .theme3-root .card-header .type { font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
         
         .theme3-root .card-body { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,0.7); }
         .theme3-root .arr-time { color: #00FF87; font-weight: 600; }
@@ -148,7 +148,6 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
             .theme3-root .custom-select { padding: 0 40px; }
             .theme3-root #originContainer::before, .theme3-root #destContainer::before { font-size: 11px; margin-bottom: 4px; }
             .theme3-root .select-trigger { font-size: 24px; }
-            .theme3-root .select-trigger::after { border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #38BDF8; margin-left: 10px; }
             .theme3-root .swap-btn { width: 48px; height: 48px; font-size: 20px; }
             .theme3-root .dashboard { max-width: 650px; }
         }
@@ -158,7 +157,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
         <h1>儀表板風格時刻表</h1>
         <div className="selector-box">
             <div className="custom-select" id="originContainer" ref={originRef} onClick={() => { setIsOriginOpen(!isOriginOpen); setIsDestOpen(false); }}>
-                <div className="select-trigger">{origin}</div>
+                <div className="select-trigger">{origin} <span style={{ fontSize: '0.6em', opacity: 0.6, color: '#38BDF8' }}>▼</span></div>
                 <div className={`select-options ${isOriginOpen ? 'open' : ''}`}>
                     {allStations.map(s => (
                         <div key={s} className={`option-item ${s === origin ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setOrigin(s); setIsOriginOpen(false); }}>
@@ -169,7 +168,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
             </div>
             <button className="swap-btn" onClick={handleSwap}>⇆</button>
             <div className="custom-select" id="destContainer" ref={destRef} onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
-                <div className="select-trigger">{dest}</div>
+                <div className="select-trigger">{dest} <span style={{ fontSize: '0.6em', opacity: 0.6, color: '#38BDF8' }}>▼</span></div>
                 <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
                     {allStations.map(s => (
                         <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
@@ -182,7 +181,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
 
         <div className="dashboard">
           {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
-          {validTrains.map((t, idx) => {
+          {validTrains.map((t) => {
             const diffMins = t.actualDepMins - currentMins;
             const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
             
@@ -192,22 +191,23 @@ export default function Theme3({ origin, setOrigin, dest, setDest, allStations, 
             if (diff < 0) diff += 24 * 60;
             let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
             const dotColor = getDotColor(t.type);
+            let actualArrMins = (ah * 60 + am) + t.delay;
 
             return (
-              <div key={idx} className="train-item" style={{"--dot-color": dotColor}}>
+              <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
                   <div className="time-label">{t.depTime}</div>
                   <div className="card" style={{borderLeft: `4px solid ${dotColor}`}}>
                       <div className="card-header">
                           <h3>
-                              <span style={{display:'inline-block', width:'60px'}}>{t.depTime}</span> 
-                              <span style={{color:'rgba(0,240,255,0.6)', fontWeight:'300'}}>⟶</span>
+                              <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.5)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 
+                              <span style={{color:'rgba(0,240,255,0.6)', fontWeight:'300', position: 'relative', top: '-6px'}}>⟶</span>
+                              <span style={{color: t.delay > 0 ? '#FF6B6B' : '#00FF87'}}>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.5)'}}>{t.arrTime}</del><span>{formatTime(actualArrMins)}</span></> : t.arrTime}</span>
                           </h3>
                           <div className="type" style={{color: dotColor}}>{t.type}</div>
                       </div>
                       <div className="card-body">
                           <div style={{display:'flex', alignItems:'center'}}>{t.number} 往 {t.route.split('－')[1] || t.route} <span style={{marginLeft: '8px', background: 'rgba(255,255,255,0.1)', padding: '3px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'}}>車程 {dur}</span></div>
                           <div>
-                            <span className="arr-time">{t.arrTime}</span> 抵達
                             {t.delay > 0 && <span className="delay-badge">晚 {t.delay} 分</span>}
                           </div>
                       </div>

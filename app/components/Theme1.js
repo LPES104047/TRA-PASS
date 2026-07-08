@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme1({ origin, setOrigin, dest, setDest, allStations, validTrains, currentMins }) {
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -19,11 +19,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSwap = () => {
-    const t = origin;
-    setOrigin(dest);
-    setDest(t);
-  };
+
 
   const nextTrain = validTrains[0];
   let diffMins = 0;
@@ -35,6 +31,12 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
     if(type.includes('區間')) return '';
     if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return 'fast';
     return 'express';
+  };
+
+  const formatTime = (mins) => {
+    let h = Math.floor(mins / 60) % 24;
+    let m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
   return (
@@ -50,8 +52,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
           --train-local: #4FACFE;
           --train-fast: #FFD700;
           --train-express: #FF6B6B;
-          background: linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%); 
-          background-attachment: fixed; 
+          background: transparent; 
           color: var(--text-main); 
           min-height: 100vh; 
           display: flex; 
@@ -91,11 +92,11 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
         .theme1-root .swap-btn { background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin-bottom: 2px; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; font-size: 20px; font-weight: bold; }
         .theme1-root .swap-btn:hover { transform: scale(1.1) rotate(180deg); }
         
-        .theme1-root .next-train-card { text-align: center; margin-bottom: 40px; }
-        .theme1-root .countdown { font-size: 72px; font-weight: 700; line-height: 1; margin: 5px 0; }
-        .theme1-root .countdown span { font-size: 20px; color: var(--text-muted); font-weight: 400; }
-        .theme1-root .subtitle { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
-        .theme1-root .dest-highlight { color: var(--accent); font-weight: 600; }
+        .theme1-root .next-train-card { text-align: center; margin-bottom: 45px; margin-top: 10px; }
+        .theme1-root .countdown { font-size: 80px; font-weight: 800; line-height: 0.95; margin: 15px 0; color: #FFFFFF; text-shadow: 0 0 25px rgba(255, 255, 255, 0.25); font-variant-numeric: tabular-nums; }
+        .theme1-root .countdown span { font-size: 24px; color: var(--accent); font-weight: 600; margin-left: 4px; text-shadow: none; text-transform: uppercase; }
+        .theme1-root .subtitle { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-weight: 500; }
+        .theme1-root .dest-highlight { color: #FFFFFF; font-weight: 700; background: rgba(255, 215, 0, 0.25); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.4); margin-left: 4px; }
         
         .theme1-root .schedule-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 500px; margin: 0 auto; }
         
@@ -135,8 +136,9 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
             .theme1-root .select-trigger { font-size: 18px; padding: 15px 20px; }
             .theme1-root .train-details p { font-size: 16px; margin-top: 8px; justify-content: flex-start; }
             .theme1-root .train-time span { font-size: 14px; margin-top: 8px; justify-content: flex-end; }
-            .theme1-root .countdown { font-size: 50px; }
-        }
+            .theme1-root .countdown { font-size: 110px; }
+            .theme1-root .countdown span { font-size: 32px; }
+            .theme1-root .subtitle { font-size: 15px; }
       `}</style>
       
       <div className="theme1-root">
@@ -188,7 +190,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
 
             <div className="schedule-list">
               {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
-              {validTrains.map((t, idx) => {
+              {validTrains.map((t) => {
                 let [dh, dm] = t.depTime.split(':').map(Number);
                 let [ah, am] = t.arrTime.split(':').map(Number);
                 let diff = (ah * 60 + am) - (dh * 60 + dm);
@@ -196,14 +198,15 @@ export default function Theme1({ origin, setOrigin, dest, setDest, allStations, 
                 let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
                 let waitDiff = t.actualDepMins - currentMins;
                 let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
+                let actualArrMins = (ah * 60 + am) + t.delay;
                 
                 return (
-                  <div key={idx} className={`train-card ${getTrainDotClass(t.type)}`}>
+                  <div key={t.number} className={`train-card ${getTrainDotClass(t.type)}`}>
                       <div className="train-details">
-                          <h3>{t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
-                          <p>{t.type} {t.number} <span className="duration-badge">車程 {dur}</span></p>
+                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
                       </div>
-                      <div className="train-time">{t.arrTime}<span>抵達 / {waitText} 後</span></div>
+                      <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
                   </div>
                 )
               })}

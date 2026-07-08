@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Theme1 from "./components/Theme1";
 import Theme2 from "./components/Theme2";
 import Theme3 from "./components/Theme3";
+import TrainAnimation from "./components/TrainAnimation";
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -10,21 +11,55 @@ export default function Home() {
   const [dest, setDest] = useState("基隆");
   const [theme, setTheme] = useState(1);
   const [liveData, setLiveData] = useState({});
+  const [animDirection, setAnimDirection] = useState('ltr');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [refreshCountdown, setRefreshCountdown] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // 初始化時讀取 LocalStorage
+  useEffect(() => {
+    const savedOrigin = localStorage.getItem("train_origin");
+    const savedDest = localStorage.getItem("train_dest");
+    const savedTheme = localStorage.getItem("train_theme");
+
+    if (savedOrigin) setOrigin(savedOrigin);
+    if (savedDest) setDest(savedDest);
+    if (savedTheme) setTheme(Number(savedTheme));
+    setIsLoaded(true);
+  }, []);
 
   useEffect(() => {
-    fetch("/data.json")
+    if (!isLoaded) return;
+    localStorage.setItem("train_theme", theme);
+
+    // Dynamically update body background to place it behind the TrainAnimation
+    if (theme === 1) {
+      document.body.style.background = 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else if (theme === 2) {
+      document.body.style.background = '#ebeff7';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else if (theme === 3) {
+      document.body.style.background = 'linear-gradient(135deg, #1A0B2E, #3B1B54, #120822)';
+      document.body.style.backgroundAttachment = 'fixed';
+    }
+  }, [theme, isLoaded]);
+
+  useEffect(() => {
+    fetch(`/data.json?v=${Date.now()}`)
       .then((res) => res.json())
       .then((d) => setData(d));
   }, []);
 
   useEffect(() => {
-    if (!origin) return;
+    if (!isLoaded || !origin) return;
     
-    let timerId;
+    let countdownInterval;
 
     const fetchLive = async () => {
+      setRefreshCountdown(null); // Show loading or wait state while fetching
       try {
-        const res = await fetch(`/api/trains?origin=${origin}`);
+        const res = await fetch(`/api/trains?origin=${origin}&_t=${Date.now()}`);
         const result = await res.json();
         if (result.data) {
           setLiveData(result.data);
@@ -33,26 +68,43 @@ export default function Home() {
         console.error("Live fetch error", e);
       }
 
-      // 動態計算下一次的抓取時間
+      // 動態計算下一次的抓取時間（與現實時鐘同步）
       const now = new Date();
       const currentHour = now.getHours();
+      const currentMins = now.getMinutes();
+      const currentSecs = now.getSeconds();
       
-      let delayMs;
-      // 23:00 到 04:59 之間，每 5 分鐘刷一次
+      let delaySeconds;
       if (currentHour >= 23 || currentHour < 5) {
-        delayMs = 5 * 60 * 1000;
+        // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
+        const totalSecs = currentMins * 60 + currentSecs;
+        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300; // +1 避免剛好在 0 秒時算出自己
+        delaySeconds = nextMarkSecs - totalSecs;
       } else {
-        // 白天時段，每 30 秒刷一次
-        delayMs = 30 * 1000;
+        // 白天：每分鐘的 00 秒與 30 秒觸發
+        delaySeconds = currentSecs < 30 ? 30 - currentSecs : 60 - currentSecs;
       }
       
-      timerId = setTimeout(fetchLive, delayMs);
+      setRefreshCountdown(delaySeconds);
+
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        setRefreshCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            fetchLive();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     };
 
-    // 第一次立刻執行
     fetchLive();
     
-    return () => clearTimeout(timerId);
+    return () => {
+      if (countdownInterval) clearInterval(countdownInterval);
+    };
   }, [origin]);
 
   if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
@@ -105,12 +157,74 @@ export default function Home() {
     });
   }
 
+  const triggerAnimation = (stateUpdateCallback, direction = 'ltr') => {
+    if (isAnimating) return; 
+    setAnimDirection(direction);
+    setIsAnimating(true);
+    // The continuous train takes 2.0s total.
+    // Update state at 1000ms (when train is exactly at the center).
+    setTimeout(() => {
+      stateUpdateCallback();
+    }, 1000);
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 2000);
+  };
+
+  const getDirectionAnim = (from, to) => {
+    if (!data) return 'ltr';
+    const nO = data.Northbound.stations.indexOf(from);
+    const nD = data.Northbound.stations.indexOf(to);
+    // 北上 (Northbound) -> LTR (由左至右), 南下 (Southbound) -> RTL (由右至左)
+    if (nO !== -1 && nD !== -1 && nO < nD) return 'ltr';
+    return 'rtl';
+  };
+
+  const handleOriginChange = (newOrigin) => {
+    if (newOrigin === origin) return;
+    setOrigin(newOrigin); // 立即更新，不觸發動畫
+    localStorage.setItem("train_origin", newOrigin);
+  };
+
+  const handleDestChange = (newDest) => {
+    if (newDest === dest) return;
+    const animDir = getDirectionAnim(origin, newDest);
+    triggerAnimation(() => {
+      setDest(newDest);
+      localStorage.setItem("train_dest", newDest);
+    }, animDir);
+  };
+
+  const handleSwap = () => {
+    if (origin === dest) return;
+    const animDir = getDirectionAnim(dest, origin);
+    triggerAnimation(() => {
+      const currentOrigin = origin;
+      const currentDest = dest;
+      setOrigin(currentDest);
+      setDest(currentOrigin);
+      localStorage.setItem("train_origin", currentDest);
+      localStorage.setItem("train_dest", currentOrigin);
+    }, animDir);
+  };
+
   const props = {
-    origin, setOrigin, dest, setDest, allStations, validTrains, currentMins
+    origin, setOrigin: handleOriginChange, 
+    dest, setDest: handleDestChange, 
+    handleSwap,
+    allStations, validTrains, currentMins
   };
 
   return (
     <>
+      <div style={{position: 'fixed', top: 10, left: 10, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.5)', padding: '5px 12px', borderRadius: '20px', color: '#00F2FE', fontSize: '12px', backdropFilter: 'blur(5px)', border: '1px solid rgba(0, 242, 254, 0.3)'}}>
+        <span style={{
+          display: 'inline-block', width: 8, height: 8, borderRadius: '50%', 
+          background: refreshCountdown === null ? '#FFD700' : '#00F2FE', 
+          boxShadow: `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#00F2FE'}`
+        }}></span>
+        {refreshCountdown === null ? '正在同步 TDX...' : `TDX 即時更新倒數 ${refreshCountdown}s`}
+      </div>
       <div style={{position: 'fixed', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: 5}}>
         <button onClick={() => setTheme(1)} style={{padding: '5px 10px', background: theme===1?'#00F2FE':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>極簡風</button>
         <button onClick={() => setTheme(2)} style={{padding: '5px 10px', background: theme===2?'#1B3B6F':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>車票風</button>
@@ -119,6 +233,7 @@ export default function Home() {
       {theme === 1 && <Theme1 {...props} />}
       {theme === 2 && <Theme2 {...props} />}
       {theme === 3 && <Theme3 {...props} />}
+      <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
     </>
   );
 }
