@@ -66,12 +66,14 @@
 ---
 
 ## 📂 核心檔案清單
-* `app/page.js`：首頁邏輯、資料串接、計時器與狀態管理。
+* `app/page.js`：首頁邏輯、資料串接、計時器與狀態管理，整合 `isTomorrow` 與 `activeTrain` 狀態。
 * `app/api/trains/route.js`：後端 API 路由，負責向 TDX 抓取即時資料並解析。
-* `app/components/Theme1.js`：主題一（霓虹風）卡片組件。
-* `app/components/Theme2.js`：主題二（票卡風）卡片組件。
-* `app/components/Theme3.js`：主題三（賽博風）卡片組件。
-* `app/components/TrainAnimation.js`：背景 EMU900 動態區間車組件。
+* `app/components/Theme1.js`：主題一（極簡風）卡片組件，整合今日/明日切換與機廠動畫。
+* `app/components/Theme2.js`：主題二（票卡風）卡片組件，整合「撕票根」物理抖動與滑落轉場特效。
+* `app/components/Theme3.js`：主題三（儀表板風）卡片組件，整合今日/明日切換與霓虹進度。
+* `app/components/TrainAnimation.js`：背景 EMU900 動態區間車組件，提供順暢的 4.0s 高慣性進站停靠動畫。
+* `app/components/TrainJourneyModal.js`：詳細行行車進度面板，展示垂直車站進度軸與實時火車 pulsing 發光圖示。
+* `app/components/MaintenanceDepot.js`：3D 質感多車軌（EMU3000/900/800）清洗與焊接保養整備機廠元件。
 * `public/data.json`：本機備用班表資料。
 
 ---
@@ -79,3 +81,4 @@
 ## 🎯 新助理接手提示
 當您在新的對話中啟動時，可以直接閱讀本文件 `HANDOVER.md`。
 目前程式碼處於極度健康且穩定的狀態，可在此基礎上直接進行新功能擴充或設計微調。
+我們剛完成「看明天車次」、「撕票根轉場」與「多車型動態整備廠」功能，下一步可繼續優化這三個功能或開發全新頁面模組。

@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
+import MaintenanceDepot from "./MaintenanceDepot";
 
-export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
+export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
+  const [tearingTrainNo, setTearingTrainNo] = useState(null);
+
+  const handleTicketClick = (t) => {
+    if (tearingTrainNo) return;
+    setTearingTrainNo(t.number);
+    setTimeout(() => {
+      onTrainSelect(t);
+      setTearingTrainNo(null);
+    }, 550);
+  };
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -210,6 +221,79 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
             pointer-events: none;
         }
 
+        /* 📅 Today/Tomorrow Toggle Badge */
+        .theme2-root .date-toggle-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 25px;
+          margin-top: 10px;
+        }
+
+        .theme2-root .date-toggle {
+          background: rgba(255, 255, 255, 0.8);
+          border: 1.5px solid #1B3B6F;
+          border-radius: 20px;
+          padding: 2px;
+          display: flex;
+          width: 200px;
+          box-shadow: 0 4px 12px rgba(27, 59, 111, 0.15);
+        }
+
+        .theme2-root .toggle-btn {
+          flex: 1;
+          border: none;
+          background: transparent;
+          color: #64748B;
+          padding: 6px 12px;
+          border-radius: 17px;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .theme2-root .toggle-btn.active {
+          background: #1B3B6F;
+          color: #FFFFFF;
+          box-shadow: 0 2px 6px rgba(27, 59, 111, 0.3);
+        }
+
+        /* 🎫 撕票根動畫 */
+        .theme2-root .card.tearing {
+          animation: ticketShake 0.5s ease-out;
+        }
+
+        .theme2-root .card.tearing::after {
+          opacity: 0;
+          transition: opacity 0.15s ease-out;
+        }
+
+        .theme2-root .card.tearing .ticket-stub-content {
+          animation: tearOffStub 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes ticketShake {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          20% { transform: scale(0.97) rotate(-1deg); }
+          40% { transform: scale(0.98) rotate(0.8deg); }
+          60% { transform: scale(0.99) rotate(-0.4deg); }
+        }
+
+        @keyframes tearOffStub {
+          0% {
+            transform: rotate(0deg) translate(0, 0);
+            opacity: 0.2;
+          }
+          20% {
+            transform: rotate(6deg) translate(5px, 15px);
+            opacity: 0.8;
+          }
+          100% {
+            transform: rotate(24deg) translate(40px, 180px);
+            opacity: 0;
+          }
+        }
+
         /* Desktop Overrides */
         @media (min-width: 768px) {
             .theme2-root .ticket { max-width: 650px; width: 100%; }
@@ -312,48 +396,70 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
                 <div className="punched-line"></div>
             </div>
             
+            {/* 📅 Date Toggle Buttons */}
+            <div className="date-toggle-container">
+              <div className="date-toggle">
+                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+              </div>
+            </div>
+
             <div className="ticket-body">
                 <div className="dashboard">
-                  {validTrains.length === 0 && <div style={{textAlign:'center', color:'#999', padding:'20px'}}>今日已無班次</div>}
-                  {validTrains.map((t) => {
-                    const diffMins = t.actualDepMins - currentMins;
-                    const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
-                    
-                    let [dh, dm] = t.depTime.split(':').map(Number);
-                    let [ah, am] = t.arrTime.split(':').map(Number);
-                    let diff = (ah * 60 + am) - (dh * 60 + dm);
-                    if (diff < 0) diff += 24 * 60;
-                    let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
-                    const dotColor = getDotColor(t.type);
-                    let actualArrMins = (ah * 60 + am) + t.delay;
+                  {validTrains.length === 0 ? (
+                    <MaintenanceDepot isTomorrow={isTomorrow} setIsTomorrow={setIsTomorrow} />
+                  ) : (
+                    validTrains.map((t) => {
+                      const diffMins = t.actualDepMins - currentMins;
+                      const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
+                      
+                      let [dh, dm] = t.depTime.split(':').map(Number);
+                      let [ah, am] = t.arrTime.split(':').map(Number);
+                      let diff = (ah * 60 + am) - (dh * 60 + dm);
+                      if (diff < 0) diff += 24 * 60;
+                      let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                      const dotColor = getDotColor(t.type);
+                      let actualArrMins = (ah * 60 + am) + t.delay;
+                      const isTearing = tearingTrainNo === t.number;
 
-                    return (
-                      <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
-                          <div className="time-label">{t.depTime}</div>
-                          <div className="card" style={{borderLeft: `6px solid ${dotColor}`}}>
-                              <div className="ticket-stub-content">TRA PASS</div>
-                              <div className="card-header">
-                                  <h3>
-                                      <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 
-                                      <span style={{color:'#888', fontSize:'16px', fontWeight: 'normal', position: 'relative', top: '-2px', margin: '0 4px'}}>⟶</span>
-                                      <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}</span>
-                                  </h3>
-                                  <div className="type" style={{color: dotColor, background: `${dotColor}15`}}>{t.type}</div>
-                              </div>
-                              <div className="card-body">
-                                  <div style={{display:'flex', alignItems:'center', zIndex: 5, position: 'relative'}}>{t.number} 往 {t.route.split('－')[1] || t.route} <span style={{marginLeft: '8px', background: 'rgba(0,0,0,0.05)', padding: '3px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'}}>車程 {dur}</span></div>
-                                  <div style={{zIndex: 5, position: 'relative'}}>
-                                    {t.delay > 0 && <span className="delay-badge">晚 {t.delay} 分</span>}
-                                  </div>
-                              </div>
-                              <div className="progress-track" style={{zIndex: 5, position: 'relative'}}>
-                                  <div className="progress-fill" style={{width: `${percent}%`, background: `linear-gradient(90deg, transparent, ${dotColor})`}}></div>
-                              </div>
-                              <div className="countdown-text" style={{color: dotColor, zIndex: 5, position: 'relative'}}>Departs in {diffMins} min</div>
-                          </div>
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div 
+                          key={t.number} 
+                          className="train-item" 
+                          style={{
+                            "--dot-color": dotColor,
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => handleTicketClick(t)}
+                        >
+                            <div className="time-label">{t.depTime}</div>
+                            <div className={`card ${isTearing ? 'tearing' : ''}`} style={{borderLeft: `6px solid ${dotColor}`}}>
+                                <div className="ticket-stub-content">TRA PASS</div>
+                                <div className="card-header">
+                                    <h3>
+                                        <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 
+                                        <span style={{color:'#888', fontSize:'16px', fontWeight: 'normal', position: 'relative', top: '-2px', margin: '0 4px'}}>⟶</span>
+                                        <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}</span>
+                                    </h3>
+                                    <div className="type" style={{color: dotColor, background: `${dotColor}15`}}>{t.type}</div>
+                                </div>
+                                <div className="card-body">
+                                    <div style={{display:'flex', alignItems:'center', zIndex: 5, position: 'relative'}}>{t.number} 往 {t.route.split('－')[1] || t.route} <span style={{marginLeft: '8px', background: 'rgba(0,0,0,0.05)', padding: '3px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'}}>車程 {dur}</span></div>
+                                    <div style={{zIndex: 5, position: 'relative'}}>
+                                      {t.delay > 0 && <span className="delay-badge">晚 {t.delay} 分</span>}
+                                    </div>
+                                </div>
+                                <div className="progress-track" style={{zIndex: 5, position: 'relative'}}>
+                                    <div className="progress-fill" style={{width: `${percent}%`, background: `linear-gradient(90deg, transparent, ${dotColor})`}}></div>
+                                </div>
+                                <div className="countdown-text" style={{color: dotColor, zIndex: 5, position: 'relative'}}>
+                                  {isTomorrow ? "明天車次" : `Departs in ${diffMins} min`}
+                                </div>
+                            </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
             </div>
             

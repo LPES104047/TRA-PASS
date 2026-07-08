@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import MaintenanceDepot from "./MaintenanceDepot";
 
-export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins }) {
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
@@ -133,6 +134,45 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
 
+        /* 📅 Today/Tomorrow Toggle Badge */
+        .theme1-root .date-toggle-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 25px;
+          margin-top: 10px;
+        }
+
+        .theme1-root .date-toggle {
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 20px;
+          padding: 3px;
+          display: flex;
+          width: 200px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme1-root .toggle-btn {
+          flex: 1;
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.7);
+          padding: 6px 12px;
+          border-radius: 17px;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .theme1-root .toggle-btn.active {
+          background: #ffffff;
+          color: #0B132B;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
         @media (min-width: 768px) {
             .theme1-root .container { max-width: 650px; padding: 40px; }
             .theme1-root .schedule-list { max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
@@ -187,7 +227,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 </div>
             </div>
 
-            {nextTrain ? (
+            {nextTrain && !isTomorrow ? (
               <div className="next-train-card">
                   <div className="subtitle">距離下一班車</div>
                   <div className="countdown">
@@ -200,28 +240,44 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
               </div>
             ) : null}
 
+            {/* 📅 Date Toggle Buttons */}
+            <div className="date-toggle-container">
+              <div className="date-toggle">
+                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+              </div>
+            </div>
+
             <div className="schedule-list">
-              {validTrains.length === 0 && <div className="empty-state">今日已無班次</div>}
-              {validTrains.map((t) => {
-                let [dh, dm] = t.depTime.split(':').map(Number);
-                let [ah, am] = t.arrTime.split(':').map(Number);
-                let diff = (ah * 60 + am) - (dh * 60 + dm);
-                if (diff < 0) diff += 24 * 60;
-                let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
-                let waitDiff = t.actualDepMins - currentMins;
-                let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
-                let actualArrMins = (ah * 60 + am) + t.delay;
-                
-                return (
-                  <div key={t.number} className={`train-card ${getTrainDotClass(t.type)}`}>
-                      <div className="train-details">
-                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
-                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
-                      </div>
-                      <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
-                  </div>
-                )
-              })}
+              {validTrains.length === 0 ? (
+                <MaintenanceDepot isTomorrow={isTomorrow} setIsTomorrow={setIsTomorrow} />
+              ) : (
+                validTrains.map((t) => {
+                  let [dh, dm] = t.depTime.split(':').map(Number);
+                  let [ah, am] = t.arrTime.split(':').map(Number);
+                  let diff = (ah * 60 + am) - (dh * 60 + dm);
+                  if (diff < 0) diff += 24 * 60;
+                  let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                  let waitDiff = t.actualDepMins - currentMins;
+                  let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
+                  let actualArrMins = (ah * 60 + am) + t.delay;
+                  
+                  return (
+                    <div 
+                      key={t.number} 
+                      className={`train-card ${getTrainDotClass(t.type)}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onTrainSelect && onTrainSelect(t)}
+                    >
+                        <div className="train-details">
+                            <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                            <p>{t.type} {t.number} <span className="duration-badge">{isTomorrow ? '明日發車' : `${waitText} 後發車`}</span></p>
+                        </div>
+                        <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
+                    </div>
+                  )
+                })
+              )}
             </div>
         </div>
       </div>

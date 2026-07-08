@@ -4,6 +4,7 @@ import Theme1 from "./components/Theme1";
 import Theme2 from "./components/Theme2";
 import Theme3 from "./components/Theme3";
 import TrainAnimation from "./components/TrainAnimation";
+import TrainJourneyModal from "./components/TrainJourneyModal";
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -15,6 +16,8 @@ export default function Home() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [refreshCountdown, setRefreshCountdown] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isTomorrow, setIsTomorrow] = useState(false);
+  const [activeTrain, setActiveTrain] = useState(null);
 
   // 初始化時讀取 LocalStorage
   useEffect(() => {
@@ -131,8 +134,8 @@ export default function Home() {
       const dTime = t.times[dirInfo.dIdx];
       if(oTime && dTime) {
         const [h, m] = oTime.split(':').map(Number);
-        // add live delay
-        let delay = liveData[t.number] || 0;
+        // 若為明天，即時誤點時間強制為 0 分
+        let delay = isTomorrow ? 0 : (liveData[t.number] || 0);
         let actualDepMins = h * 60 + m + delay;
         
         validTrains.push({ 
@@ -148,7 +151,8 @@ export default function Home() {
     
     validTrains.sort((a, b) => a.actualDepMins - b.actualDepMins);
     validTrains = validTrains.filter(t => {
-      if (t.actualDepMins < currentMins) return false;
+      // 若為明天，則不過濾「目前時間點之前發車」的列車
+      if (!isTomorrow && t.actualDepMins < currentMins) return false;
       let [dh, dm] = t.depTime.split(':').map(Number);
       let [ah, am] = t.arrTime.split(':').map(Number);
       let diff = (ah * 60 + am) - (dh * 60 + dm);
@@ -212,7 +216,9 @@ export default function Home() {
     origin, setOrigin: handleOriginChange, 
     dest, setDest: handleDestChange, 
     handleSwap,
-    allStations, validTrains, currentMins
+    allStations, validTrains, currentMins,
+    isTomorrow, setIsTomorrow,
+    onTrainSelect: setActiveTrain
   };
 
   return (
@@ -234,6 +240,19 @@ export default function Home() {
       {theme === 2 && <Theme2 {...props} />}
       {theme === 3 && <Theme3 {...props} />}
       <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
+
+      {activeTrain && (
+        <TrainJourneyModal
+          train={activeTrain}
+          onClose={() => setActiveTrain(null)}
+          stations={allStations}
+          dirInfo={dirInfo}
+          isTomorrow={isTomorrow}
+          origin={origin}
+          dest={dest}
+          theme={theme}
+        />
+      )}
     </>
   );
 }
