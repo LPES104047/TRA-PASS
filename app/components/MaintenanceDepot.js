@@ -6,23 +6,36 @@ export default function MaintenanceDepot({ show }) {
   return (
     <>
       <style>{`
+        /* Override body background when Depot is visible */
+        body {
+          background: #11111e !important;
+        }
+
         /* 🏭 背景機廠貨車庫結構 */
         .bg-depot-root {
           position: fixed;
-          bottom: 0;
+          top: 0;
           left: 0;
           width: 100vw;
-          height: 380px;
+          height: 100vh;
           pointer-events: none;
           z-index: -2; /* 處於卡片層與火車層下方 */
           overflow: hidden;
-          background: linear-gradient(to top, #11111e 75%, rgba(17,17,30,0) 100%);
+          background: #11111e;
           animation: depotFadeIn 0.5s ease-out forwards;
         }
 
+        .depot-svg-container {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 380px;
+        }
+
         @keyframes depotFadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         /* 🪚 電焊火花動畫 */
@@ -83,8 +96,9 @@ export default function MaintenanceDepot({ show }) {
       `}</style>
 
       <div className="bg-depot-root">
-        <svg width="100%" height="100%" viewBox="0 0 800 250" preserveAspectRatio="xMidYMax slice">
-          <defs>
+        <div className="depot-svg-container">
+          <svg width="100%" height="100%" viewBox="0 0 800 250" preserveAspectRatio="xMidYMax slice">
+            <defs>
             {/* Metal/steel textures for 3D gradient look */}
             <linearGradient id="emu3000Body" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#FFFFFF" />
@@ -267,6 +281,7 @@ export default function MaintenanceDepot({ show }) {
           {/* Hangar Floor Warning Stripe Borders (Yellow & Black stripes) */}
           <rect x="0" y="243" width="800" height="7" fill="url(#warningStripes)" />
         </svg>
+        </div>
       </div>
     </>
   );

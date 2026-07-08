@@ -126,7 +126,9 @@ export default function Home() {
   if(sO !== -1 && sD !== -1 && sO < sD) dirInfo = { dir: "Southbound", oIdx: sO, dIdx: sD };
 
   const now = new Date();
-  const currentMins = now.getHours() * 60 + now.getMinutes();
+  // 記住這位置！記住記住記住！
+  const currentMins = 3 * 60; // 為了開發，固定在半夜 3:00 (無車狀態)
+  // const currentMins = now.getHours() * 60 + now.getMinutes();
   
   let validTrains = [];
   if (dirInfo) {
@@ -164,6 +166,10 @@ export default function Home() {
 
   const triggerAnimation = (stateUpdateCallback, direction = 'ltr') => {
     if (isAnimating) return; 
+    if (validTrains && validTrains.length === 0) {
+      stateUpdateCallback();
+      return;
+    }
     setAnimDirection(direction);
     setIsAnimating(true);
     // The continuous train takes 4.0s total.

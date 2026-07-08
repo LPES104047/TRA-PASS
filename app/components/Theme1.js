@@ -220,6 +220,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme1-root .train-time { font-size: 22px; font-weight: 800; color: #fff; text-align: right; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
         .theme1-root .train-time span { display: block; font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .theme1-root .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; }
         
         .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
 
@@ -337,63 +338,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
 
             <div className="schedule-list">
               {validTrains.length === 0 ? (
-                <div className="empty-state-card" style={{
-                  background: 'rgba(255, 255, 255, 0.12)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: '16px',
-                  padding: '30px 20px',
-                  textAlign: 'center',
-                  color: '#fff',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)'
-                }}>
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    background: 'rgba(255,75,75,0.15)',
-                    border: '1px solid rgba(255,75,75,0.3)',
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    color: '#FF6B6B',
-                    fontSize: '13px',
-                    fontWeight: 'bold',
-                    marginBottom: '15px',
-                    textShadow: '0 0 5px rgba(255,107,107,0.3)'
-                  }}>
-                    <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF6B6B', boxShadow: '0 0 6px #FF6B6B' }}></span>
-                    {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
-                  </div>
-                  <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6' }}>
-                    本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
-                  </p>
-                  <button 
-                    onClick={() => setIsTomorrow(!isTomorrow)}
-                    style={{
-                      background: 'linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%)',
-                      border: 'none',
-                      borderRadius: '20px',
-                      color: '#fff',
-                      padding: '8px 24px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 15px rgba(0, 242, 254, 0.3)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'transform 0.2s'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                      <path d="M16 2v4M8 2v4M2 10h20" />
-                    </svg>
-                    {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
-                  </button>
-                </div>
+                <div className="empty-state">今日已無班次</div>
               ) : (
                 validTrains.map((t) => {
                   let [dh, dm] = t.depTime.split(':').map(Number);
