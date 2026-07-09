@@ -103,10 +103,20 @@ export default function MaintenanceDepot({ show }) {
           animation: craneMove 25s ease-in-out infinite;
         }
 
-        /* 天車吊索搖晃效果 (物理慣性) */
-        .crane-cable-group {
-          transform-origin: 0px 56px;
-          animation: craneSway 25s ease-in-out infinite;
+        /* 天車吊索鏈條分段物理擺盪 (雙關節模擬彎曲) */
+        .crane-link-1 {
+          transform-origin: 0px 64px;
+          animation: craneSway1 25s ease-in-out infinite;
+        }
+
+        .crane-link-2 {
+          transform-origin: 0px 88px;
+          animation: craneSway2 25s ease-in-out infinite;
+        }
+
+        .crane-link-3 {
+          transform-origin: 0px 112px;
+          animation: craneSway3 25s ease-in-out infinite;
         }
 
         @keyframes craneMove {
@@ -114,14 +124,28 @@ export default function MaintenanceDepot({ show }) {
           50% { transform: translateX(620px); }
         }
 
-        @keyframes craneSway {
-          0% { transform: rotate(-8deg); }
-          15% { transform: rotate(0deg); }
-          45% { transform: rotate(8deg); }
-          50% { transform: rotate(8deg); }
-          65% { transform: rotate(0deg); }
-          95% { transform: rotate(-8deg); }
-          100% { transform: rotate(-8deg); }
+        @keyframes craneSway1 {
+          0%, 25%, 50%, 75%, 100% { transform: rotate(0deg); }
+          12.5% { transform: rotate(-9deg); }
+          37.5% { transform: rotate(9deg); }
+          62.5% { transform: rotate(9deg); }
+          87.5% { transform: rotate(-9deg); }
+        }
+
+        @keyframes craneSway2 {
+          0%, 28.5%, 50%, 78.5%, 100% { transform: rotate(0deg); }
+          16% { transform: rotate(3.5deg); }
+          41% { transform: rotate(-3.5deg); }
+          66% { transform: rotate(-3.5deg); }
+          91% { transform: rotate(3.5deg); }
+        }
+
+        @keyframes craneSway3 {
+          0%, 32%, 50%, 82%, 100% { transform: rotate(0deg); }
+          19.5% { transform: rotate(3deg); }
+          44.5% { transform: rotate(-3deg); }
+          69.5% { transform: rotate(-3deg); }
+          94.5% { transform: rotate(3deg); }
         }
 
         /* 天花板燈光呼吸效果 */
@@ -234,15 +258,26 @@ export default function MaintenanceDepot({ show }) {
               {/* Crane Rail Carriage */}
               <rect x="-25" y="46" width="50" height="10" fill="#f39c12" rx="1" />
               <rect x="-15" y="56" width="30" height="8" fill="#2c3e50" rx="1" />
-              {/* Cable & Hook Group (Swaying) */}
-              <g className="crane-cable-group">
-                {/* Gantry steel cable */}
-                <line x1="0" y1="64" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
-                {/* Hook block and mechanical claw */}
-                <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
-                <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
-                {/* Dual steel claw hooks */}
-                <path d="M -9,145 Q -9,152 -4,152 Q -1,152 -1,148 Q -1,152 2,152 Q 7,152 7,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Cable & Hook Group (Double-jointed physical swaying) */}
+              {/* Link 1: Upper Cable */}
+              <g className="crane-link-1">
+                <line x1="0" y1="64" x2="0" y2="88" stroke="#7f8c8d" strokeWidth="1.8" strokeDasharray="3, 3" />
+                
+                {/* Link 2: Middle Cable */}
+                <g className="crane-link-2">
+                  <line x1="0" y1="88" x2="0" y2="112" stroke="#7f8c8d" strokeWidth="1.8" strokeDasharray="3, 3" />
+                  
+                  {/* Link 3: Lower Cable & Hook Block */}
+                  <g className="crane-link-3">
+                    <line x1="0" y1="112" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.8" strokeDasharray="3, 3" />
+                    
+                    {/* Symmetrical Hook block and mechanical claw */}
+                    <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
+                    <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
+                    {/* Symmetrical Dual steel claw hooks (Centered at x=0) */}
+                    <path d="M -8,145 Q -8,152 -3,152 Q 0,152 0,148 Q 0,152 3,152 Q 8,152 8,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+                  </g>
+                </g>
               </g>
             </g>
 
