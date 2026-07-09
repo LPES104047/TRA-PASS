@@ -39,6 +39,29 @@ export default function Home() {
       if (savedOrigin) setOrigin(savedOrigin);
       if (savedDest) setDest(savedDest);
       if (savedTheme) setTheme(Number(savedTheme));
+      
+      const nowMs = Date.now();
+      const savedExpire = localStorage.getItem("live_connection_expire_time");
+      if (savedExpire) {
+        const expireTime = Number(savedExpire);
+        if (expireTime > nowMs) {
+          setIsLiveConnected(true);
+          setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
+        } else {
+          localStorage.removeItem("live_connection_expire_time");
+        }
+      }
+      
+      const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
+      if (savedCooldown) {
+        const cooldownTime = Number(savedCooldown);
+        if (cooldownTime > nowMs) {
+          setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000));
+        } else {
+          localStorage.removeItem("manual_refresh_cooldown_expire_time");
+        }
+      }
+
       setIsLoaded(true);
     }, 0);
   }, []);
@@ -69,6 +92,7 @@ export default function Home() {
           setConnectionTimeLeft(prev => {
             if (prev <= 1) {
               setIsLiveConnected(false); // 5 分鐘到，自動斷線關閉
+              localStorage.removeItem("live_connection_expire_time");
               return 300;
             }
             return prev - 1;
@@ -312,6 +336,9 @@ export default function Home() {
       const next = !prev;
       if (next) {
         setConnectionTimeLeft(300); // 重置為 5 分鐘
+        localStorage.setItem("live_connection_expire_time", String(Date.now() + 300000));
+      } else {
+        localStorage.removeItem("live_connection_expire_time");
       }
       return next;
     });
@@ -320,6 +347,7 @@ export default function Home() {
   const handleManualRefresh = () => {
     if (!isLiveConnected || cooldownTimeLeft > 0) return;
     setCooldownTimeLeft(20); // 20 秒手動更新冷卻
+    localStorage.setItem("manual_refresh_cooldown_expire_time", String(Date.now() + 20000));
     bypassCacheRef.current = true; // 標記強制刷新以繞過後台快取
     setRefreshTrigger(prev => prev + 1); // 觸發 useEffect 重新整理
   };
