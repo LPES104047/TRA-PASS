@@ -21,8 +21,10 @@ export default function Home() {
   const [activeTrain, setActiveTrain] = useState(null);
 
   // 智慧防護與節流狀態
-  const [isTabActive, setIsTabActive] = useState(true);
-  const [isIdle, setIsIdle] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [connectionTimeLeft, setConnectionTimeLeft] = useState(300); // 5 分鐘安全限制 (300 秒)
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0); // 手動刷新冷卻 (20 秒)
+  const [forceRefresh, setForceRefresh] = useState(false); // 強制更新標記 (繞過快取)
   const lastFetchTimeRef = useRef(0);
 
   // 初始化時讀取 LocalStorage
@@ -57,42 +59,29 @@ export default function Home() {
     }
   }, [theme, isLoaded]);
 
-  // 監聽 Visibility API 與 閒置偵測 (5 分鐘 = 300,000 ms)
+  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    // Visibility
-    const handleVisibilityChange = () => {
-      setIsTabActive(!document.hidden);
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Idle Detection
-    let idleTimer;
-    const resetIdleTimer = () => {
-      setIsIdle(false);
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(() => {
-        setIsIdle(true);
-      }, 300000); // 5 分鐘
-    };
-
-    window.addEventListener("mousemove", resetIdleTimer);
-    window.addEventListener("keydown", resetIdleTimer);
-    window.addEventListener("click", resetIdleTimer);
-    window.addEventListener("scroll", resetIdleTimer);
-
-    resetIdleTimer();
-
+    let interval;
+    if (isLiveConnected || cooldownTimeLeft > 0) {
+      interval = setInterval(() => {
+        if (isLiveConnected) {
+          setConnectionTimeLeft(prev => {
+            if (prev <= 1) {
+              setIsLiveConnected(false); // 5 分鐘到，自動斷線關閉
+              return 300;
+            }
+            return prev - 1;
+          });
+        }
+        if (cooldownTimeLeft > 0) {
+          setCooldownTimeLeft(prev => prev - 1);
+        }
+      }, 1000);
+    }
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("mousemove", resetIdleTimer);
-      window.removeEventListener("keydown", resetIdleTimer);
-      window.removeEventListener("click", resetIdleTimer);
-      window.removeEventListener("scroll", resetIdleTimer);
-      clearTimeout(idleTimer);
+      if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [isLiveConnected, cooldownTimeLeft]);
 
   useEffect(() => {
     fetch(`/data.json?v=${Date.now()}`)
@@ -105,10 +94,11 @@ export default function Home() {
     
     let countdownInterval;
 
-    const fetchLive = async () => {
-      setRefreshCountdown(null); // Show loading or wait state while fetching
+    const fetchLive = async (bypass = false) => {
+      setRefreshCountdown(null); // 同步中
       try {
-        const res = await fetch(`/api/trains?origin=${origin}&_t=${Date.now()}`);
+        const url = `/api/trains?origin=${origin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
+        const res = await fetch(url);
         const result = await res.json();
         if (result.data) {
           setLiveData(result.data);
@@ -128,7 +118,7 @@ export default function Home() {
       if (currentHour >= 23 || currentHour < 5) {
         // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
         const totalSecs = currentMins * 60 + currentSecs;
-        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300; // +1 避免剛好在 0 秒時算出自己
+        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
         delaySeconds = nextMarkSecs - totalSecs;
       } else {
         // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
@@ -152,38 +142,43 @@ export default function Home() {
       }, 1000);
     };
 
-    // 如果目前分頁活躍且非閒置，才進行 fetch 或是設定定時器
-    if (isTabActive && !isIdle) {
-      const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
-      if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
-        // 已過期或第一次載入，立刻向後端取資料
-        fetchLive();
+    // 只有在即時連線開啟時，才發送請求或進行倒數
+    if (isLiveConnected) {
+      if (forceRefresh) {
+        setTimeout(() => setForceRefresh(false), 0); // 延遲更新以防 React 同步引發階梯式重繪警告
+        fetchLive(true); // 強制更新 (繞過快取)
       } else {
-        // 未過期，計算剩餘時間並重啟倒數計時器
-        const remainingSecs = Math.max(1, Math.ceil((180000 - timeSinceLastFetch) / 1000));
-        setRefreshCountdown(remainingSecs);
-        
-        if (countdownInterval) clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-          setRefreshCountdown(prev => {
-            if (prev <= 1) {
-              clearInterval(countdownInterval);
-              fetchLive();
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
+        if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
+          // 已過期或第一次載入，立刻向後端取資料
+          fetchLive(false);
+        } else {
+          // 未過期，計算剩餘時間並重啟倒數計時器
+          const remainingSecs = Math.max(1, Math.ceil((180000 - timeSinceLastFetch) / 1000));
+          setRefreshCountdown(remainingSecs);
+          
+          if (countdownInterval) clearInterval(countdownInterval);
+          countdownInterval = setInterval(() => {
+            setRefreshCountdown(prev => {
+              if (prev <= 1) {
+                clearInterval(countdownInterval);
+                fetchLive();
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
       }
     } else {
-      // 若背景中或閒置，清空倒數顯示
+      // 離線模式，清空倒數顯示
       setRefreshCountdown(null);
     }
 
     return () => {
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [origin, isLoaded, isTabActive, isIdle]);
+  }, [origin, isLoaded, isLiveConnected, forceRefresh]);
 
   if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
 
@@ -294,6 +289,28 @@ export default function Home() {
     }, animDir);
   };
 
+  const toggleLiveConnection = () => {
+    setIsLiveConnected(prev => {
+      const next = !prev;
+      if (next) {
+        setConnectionTimeLeft(300); // 重置為 5 分鐘
+      }
+      return next;
+    });
+  };
+
+  const handleManualRefresh = () => {
+    if (!isLiveConnected || cooldownTimeLeft > 0) return;
+    setCooldownTimeLeft(20); // 20 秒手動更新冷卻
+    setForceRefresh(true); // 標記強制刷新以繞過後台快取
+  };
+
+  const formatTimeLeft = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}m ${String(s).padStart(2, '0')}s`;
+  };
+
   const props = {
     origin, setOrigin: handleOriginChange, 
     dest, setDest: handleDestChange, 
@@ -305,23 +322,53 @@ export default function Home() {
 
   return (
     <>
-      <div style={{
-        position: 'fixed', top: 10, left: 10, zIndex: 9999, 
-        display: 'flex', alignItems: 'center', gap: 8, 
-        background: isIdle ? 'rgba(231, 76, 60, 0.2)' : 'rgba(0,0,0,0.5)', 
-        padding: '5px 12px', borderRadius: '20px', 
-        color: isIdle ? '#FF6B6B' : '#00F2FE', 
-        fontSize: '12px', backdropFilter: 'blur(5px)', 
-        border: isIdle ? '1px solid rgba(231, 76, 60, 0.4)' : '1px solid rgba(0, 242, 254, 0.3)',
-        transition: 'all 0.5s ease'
-      }}>
+      {/* 📡 膠囊一：即時連線開關 */}
+      <button 
+        onClick={toggleLiveConnection}
+        style={{
+          position: 'fixed', top: 10, left: 10, zIndex: 9999, 
+          display: 'flex', alignItems: 'center', gap: 8, 
+          background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)', 
+          padding: '6px 14px', borderRadius: '20px', 
+          color: isLiveConnected ? '#2ECC71' : '#BDC3C7', 
+          fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+          border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
+          cursor: 'pointer', transition: 'all 0.3s ease',
+          boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
+        }}
+      >
         <span style={{
           display: 'inline-block', width: 8, height: 8, borderRadius: '50%', 
-          background: isIdle ? '#FF6B6B' : (refreshCountdown === null ? '#FFD700' : '#00F2FE'), 
-          boxShadow: `0 0 8px ${isIdle ? '#FF6B6B' : (refreshCountdown === null ? '#FFD700' : '#00F2FE')}`
+          background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D', 
+          boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
         }}></span>
-        {isIdle ? '💤 已暫停自動更新 (移動滑鼠以恢復)' : (refreshCountdown === null ? '正在同步 TDX...' : `TDX 即時更新倒數 ${refreshCountdown}s`)}
-      </div>
+        {isLiveConnected ? (
+          <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕</span>
+        ) : (
+          <span>● 離線模式 (點擊連線)</span>
+        )}
+      </button>
+
+      {/* 🔄 膠囊二：手動立即更新 */}
+      <button 
+        onClick={handleManualRefresh}
+        disabled={!isLiveConnected || cooldownTimeLeft > 0}
+        style={{
+          position: 'fixed', top: 46, left: 10, zIndex: 9999, 
+          display: 'flex', alignItems: 'center', gap: 6, 
+          background: !isLiveConnected ? 'rgba(127, 140, 141, 0.05)' : (cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : 'rgba(52, 152, 219, 0.15)'), 
+          padding: '5px 12px', borderRadius: '20px', 
+          color: !isLiveConnected ? 'rgba(189, 195, 199, 0.4)' : (cooldownTimeLeft > 0 ? '#E67E22' : '#3498DB'), 
+          fontSize: '11px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+          border: !isLiveConnected ? '1px solid rgba(127, 140, 141, 0.1)' : (cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : '1px solid rgba(52, 152, 219, 0.4)'),
+          cursor: isLiveConnected && cooldownTimeLeft === 0 ? 'pointer' : 'not-allowed', 
+          transition: 'all 0.3s ease',
+          opacity: isLiveConnected ? 1 : 0.5,
+          pointerEvents: isLiveConnected ? 'auto' : 'none'
+        }}
+      >
+        <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '🔄 立即手動更新'}</span>
+      </button>
       <div style={{position: 'fixed', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: 5}}>
         <button onClick={() => setTheme(1)} style={{padding: '5px 10px', background: theme===1?'#00F2FE':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>極簡風</button>
         <button onClick={() => setTheme(2)} style={{padding: '5px 10px', background: theme===2?'#1B3B6F':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>車票風</button>
