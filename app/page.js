@@ -24,8 +24,9 @@ export default function Home() {
   const [isLiveConnected, setIsLiveConnected] = useState(false);
   const [connectionTimeLeft, setConnectionTimeLeft] = useState(300); // 5 分鐘安全限制 (300 秒)
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0); // 手動刷新冷卻 (20 秒)
-  const [forceRefresh, setForceRefresh] = useState(false); // 強制更新標記 (繞過快取)
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // 觸發更新計數器
   const lastFetchTimeRef = useRef(0);
+  const bypassCacheRef = useRef(false); // 強制更新標記 (繞過快取)
 
   // 初始化時讀取 LocalStorage
   useEffect(() => {
@@ -92,14 +93,19 @@ export default function Home() {
   useEffect(() => {
     if (!isLoaded || !origin) return;
     
+    let isCurrent = true;
     let countdownInterval;
 
     const fetchLive = async (bypass = false) => {
+      if (!isCurrent) return;
       setRefreshCountdown(null); // 同步中
       try {
         const url = `/api/trains?origin=${origin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
         const res = await fetch(url);
         const result = await res.json();
+        
+        if (!isCurrent) return;
+        
         if (result.data) {
           setLiveData(result.data);
           lastFetchTimeRef.current = Date.now();
@@ -107,6 +113,8 @@ export default function Home() {
       } catch (e) {
         console.error("Live fetch error", e);
       }
+
+      if (!isCurrent) return;
 
       // 動態計算下一次的抓取時間（與現實時鐘同步）
       const now = new Date();
@@ -131,6 +139,10 @@ export default function Home() {
 
       if (countdownInterval) clearInterval(countdownInterval);
       countdownInterval = setInterval(() => {
+        if (!isCurrent) {
+          clearInterval(countdownInterval);
+          return;
+        }
         setRefreshCountdown(prev => {
           if (prev <= 1) {
             clearInterval(countdownInterval);
@@ -144,8 +156,9 @@ export default function Home() {
 
     // 只有在即時連線開啟時，才發送請求或進行倒數
     if (isLiveConnected) {
-      if (forceRefresh) {
-        setTimeout(() => setForceRefresh(false), 0); // 延遲更新以防 React 同步引發階梯式重繪警告
+      const shouldBypass = bypassCacheRef.current;
+      if (shouldBypass) {
+        bypassCacheRef.current = false; // 立即重置
         fetchLive(true); // 強制更新 (繞過快取)
       } else {
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
@@ -159,6 +172,10 @@ export default function Home() {
           
           if (countdownInterval) clearInterval(countdownInterval);
           countdownInterval = setInterval(() => {
+            if (!isCurrent) {
+              clearInterval(countdownInterval);
+              return;
+            }
             setRefreshCountdown(prev => {
               if (prev <= 1) {
                 clearInterval(countdownInterval);
@@ -176,9 +193,10 @@ export default function Home() {
     }
 
     return () => {
+      isCurrent = false;
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [origin, isLoaded, isLiveConnected, forceRefresh]);
+  }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
 
   if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
 
@@ -302,7 +320,8 @@ export default function Home() {
   const handleManualRefresh = () => {
     if (!isLiveConnected || cooldownTimeLeft > 0) return;
     setCooldownTimeLeft(20); // 20 秒手動更新冷卻
-    setForceRefresh(true); // 標記強制刷新以繞過後台快取
+    bypassCacheRef.current = true; // 標記強制刷新以繞過後台快取
+    setRefreshTrigger(prev => prev + 1); // 觸發 useEffect 重新整理
   };
 
   const formatTimeLeft = (secs) => {
