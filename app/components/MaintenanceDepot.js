@@ -120,41 +120,101 @@ export default function MaintenanceDepot({ show }) {
         }
 
         @keyframes craneMove {
-          0%, 100% { transform: translateX(40px); }
-          50% { transform: translateX(620px); }
+          0%, 10% { transform: translateX(160px); }
+          45%, 60% { transform: translateX(700px); }
+          95%, 100% { transform: translateX(160px); }
         }
 
         @keyframes swayJoint1 {
-          0%, 100% { transform: rotate(0deg); }
-          10% { transform: rotate(-5deg); }
-          25% { transform: rotate(0deg); }
-          40% { transform: rotate(5deg); }
-          50% { transform: rotate(0deg); }
-          60% { transform: rotate(5deg); }
-          75% { transform: rotate(0deg); }
-          90% { transform: rotate(-5deg); }
+          /* Damped oscillation at left (static, 0% to 10%) */
+          0% { transform: rotate(-2.5deg); }
+          3% { transform: rotate(1.2deg); }
+          6% { transform: rotate(-0.6deg); }
+          8% { transform: rotate(0.2deg); }
+          10% { transform: rotate(0deg); }
+          
+          /* Move right (10% to 45%) */
+          18% { transform: rotate(-7deg); }   /* Lag left during acceleration */
+          27.5% { transform: rotate(0deg); }   /* Pass center at max speed */
+          37% { transform: rotate(8deg); }    /* Swing right during deceleration */
+          45% { transform: rotate(9deg); }    /* Stop at right (max displacement) */
+          
+          /* Damped oscillation at right (static, 45% to 60%) */
+          48% { transform: rotate(-5deg); }   /* Swing back left */
+          51% { transform: rotate(2.5deg); }  /* Swing right */
+          54% { transform: rotate(-1.2deg); } /* Swing left */
+          57% { transform: rotate(0.6deg); }  /* Swing right */
+          60% { transform: rotate(0deg); }
+          
+          /* Move left (60% to 95%) */
+          68% { transform: rotate(7deg); }     /* Lag right during acceleration */
+          77.5% { transform: rotate(0deg); }   /* Pass center at max speed */
+          87% { transform: rotate(-8deg); }   /* Swing left during deceleration */
+          95% { transform: rotate(-9deg); }   /* Stop at left (max displacement) */
+          
+          /* Damped oscillation at left starts (95% to 100%) */
+          98% { transform: rotate(5deg); }    /* Swing back right */
         }
 
         @keyframes swayJoint2 {
-          0%, 100% { transform: rotate(0deg); }
-          12% { transform: rotate(-4.5deg); }
-          27% { transform: rotate(0deg); }
-          42% { transform: rotate(4.5deg); }
-          50% { transform: rotate(0deg); }
-          62% { transform: rotate(4.5deg); }
-          77% { transform: rotate(0deg); }
-          92% { transform: rotate(-4.5deg); }
+          /* Damped oscillation at left (static, 0% to 10%) */
+          0% { transform: rotate(-2.2deg); }
+          4.5% { transform: rotate(1.0deg); }
+          7.5% { transform: rotate(-0.5deg); }
+          9.5% { transform: rotate(0.1deg); }
+          11.5% { transform: rotate(0deg); }
+          
+          /* Move right */
+          19.5% { transform: rotate(-6deg); }
+          29% { transform: rotate(0deg); }
+          38.5% { transform: rotate(7deg); }
+          46.5% { transform: rotate(8deg); }
+          
+          /* Damped oscillation at right */
+          49.5% { transform: rotate(-4.5deg); }
+          52.5% { transform: rotate(2.2deg); }
+          55.5% { transform: rotate(-1.0deg); }
+          58.5% { transform: rotate(0.5deg); }
+          61.5% { transform: rotate(0deg); }
+          
+          /* Move left */
+          69.5% { transform: rotate(6deg); }
+          79% { transform: rotate(0deg); }
+          88.5% { transform: rotate(-7deg); }
+          96.5% { transform: rotate(-8deg); }
+          
+          /* Damped oscillation at left starts */
+          99.5% { transform: rotate(4.5deg); }
         }
 
         @keyframes swayJoint3 {
-          0%, 100% { transform: rotate(0deg); }
-          14% { transform: rotate(-4deg); }
-          29% { transform: rotate(0deg); }
-          44% { transform: rotate(4deg); }
-          50% { transform: rotate(0deg); }
-          64% { transform: rotate(4deg); }
-          79% { transform: rotate(0deg); }
-          94% { transform: rotate(-4deg); }
+          /* Damped oscillation at left (static, 0% to 10%) */
+          0% { transform: rotate(-1.8deg); }
+          6% { transform: rotate(0.8deg); }
+          9% { transform: rotate(-0.4deg); }
+          11% { transform: rotate(0.1deg); }
+          13% { transform: rotate(0deg); }
+          
+          /* Move right */
+          21% { transform: rotate(-5deg); }
+          30.5% { transform: rotate(0deg); }
+          40% { transform: rotate(6deg); }
+          48% { transform: rotate(7deg); }
+          
+          /* Damped oscillation at right */
+          51% { transform: rotate(-4deg); }
+          54% { transform: rotate(1.8deg); }
+          57% { transform: rotate(-0.8deg); }
+          60% { transform: rotate(0.4deg); }
+          63% { transform: rotate(0deg); }
+          
+          /* Move left */
+          71% { transform: rotate(5deg); }
+          80.5% { transform: rotate(0deg); }
+          90% { transform: rotate(-6deg); }
+          98% { transform: rotate(-7deg); }
+          
+          /* Damped oscillation at left starts */
         }
 
         /* 天花板燈光呼吸效果 */
