@@ -100,7 +100,7 @@ export default function MaintenanceDepot({ show }) {
 
         /* 🏗️ 懸吊天車平移動畫 */
         .overhead-crane {
-          animation: craneMove 25s linear infinite;
+          animation: craneMove 25s ease-in-out infinite;
         }
 
         /* 天車多段關節物理擺盪效果 */
@@ -120,22 +120,8 @@ export default function MaintenanceDepot({ show }) {
         }
 
         @keyframes craneMove {
-          /* Static at left */
           0%, 10% { transform: translateX(160px); }
-          
-          /* Move right with custom ease-in-out points */
-          18% { transform: translateX(231px); }
-          27.5% { transform: translateX(430px); }
-          37% { transform: translateX(628px); }
-          45% { transform: translateX(700px); }
-          
-          /* Static at right */
           45%, 60% { transform: translateX(700px); }
-          
-          /* Move left with custom ease-in-out points */
-          68% { transform: translateX(629px); }
-          77.5% { transform: translateX(430px); }
-          87% { transform: translateX(232px); }
           95%, 100% { transform: translateX(160px); }
         }
 
