@@ -103,10 +103,20 @@ export default function MaintenanceDepot({ show }) {
           animation: craneMove 25s ease-in-out infinite;
         }
 
-        /* 天車吊索搖晃效果 (物理慣性) */
-        .crane-cable-group {
-          transform-origin: 0px 56px;
-          animation: craneSway 25s ease-in-out infinite;
+        /* 天車多段關節物理擺盪效果 */
+        .crane-joint-1 {
+          transform-origin: 0px 64px;
+          animation: swayJoint1 25s ease-in-out infinite;
+        }
+
+        .crane-joint-2 {
+          transform-origin: 0px 0px;
+          animation: swayJoint2 25s ease-in-out infinite;
+        }
+
+        .crane-joint-3 {
+          transform-origin: 0px 0px;
+          animation: swayJoint3 25s ease-in-out infinite;
         }
 
         @keyframes craneMove {
@@ -114,14 +124,37 @@ export default function MaintenanceDepot({ show }) {
           50% { transform: translateX(620px); }
         }
 
-        @keyframes craneSway {
-          0% { transform: rotate(-8deg); }
-          15% { transform: rotate(0deg); }
-          45% { transform: rotate(8deg); }
-          50% { transform: rotate(8deg); }
-          65% { transform: rotate(0deg); }
-          95% { transform: rotate(-8deg); }
-          100% { transform: rotate(-8deg); }
+        @keyframes swayJoint1 {
+          0%, 100% { transform: rotate(0deg); }
+          10% { transform: rotate(-5deg); }
+          25% { transform: rotate(0deg); }
+          40% { transform: rotate(5deg); }
+          50% { transform: rotate(0deg); }
+          60% { transform: rotate(5deg); }
+          75% { transform: rotate(0deg); }
+          90% { transform: rotate(-5deg); }
+        }
+
+        @keyframes swayJoint2 {
+          0%, 100% { transform: rotate(0deg); }
+          12% { transform: rotate(-4.5deg); }
+          27% { transform: rotate(0deg); }
+          42% { transform: rotate(4.5deg); }
+          50% { transform: rotate(0deg); }
+          62% { transform: rotate(4.5deg); }
+          77% { transform: rotate(0deg); }
+          92% { transform: rotate(-4.5deg); }
+        }
+
+        @keyframes swayJoint3 {
+          0%, 100% { transform: rotate(0deg); }
+          14% { transform: rotate(-4deg); }
+          29% { transform: rotate(0deg); }
+          44% { transform: rotate(4deg); }
+          50% { transform: rotate(0deg); }
+          64% { transform: rotate(4deg); }
+          79% { transform: rotate(0deg); }
+          94% { transform: rotate(-4deg); }
         }
 
         /* 天花板燈光呼吸效果 */
@@ -234,15 +267,28 @@ export default function MaintenanceDepot({ show }) {
               {/* Crane Rail Carriage */}
               <rect x="-25" y="46" width="50" height="10" fill="#f39c12" rx="1" />
               <rect x="-15" y="56" width="30" height="8" fill="#2c3e50" rx="1" />
-              {/* Cable & Hook Group (Swaying) */}
-              <g className="crane-cable-group">
-                {/* Gantry steel cable */}
-                <line x1="0" y1="64" x2="0" y2="135" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
-                {/* Hook block and mechanical claw */}
-                <rect x="-6" y="135" width="12" height="12" fill="#34495e" rx="1" />
-                <circle cx="0" cy="141" r="2.5" fill="#f1c40f" />
-                {/* Dual steel claw hooks */}
-                <path d="M -9,145 Q -9,152 -4,152 Q -1,152 -1,148 Q -1,152 2,152 Q 7,152 7,145" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Cable & Hook Group (Swaying with Nested joints) */}
+              <g className="crane-joint-1">
+                {/* Segment 1 line */}
+                <line x1="0" y1="64" x2="0" y2="88" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                
+                <g className="crane-joint-2" transform="translate(0, 88)">
+                  {/* Segment 2 line */}
+                  <line x1="0" y1="0" x2="0" y2="24" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                  
+                  <g className="crane-joint-3" transform="translate(0, 24)">
+                    {/* Segment 3 line */}
+                    <line x1="0" y1="0" x2="0" y2="23" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                    
+                    {/* Hook block and mechanical claw */}
+                    <g transform="translate(0, 23)">
+                      <rect x="-6" y="0" width="12" height="12" fill="#34495e" rx="1" />
+                      <circle cx="0" cy="6" r="2.5" fill="#f1c40f" />
+                      {/* Symmetric steel claw hooks */}
+                      <path d="M -8,10 Q -8,17 -4,17 Q 0,17 0,13 Q 0,17 4,17 Q 8,17 8,10" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+                    </g>
+                  </g>
+                </g>
               </g>
             </g>
 
