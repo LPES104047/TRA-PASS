@@ -83,23 +83,40 @@ export default function Home() {
     }
   }, [theme, isLoaded]);
 
-  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數
+  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數 (使用絕對時間戳以防背景運行失效)
   useEffect(() => {
     let interval;
     if (isLiveConnected || cooldownTimeLeft > 0) {
       interval = setInterval(() => {
+        const nowMs = Date.now();
+
         if (isLiveConnected) {
-          setConnectionTimeLeft(prev => {
-            if (prev <= 1) {
-              setIsLiveConnected(false); // 5 分鐘到，自動斷線關閉
+          const savedExpire = localStorage.getItem("live_connection_expire_time");
+          if (savedExpire) {
+            const expireTime = Number(savedExpire);
+            const remaining = Math.max(0, Math.ceil((expireTime - nowMs) / 1000));
+            setConnectionTimeLeft(remaining);
+            if (remaining === 0) {
+              setIsLiveConnected(false);
               localStorage.removeItem("live_connection_expire_time");
-              return 300;
             }
-            return prev - 1;
-          });
+          } else {
+            setIsLiveConnected(false);
+          }
         }
+
         if (cooldownTimeLeft > 0) {
-          setCooldownTimeLeft(prev => prev - 1);
+          const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
+          if (savedCooldown) {
+            const cooldownTime = Number(savedCooldown);
+            const remaining = Math.max(0, Math.ceil((cooldownTime - nowMs) / 1000));
+            setCooldownTimeLeft(remaining);
+            if (remaining === 0) {
+              localStorage.removeItem("manual_refresh_cooldown_expire_time");
+            }
+          } else {
+            setCooldownTimeLeft(0);
+          }
         }
       }, 1000);
     }
@@ -120,7 +137,7 @@ export default function Home() {
     let isCurrent = true;
     let countdownInterval;
 
-    const fetchLive = async (bypass = false) => {
+    const fetchLive = async (bypass = false, isManual = false) => {
       if (!isCurrent) return;
       setRefreshCountdown(null); // 同步中
       try {
@@ -140,23 +157,29 @@ export default function Home() {
 
       if (!isCurrent) return;
 
-      // 動態計算下一次的抓取時間（與現實時鐘同步）
+      // 動態計算下一次的抓取時間
       const now = new Date();
       const currentHour = now.getHours();
       const currentMins = now.getMinutes();
       const currentSecs = now.getSeconds();
       
       let delaySeconds;
-      if (currentHour >= 23 || currentHour < 5) {
-        // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
-        const totalSecs = currentMins * 60 + currentSecs;
-        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
-        delaySeconds = nextMarkSecs - totalSecs;
+      if (isManual) {
+        // 如果是手動更新，直接重置為完整的 180 秒 (白天) 或 300 秒 (半夜)
+        delaySeconds = (currentHour >= 23 || currentHour < 5) ? 300 : 180;
       } else {
-        // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
-        const totalSecs = currentMins * 60 + currentSecs;
-        const nextMarkSecs = Math.ceil((totalSecs + 1) / 180) * 180;
-        delaySeconds = nextMarkSecs - totalSecs;
+        // 自動刷新時，維持與現實時鐘對齊
+        if (currentHour >= 23 || currentHour < 5) {
+          // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
+          const totalSecs = currentMins * 60 + currentSecs;
+          const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
+          delaySeconds = nextMarkSecs - totalSecs;
+        } else {
+          // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
+          const totalSecs = currentMins * 60 + currentSecs;
+          const nextMarkSecs = Math.ceil((totalSecs + 1) / 180) * 180;
+          delaySeconds = nextMarkSecs - totalSecs;
+        }
       }
       
       setRefreshCountdown(delaySeconds);
@@ -183,7 +206,7 @@ export default function Home() {
       const shouldBypass = bypassCacheRef.current;
       if (shouldBypass) {
         bypassCacheRef.current = false; // 立即重置
-        fetchLive(true); // 強制更新 (繞過快取)
+        fetchLive(true, true); // 強制更新 (繞過快取，且為手動更新以重設完整計時)
       } else {
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
         if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
