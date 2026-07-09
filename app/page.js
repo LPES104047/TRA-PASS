@@ -83,40 +83,23 @@ export default function Home() {
     }
   }, [theme, isLoaded]);
 
-  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數 (使用絕對時間戳以防背景運行失效)
+  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數
   useEffect(() => {
     let interval;
     if (isLiveConnected || cooldownTimeLeft > 0) {
       interval = setInterval(() => {
-        const nowMs = Date.now();
-
         if (isLiveConnected) {
-          const savedExpire = localStorage.getItem("live_connection_expire_time");
-          if (savedExpire) {
-            const expireTime = Number(savedExpire);
-            const remaining = Math.max(0, Math.ceil((expireTime - nowMs) / 1000));
-            setConnectionTimeLeft(remaining);
-            if (remaining === 0) {
-              setIsLiveConnected(false);
+          setConnectionTimeLeft(prev => {
+            if (prev <= 1) {
+              setIsLiveConnected(false); // 5 分鐘到，自動斷線關閉
               localStorage.removeItem("live_connection_expire_time");
+              return 300;
             }
-          } else {
-            setIsLiveConnected(false);
-          }
+            return prev - 1;
+          });
         }
-
         if (cooldownTimeLeft > 0) {
-          const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
-          if (savedCooldown) {
-            const cooldownTime = Number(savedCooldown);
-            const remaining = Math.max(0, Math.ceil((cooldownTime - nowMs) / 1000));
-            setCooldownTimeLeft(remaining);
-            if (remaining === 0) {
-              localStorage.removeItem("manual_refresh_cooldown_expire_time");
-            }
-          } else {
-            setCooldownTimeLeft(0);
-          }
+          setCooldownTimeLeft(prev => prev - 1);
         }
       }, 1000);
     }
@@ -137,7 +120,7 @@ export default function Home() {
     let isCurrent = true;
     let countdownInterval;
 
-    const fetchLive = async (bypass = false, isManual = false) => {
+    const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
       setRefreshCountdown(null); // 同步中
       try {
@@ -157,29 +140,23 @@ export default function Home() {
 
       if (!isCurrent) return;
 
-      // 動態計算下一次的抓取時間
+      // 動態計算下一次的抓取時間（與現實時鐘同步）
       const now = new Date();
       const currentHour = now.getHours();
       const currentMins = now.getMinutes();
       const currentSecs = now.getSeconds();
       
       let delaySeconds;
-      if (isManual) {
-        // 如果是手動更新，直接重置為完整的 180 秒 (白天) 或 300 秒 (半夜)
-        delaySeconds = (currentHour >= 23 || currentHour < 5) ? 300 : 180;
+      if (currentHour >= 23 || currentHour < 5) {
+        // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
+        const totalSecs = currentMins * 60 + currentSecs;
+        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
+        delaySeconds = nextMarkSecs - totalSecs;
       } else {
-        // 自動刷新時，維持與現實時鐘對齊
-        if (currentHour >= 23 || currentHour < 5) {
-          // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
-          const totalSecs = currentMins * 60 + currentSecs;
-          const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
-          delaySeconds = nextMarkSecs - totalSecs;
-        } else {
-          // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
-          const totalSecs = currentMins * 60 + currentSecs;
-          const nextMarkSecs = Math.ceil((totalSecs + 1) / 180) * 180;
-          delaySeconds = nextMarkSecs - totalSecs;
-        }
+        // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
+        const totalSecs = currentMins * 60 + currentSecs;
+        const nextMarkSecs = Math.ceil((totalSecs + 1) / 180) * 180;
+        delaySeconds = nextMarkSecs - totalSecs;
       }
       
       setRefreshCountdown(delaySeconds);
@@ -206,7 +183,7 @@ export default function Home() {
       const shouldBypass = bypassCacheRef.current;
       if (shouldBypass) {
         bypassCacheRef.current = false; // 立即重置
-        fetchLive(true, true); // 強制更新 (繞過快取，且為手動更新以重設完整計時)
+        fetchLive(true); // 強制更新 (繞過快取)
       } else {
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
         if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
@@ -326,10 +303,18 @@ export default function Home() {
     return 'rtl';
   };
 
+  const resetConnectionTimer = () => {
+    if (isLiveConnected) {
+      setConnectionTimeLeft(300); // 重新填滿為 5 分鐘
+      localStorage.setItem("live_connection_expire_time", String(Date.now() + 300000));
+    }
+  };
+
   const handleOriginChange = (newOrigin) => {
     if (newOrigin === origin) return;
     setOrigin(newOrigin); // 立即更新，不觸發動畫
     localStorage.setItem("train_origin", newOrigin);
+    resetConnectionTimer();
   };
 
   const handleDestChange = (newDest) => {
@@ -338,6 +323,7 @@ export default function Home() {
     triggerAnimation(() => {
       setDest(newDest);
       localStorage.setItem("train_dest", newDest);
+      resetConnectionTimer();
     }, animDir);
   };
 
@@ -351,6 +337,7 @@ export default function Home() {
       setDest(currentOrigin);
       localStorage.setItem("train_origin", currentDest);
       localStorage.setItem("train_dest", currentOrigin);
+      resetConnectionTimer();
     }, animDir);
   };
 
@@ -373,6 +360,7 @@ export default function Home() {
     localStorage.setItem("manual_refresh_cooldown_expire_time", String(Date.now() + 20000));
     bypassCacheRef.current = true; // 標記強制刷新以繞過後台快取
     setRefreshTrigger(prev => prev + 1); // 觸發 useEffect 重新整理
+    resetConnectionTimer(); // 重置防呆倒數
   };
 
   const formatTimeLeft = (secs) => {

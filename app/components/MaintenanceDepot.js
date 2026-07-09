@@ -272,20 +272,28 @@ export default function MaintenanceDepot({ show }) {
                 {/* Segment 1 line */}
                 <line x1="0" y1="64" x2="0" y2="88" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
                 
-                <g className="crane-joint-2" transform="translate(0, 88)">
-                  {/* Segment 2 line */}
-                  <line x1="0" y1="0" x2="0" y2="24" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
-                  
-                  <g className="crane-joint-3" transform="translate(0, 24)">
-                    {/* Segment 3 line */}
-                    <line x1="0" y1="0" x2="0" y2="23" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                {/* Translate to end of Segment 1 */}
+                <g transform="translate(0, 88)">
+                  {/* Rotate Segment 2 */}
+                  <g className="crane-joint-2">
+                    {/* Segment 2 line */}
+                    <line x1="0" y1="0" x2="0" y2="24" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
                     
-                    {/* Hook block and mechanical claw */}
-                    <g transform="translate(0, 23)">
-                      <rect x="-6" y="0" width="12" height="12" fill="#34495e" rx="1" />
-                      <circle cx="0" cy="6" r="2.5" fill="#f1c40f" />
-                      {/* Symmetric steel claw hooks */}
-                      <path d="M -8,10 Q -8,17 -4,17 Q 0,17 0,13 Q 0,17 4,17 Q 8,17 8,10" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+                    {/* Translate to end of Segment 2 */}
+                    <g transform="translate(0, 24)">
+                      {/* Rotate Segment 3 */}
+                      <g className="crane-joint-3">
+                        {/* Segment 3 line */}
+                        <line x1="0" y1="0" x2="0" y2="23" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                        
+                        {/* Hook block and mechanical claw */}
+                        <g transform="translate(0, 23)">
+                          <rect x="-6" y="0" width="12" height="12" fill="#34495e" rx="1" />
+                          <circle cx="0" cy="6" r="2.5" fill="#f1c40f" />
+                          {/* Symmetric steel claw hooks */}
+                          <path d="M -8,10 Q -8,17 -4,17 Q 0,17 0,13 Q 0,17 4,17 Q 8,17 8,10" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      </g>
                     </g>
                   </g>
                 </g>
