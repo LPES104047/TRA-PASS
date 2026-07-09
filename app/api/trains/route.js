@@ -47,9 +47,9 @@ export async function GET(request) {
   }
 
   try {
-    // 檢查記憶體快取：如果距離上次抓取同一站的資料不到 10 秒，直接回傳快取資料
+    // 檢查記憶體快取：如果距離上次抓取同一站的資料不到 3 分鐘 (180,000 ms)，直接回傳快取資料
     const nowMs = Date.now();
-    if (apiCache[origin] && (nowMs - apiCache[origin].timestamp < 10000)) {
+    if (apiCache[origin] && (nowMs - apiCache[origin].timestamp < 180000)) {
       console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
       return NextResponse.json({ data: apiCache[origin].data });
     }
