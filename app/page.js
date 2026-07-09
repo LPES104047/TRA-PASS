@@ -120,7 +120,7 @@ export default function Home() {
     let isCurrent = true;
     let countdownInterval;
 
-    const fetchLive = async (bypass = false) => {
+    const fetchLive = async (bypass = false, isManual = false) => {
       if (!isCurrent) return;
       setRefreshCountdown(null); // 同步中
       try {
@@ -147,7 +147,10 @@ export default function Home() {
       const currentSecs = now.getSeconds();
       
       let delaySeconds;
-      if (currentHour >= 23 || currentHour < 5) {
+      if (isManual) {
+        // 手動更新直接重置為完整 3 分鐘 (白天) 或 5 分鐘 (半夜)
+        delaySeconds = (currentHour >= 23 || currentHour < 5) ? 300 : 180;
+      } else if (currentHour >= 23 || currentHour < 5) {
         // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
         const totalSecs = currentMins * 60 + currentSecs;
         const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
@@ -183,7 +186,7 @@ export default function Home() {
       const shouldBypass = bypassCacheRef.current;
       if (shouldBypass) {
         bypassCacheRef.current = false; // 立即重置
-        fetchLive(true); // 強制更新 (繞過快取)
+        fetchLive(true, true); // 強制更新 (繞過快取) 並標記為手動更新
       } else {
         const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
         if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
