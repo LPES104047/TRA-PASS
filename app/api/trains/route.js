@@ -43,8 +43,8 @@ export async function GET(request) {
   const origin = searchParams.get('origin');
   const bypass = searchParams.get('bypass') === 'true';
 
-  if (!origin) {
-    return NextResponse.json({ error: 'Origin station is required' }, { status: 400 });
+  if (!origin || origin.length > 10) {
+    return NextResponse.json({ error: 'Invalid origin station' }, { status: 400 });
   }
 
   try {

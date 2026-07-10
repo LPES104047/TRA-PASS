@@ -136,7 +136,7 @@ export default function Home() {
   }, [isLoaded, origin]);
 
   useEffect(() => {
-    fetch(`/data.json?v=${Date.now()}`)
+    fetch(`/data.json`)
       .then((res) => res.json())
       .then((d) => setData(d));
   }, []);
