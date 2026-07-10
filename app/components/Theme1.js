@@ -276,10 +276,10 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                     marginBottom: '15px'
                   }}>
                     <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FFD700', boxShadow: '0 0 6px #FFD700' }}></span>
-                    {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+                    {origin === dest ? '⚠️ 路線錯誤' : (isTomorrow ? '明日班次查詢中' : '今日已無班次')}
                   </div>
                   <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6' }}>
-                    本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+                    {origin === dest ? '出發站與目的地不可相同，請重新選擇車站。' : '本日列車已收班，後台正連線同步明日車表。您可點擊下方按鈕提早規劃行程。'}
                   </p>
                   <button 
                     onClick={() => setIsTomorrow(!isTomorrow)}

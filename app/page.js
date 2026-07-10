@@ -166,6 +166,8 @@ export default function Home() {
         }
       } catch (e) {
         console.error("Live fetch error", e);
+        // 【死鎖修復】：就算網路失敗，也要推進最後更新時間，否則計時器會永遠卡死
+        localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
       }
     };
 
@@ -200,6 +202,13 @@ export default function Home() {
       isCurrent = false;
     };
   }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
+
+  useEffect(() => {
+    if (isLoaded && !isLiveConnected) {
+      // 當斷開連線時，立刻清除殘留的即時延誤資料，避免誤導使用者
+      setLiveData({});
+    }
+  }, [isLiveConnected, isLoaded]);
 
   if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
 

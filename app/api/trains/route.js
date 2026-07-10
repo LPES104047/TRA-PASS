@@ -1,5 +1,20 @@
 import { NextResponse } from 'next/server';
 
+// ==========================================
+// 🛡️ 記憶體安全防護區
+// ==========================================
+// 1. 拒絕使用 {}，改用 Map 以防範 Prototype Pollution (記憶體擴權攻擊)
+const apiCache = new Map();
+
+// 2. 快取鎖 (Promise Lock)：防止併發導致的 Cache Stampede (快取擊穿)
+const fetchPromises = new Map();
+
+// 3. 嚴格白名單：阻擋惡意參數引發的 Memory Leak (請補齊您所有的有效車站名稱)
+const VALID_STATIONS = new Set([
+  "基隆", "三坑", "八堵", "七堵", "百福", "五堵", "汐止", "汐科", "南港", "松山", 
+  "臺北", "萬華", "板橋", "浮洲", "樹林", "南樹林", "山佳", "鶯歌", "鳳鳴", "桃園"
+]);
+
 // 取得 TDX Access Token
 async function getTdxToken() {
   const clientId = process.env.TDX_CLIENT_ID;
@@ -22,7 +37,6 @@ async function getTdxToken() {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
-      // Token 可以快取很久 (通常是 24 小時)，這裡設定 12 小時 (43200 秒)
       next: { revalidate: 43200 } 
     });
     
@@ -35,63 +49,62 @@ async function getTdxToken() {
   }
 }
 
-// 記憶體快取，防止使用者狂按 F5 把額度刷爆
-let apiCache = {}; 
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('origin');
   const bypass = searchParams.get('bypass') === 'true';
 
-  if (!origin || origin.length > 10) {
+  // 🛡️ 驗證：絕對白名單攔截，防禦記憶體無限擴張攻擊
+  if (!origin || !VALID_STATIONS.has(origin)) {
     return NextResponse.json({ error: 'Invalid origin station' }, { status: 400 });
   }
 
-  try {
-    const nowMs = Date.now();
-    const cachedData = apiCache[origin];
+  const nowMs = Date.now();
+  const cachedData = apiCache.get(origin);
 
-    // 【安全加固區塊】
-    if (cachedData) {
-      const timeDiff = nowMs - cachedData.timestamp;
-      
-      // 1. 絕對硬性防護：無論是否 bypass，15 秒內絕對不允許向 TDX 發送新請求 (防止惡意 DDoS)
-      if (timeDiff < 15000) {
-        console.log(`[Security Block] Blocked rapid bypass attempt for ${origin}. Serving cache.`);
-        return NextResponse.json({ data: cachedData.data });
-      }
-
-      // 2. 常規快取：如果沒有強制 bypass，且在 3 分鐘內，回傳快取
-      if (!bypass && timeDiff < 180000) {
-        console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
-        return NextResponse.json({ data: cachedData.data });
-      }
-    }
-
-    const token = await getTdxToken();
+  // 🛡️ 驗證：API 呼叫硬限制與防繞過機制
+  if (cachedData) {
+    const timeDiff = nowMs - cachedData.timestamp;
     
-    // 如果沒有 Token (沒設定金鑰)，回傳空物件讓前端自動降級
-    if (!token) {
-      return NextResponse.json({ data: {} });
+    // 【極限煞車】無論是否要求 bypass，15 秒內絕對不允許向 TDX 發送新請求 (防腳本 DDoS)
+    if (timeDiff < 15000) {
+      console.log(`[Security Block] Blocked rapid request for ${origin}`);
+      return NextResponse.json({ data: cachedData.data });
     }
+    // 【常規快取】3 分鐘 (180,000 ms) 內，且無 bypass，返回快取
+    if (!bypass && timeDiff < 180000) {
+      console.log(`[Cache Hit] Serving ${origin}`);
+      return NextResponse.json({ data: cachedData.data });
+    }
+  }
 
-    // 呼叫 TDX 即時看板 API，過濾出該出發站的資料
+  // 🛡️ 驗證：防止快取擊穿 (Cache Stampede)
+  // 如果此時已經有另一個請求正在抓取同一個車站的資料，直接等待它的結果，不重複發送 API
+  if (fetchPromises.has(origin)) {
+    console.log(`[Concurrency Lock] Waiting for existing fetch task for ${origin}`);
+    try {
+      const data = await fetchPromises.get(origin);
+      return NextResponse.json({ data });
+    } catch (e) {
+      // 若原來的 Promise 失敗，就繼續往下自己執行
+    }
+  }
+
+  // 建立實際抓取 TDX 資料的非同步任務
+  const fetchTask = (async () => {
+    const token = await getTdxToken();
+    if (!token) return {};
+
     const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$filter=StationName/Zh_tw eq '${encodeURIComponent(origin)}'&$format=JSON`;
-
     const res = await fetch(tdxUrl, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store'
     });
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch TDX live board');
-    }
-
+    if (!res.ok) throw new Error('Failed to fetch TDX live board');
     const data = await res.json();
     
-    // 將資料簡化為我們需要的格式 (車次號碼 -> 延誤分鐘數)
     const delayMap = {};
     if (Array.isArray(data)) {
       data.forEach(train => {
@@ -99,24 +112,31 @@ export async function GET(request) {
       });
     }
 
-    // 在 route.js 的 apiCache 賦值前加上快取水位限制：
-    if (Object.keys(apiCache).length > 300) {
-      console.warn("[Memory Protection] Clearing apiCache to prevent OOM.");
-      apiCache = {}; // 容量超過 300 筆，直接清空重置
+    // 🛡️ OOM 防護：即使有白名單，依然確保記憶體安全水位 (不會超過 300 站)
+    if (apiCache.size > 300) {
+      apiCache.clear();
     }
 
-    // 更新記憶體快取
-    apiCache[origin] = {
+    apiCache.set(origin, {
       data: delayMap,
-      timestamp: nowMs
-    };
+      timestamp: Date.now()
+    });
 
-    console.log(`[TDX Fetch] Successfully fetched live data for ${origin}`);
+    return delayMap;
+  })();
+
+  // 紀錄 Promise，讓後續併發的請求可以共享結果
+  fetchPromises.set(origin, fetchTask);
+
+  try {
+    const delayMap = await fetchTask;
+    console.log(`[TDX Fetch] Data updated for ${origin}`);
     return NextResponse.json({ data: delayMap });
-
   } catch (error) {
     console.error('TDX API Error:', error);
-    // 發生錯誤時回傳空資料，讓前端降級使用本地 json
     return NextResponse.json({ data: {} }, { status: 500 });
+  } finally {
+    // 無論成功或失敗，任務完成後解除鎖定
+    fetchPromises.delete(origin);
   }
 }
