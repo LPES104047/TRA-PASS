@@ -67,12 +67,36 @@ async function getTdxToken(forceRefresh = false) {
 }
 
 export async function GET(request) {
+  // 🛡️ 資訊安全防禦：API 盜用防護 (防止外部 Bot 惡意爬蟲或直接以 script 刷流量)
+  const referer = request.headers.get('referer');
+  const secFetchSite = request.headers.get('sec-fetch-site');
+  const host = request.headers.get('host');
+ 
+  // 檢查是否來自同源 (在生產環境中，若沒有 referer 或來自其他網域則拒絕服務)
+  if (process.env.NODE_ENV === 'production') {
+    const isSameOrigin = secFetchSite === 'same-origin' || (referer && referer.includes(host));
+    if (!isSameOrigin) {
+      return NextResponse.json({ 
+        error: 'Forbidden: Access Denied' 
+      }, { 
+        status: 403 
+      });
+    }
+  }
+
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('origin');
   const bypass = searchParams.get('bypass') === 'true';
 
+  // 🛡️ 資訊安全防禦：全站防快取控制 (防護 CDN/瀏覽器意外快取即時班表)
+  const noCacheHeaders = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+
   if (!origin || !VALID_STATIONS.has(origin)) {
-    return NextResponse.json({ error: 'Invalid origin station' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid origin station' }, { status: 400, headers: noCacheHeaders });
   }
 
   const nowMs = Date.now();
@@ -81,17 +105,17 @@ export async function GET(request) {
   if (cachedData) {
     const timeDiff = nowMs - cachedData.timestamp;
     if (timeDiff < 15000) {
-      return NextResponse.json({ data: cachedData.data });
+      return NextResponse.json({ data: cachedData.data }, { headers: noCacheHeaders });
     }
     if (!bypass && timeDiff < 180000) {
-      return NextResponse.json({ data: cachedData.data });
+      return NextResponse.json({ data: cachedData.data }, { headers: noCacheHeaders });
     }
   }
 
   if (fetchPromises.has(origin)) {
     try {
       const data = await fetchPromises.get(origin);
-      return NextResponse.json({ data });
+      return NextResponse.json({ data }, { headers: noCacheHeaders });
     } catch (e) {
       // 繼續往下執行
     }
@@ -140,10 +164,10 @@ export async function GET(request) {
 
   try {
     const delayMap = await fetchTask;
-    return NextResponse.json({ data: delayMap });
+    return NextResponse.json({ data: delayMap }, { headers: noCacheHeaders });
   } catch (error) {
     console.error('TDX API Error:', error);
-    return NextResponse.json({ data: {} }, { status: 500 });
+    return NextResponse.json({ data: {} }, { status: 500, headers: noCacheHeaders });
   } finally {
     fetchPromises.delete(origin);
   }
