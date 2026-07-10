@@ -220,13 +220,13 @@ const TrainCab = ({ model, side }) => {
       ) : (
         <>
           {/* Shinkansen E5 Series smooth duckbill nose body base (Hiun White) */}
-          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 330,165 315,178 285,183 L 0,183 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          <path d="M 0,50 L 65,50 C 85,50 95,78 115,78 C 135,78 175,100 335,172 C 325,178 305,188 280,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
           {/* Upper body Tokiwa Green paint overlay */}
-          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 320,154 300,150 280,147 C 235,147 205,136 175,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          <path d="M 0,50 L 65,50 C 85,50 95,78 115,78 C 135,78 175,100 335,172 C 325,168 310,162 285,158 C 240,158 210,138 175,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
           {/* Azalea Pink Stripe running along the boundary */}
-          <path d="M 0,136 L 175,136 C 205,136 235,147 280,147 C 300,147 320,154 335,160" fill="none" stroke="#E93B8E" strokeWidth="5.5" strokeLinecap="round" />
+          <path d="M 0,136 L 175,136 C 210,138 240,158 285,158 C 310,158 325,168 335,172" fill="none" stroke="#E93B8E" strokeWidth="5.5" strokeLinecap="round" />
           {/* Aerodynamic wing/fender line below cockpit */}
-          <path d="M 215,114 Q 250,118 280,134" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
+          <path d="M 130,105 Q 185,120 225,138" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
         </>
       )}
       
@@ -242,9 +242,9 @@ const TrainCab = ({ model, side }) => {
       {isTaroko && (
         <>
           {/* Driver's side window */}
-          <rect x="145" y="85" width="18" height="24" fill="#1A1A1A" rx={1} stroke="#111" strokeWidth={1} />
+          <rect x="122" y="86" width="18" height="24" fill="#1A1A1A" rx={1} stroke="#111" strokeWidth={1} />
           {/* Hayabusa Falcon emblem on the green side panel */}
-          <g transform="translate(60, 95)" opacity="0.95">
+          <g transform="translate(85, 95)" opacity="0.95">
             <path d="M 0,10 L 15,2 L 30,12 L 12,20 Z" fill="#FFFFFF" />
             <path d="M 5,12 L 12,9 L 20,15 Z" fill="#E93B8E" />
           </g>
@@ -274,7 +274,7 @@ const TrainCab = ({ model, side }) => {
           <path d="M 8,85 L 25,85 L 8,110 Z" fill="rgba(255,255,255,0.12)" />
         </g>
       ) : isTaroko ? (
-        <g transform="translate(110, 0)">
+        <g transform="translate(15, 0)">
           <rect x="0" y="75" width="30" height="112" fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
           <path d="M 0,75 L 30,75 L 30,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
           <rect x="0" y="136" width="30" height="5" fill="#E93B8E" />
@@ -298,8 +298,7 @@ const TrainCab = ({ model, side }) => {
         </g>
       ) : isTaroko ? (
         <g transform="translate(0, 0)">
-          <rect x="35" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
-          <rect x="70" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+          <rect x="55" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
         </g>
       ) : (
         <g transform="translate(30, 0)">
@@ -326,15 +325,15 @@ const TrainCab = ({ model, side }) => {
         ) : (
           <>
             {/* Shinkansen E5 style pilot cockpit canopy */}
-            <path d="M 190,95 Q 215,70 240,95 Q 215,108 190,95 Z" fill="#111" />
-            <path d="M 195,92 Q 215,75 235,92 Z" fill="rgba(255,255,255,0.2)" />
+            <path d="M 100,90 Q 110,75 120,90 Q 110,96 100,90 Z" fill="#111" />
+            <path d="M 104,87 Q 110,78 116,87 Z" fill="rgba(255,255,255,0.2)" />
             {/* Aerodynamic LED headlights on the side of the duckbill nose */}
-            <ellipse cx="242" cy="116" rx="8" ry="1.8" fill="#FFF" transform="rotate(-28, 242, 116)" filter="drop-shadow(0 0 4.5px #FFF)" />
-            <ellipse cx="242" cy="116" rx="5" ry="0.8" fill="#FFFAED" transform="rotate(-28, 242, 116)" />
+            <ellipse cx="230" cy="162" rx="8" ry="1.8" fill="#FFF" transform="rotate(-15, 230, 162)" filter="drop-shadow(0 0 4.5px #FFF)" />
+            <ellipse cx="230" cy="162" rx="5" ry="0.8" fill="#FFFAED" transform="rotate(-15, 230, 162)" />
             {/* Streamlined nose panel joint lines */}
-            <path d="M 280,115 Q 310,135 335,155" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+            <path d="M 285,138 Q 310,152 335,168" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
             {/* Small black bottom cover for the coupler pocket */}
-            <rect x="315" y="162" width="10" height="8" fill="#222" rx="1" />
+            <rect x="315" y="174" width="10" height="6" fill="#222" rx="1" />
           </>
         )}
       </g>
@@ -348,7 +347,7 @@ const TrainCab = ({ model, side }) => {
             <path d="M 10,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
           </g>
         ) : isTaroko ? (
-          <g transform="translate(242, 116)">
+          <g transform="translate(230, 162)">
             <ellipse cx="0" cy="0" rx="8" ry="1.8" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
             <ellipse cx="0" cy="0" rx="4" ry="0.8" fill="#FFF" />
             <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
@@ -361,7 +360,7 @@ const TrainCab = ({ model, side }) => {
         isEMU3000 ? (
           <rect x="320" y="145" width="6" height="3" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
         ) : isTaroko ? (
-          <circle cx="242" cy="116" r="3.5" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+          <circle cx="230" cy="162" r="3.5" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
         ) : null
       )}
 
@@ -867,14 +866,14 @@ export default function MaintenanceDepot({ show }) {
 
               {/* Brush 1 (Upper) - No inline transformOrigin styles to avoid offsets, spins in place */}
               <g className="wash-brush">
-                <rect x="-7" y="287" width="14" height="22" fill="#3498DB" opacity="0.85" rx="3" />
-                <line x1="0" y1="287" x2="0" y2="309" stroke="#FFF" strokeWidth="1" />
+                <rect x="-9" y="274" width="18" height="26" fill="#3498DB" opacity="0.85" rx="3" />
+                <line x1="0" y1="274" x2="0" y2="300" stroke="#FFF" strokeWidth="1.2" />
               </g>
 
               {/* Brush 2 (Lower) - reverse spin */}
               <g className="wash-brush-2">
-                <rect x="-7" y="311" width="14" height="22" fill="#2980B9" opacity="0.85" rx="3" />
-                <line x1="0" y1="311" x2="0" y2="333" stroke="#FFF" strokeWidth="1" />
+                <rect x="-9" y="303" width="18" height="26" fill="#2980B9" opacity="0.85" rx="3" />
+                <line x1="0" y1="303" x2="0" y2="329" stroke="#FFF" strokeWidth="1.2" />
               </g>
             </g>
 
