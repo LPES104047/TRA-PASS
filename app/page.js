@@ -27,6 +27,7 @@ export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0); // 觸發更新計數器
   const lastFetchTimeRef = useRef(0);
   const bypassCacheRef = useRef(false); // 強制更新標記 (繞過快取)
+  const abortControllerRef = useRef(null); // 🟢 新增：用於中斷 API 請求的控制器useEffect
 
   // 初始化時讀取 LocalStorage
   useEffect(() => {
@@ -85,53 +86,39 @@ export default function Home() {
     isLiveRef.current = isLiveConnected;
   }, [isLiveConnected]);
 
-  // 中央時鐘 (處理 5 分鐘防呆、手動冷卻、與自動刷新倒數)
+// 中央時鐘 (處理 5 分鐘防呆、手動冷卻、與自動刷新倒數)
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
-      const now = Date.now();
-      
+      // 1. 手動更新冷卻倒數
+      setCooldownTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+
+      // 2. 5 分鐘安全連線防呆
       if (isLiveRef.current) {
-        const connExpire = Number(localStorage.getItem("live_connection_expire_time") || 0);
-        if (connExpire > now) {
-          setConnectionTimeLeft(Math.ceil((connExpire - now) / 1000));
-        } else if (connExpire !== 0) {
+        setConnectionTimeLeft(prev => {
+          if (prev > 1) return prev - 1;
+          // 倒數歸零，斷開連線
           setIsLiveConnected(false);
           localStorage.removeItem("live_connection_expire_time");
-        }
+          return 0;
+        });
       }
 
-      const cooldownExpire = Number(localStorage.getItem("manual_refresh_cooldown_expire_time") || 0);
-      if (cooldownExpire > now) {
-        setCooldownTimeLeft(Math.ceil((cooldownExpire - now) / 1000));
-      } else {
-        setCooldownTimeLeft(0);
-      }
-
+      // 3. 自動刷新倒數 (180 秒)
       if (isLiveRef.current && origin) {
-        const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
-        const refreshInterval = 180;
-        
-        if (lastFetch > 0) {
-          const nextFetchTime = lastFetch + refreshInterval * 1000;
-          if (nextFetchTime > now) {
-            setRefreshCountdown(Math.ceil((nextFetchTime - now) / 1000));
-          } else {
-            setRefreshCountdown(prev => {
-              if (prev !== null) {
-                setRefreshTrigger(t => t + 1);
-                return null; // 標記為同步中
-              }
-              return prev;
-            });
-          }
-        } else {
-          setRefreshCountdown(null);
-        }
+        setRefreshCountdown(prev => {
+          if (prev === null) return null; // 同步中不倒數
+          if (prev > 1) return prev - 1;
+          
+          // 觸發重新請求資料
+          setRefreshTrigger(t => t + 1);
+          return null; 
+        });
       } else {
         setRefreshCountdown(null);
       }
     }, 1000);
+    
     return () => clearInterval(interval);
   }, [isLoaded, origin]);
 
@@ -151,10 +138,17 @@ export default function Home() {
 
     const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
+      
+      // ⚡️ 【防競態條件】立即中斷上一個未完成的請求
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       setRefreshCountdown(null); // 同步中
       try {
         const url = `/api/trains?origin=${origin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: abortControllerRef.current.signal });
         const result = await res.json();
         
         if (!isCurrent) return;
@@ -163,11 +157,17 @@ export default function Home() {
           setLiveData(result.data);
           sessionStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
           localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
+          setRefreshCountdown(180);
         }
       } catch (e) {
+        if (e.name === 'AbortError') {
+          console.log(`Fetch aborted for origin: ${origin}`);
+          return; 
+        }
         console.error("Live fetch error", e);
-        // 【死鎖修復】：就算網路失敗，也要推進最後更新時間，否則計時器會永遠卡死
+        // 【死鎖修復】：就算網路失敗，也要推進最後更新時間
         localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
+        setRefreshCountdown(180);
       }
     };
 
@@ -187,6 +187,7 @@ export default function Home() {
         if (cached) {
           try {
             setLiveData(JSON.parse(cached));
+            setRefreshCountdown(Math.ceil((lastFetch + refreshInterval * 1000 - now) / 1000));
           } catch (e) {
             console.error("Cache parsing error", e);
             sessionStorage.removeItem(`live_data_cache_${origin}`);

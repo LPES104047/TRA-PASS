@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 
+const calculateWaitTime = (actualDepMins, currentMins, isTomorrow) => {
+  let diffMins = actualDepMins - currentMins;
+  if (isTomorrow) diffMins += 1440;
+  else if (diffMins < 0) diffMins += 1440;
+  return diffMins;
+};
+
 export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
@@ -34,13 +41,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
 
 
   const nextTrain = validTrains[0];
-  let diffMins = 0;
-  if (nextTrain) {
-    diffMins = nextTrain.actualDepMins - currentMins;
-    // 【修正】：如果是明天車次，或者已經跨夜，強制補上 24 小時 (1440 分鐘)
-    if (isTomorrow) diffMins += 1440;
-    else if (diffMins < 0) diffMins += 1440;
-  }
+  const diffMins = nextTrain ? calculateWaitTime(nextTrain.actualDepMins, currentMins, isTomorrow) : 0;
 
   const getTrainDotClass = (type) => {
     if(type.includes('區間')) return '';
@@ -342,11 +343,8 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 if (diff < 0) diff += 24 * 60;
                 let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
                 
-                // 【修正：跨夜時間與文字】
-                let diffMins = t.actualDepMins - currentMins;
-                if (isTomorrow) diffMins += 1440;
-                else if (diffMins < 0) diffMins += 1440;
-                let waitText = diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`;
+                let diffWait = calculateWaitTime(t.actualDepMins, currentMins, isTomorrow);
+                let waitText = diffWait > 60 ? `${Math.floor(diffWait/60)}h ${diffWait%60}m` : `${diffWait}m`;
                 
                 let actualDepMins = dh * 60 + dm + (isTomorrow ? 0 : t.delay);
                 let actualArrMins = ah * 60 + am + (isTomorrow ? 0 : t.delay);
