@@ -58,7 +58,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
       <style>{`
         .theme2-root {
           background: transparent; 
-          min-height: 100vh; 
+          min-height: 100dvh; 
           display: flex; 
           flex-direction: column; 
           align-items: center; 

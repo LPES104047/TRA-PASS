@@ -49,7 +49,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
       <style>{`
         .theme3-root {
           background: transparent; 
-          min-height: 100vh; 
+          min-height: 100dvh; 
           display: flex; 
           flex-direction: column; 
           align-items: center; 

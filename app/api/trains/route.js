@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+// ⚡️ 直接使用 import 引入 JSON，讓 Webpack/Vercel 自動追蹤並打包，避免 Serverless 環境找不到檔案
+import staticData from '../../../public/data.json'; 
 
 // ==========================================
 // 🛡️ 記憶體安全防護區
@@ -8,17 +8,13 @@ import path from 'path';
 const apiCache = new Map();
 const fetchPromises = new Map();
 
-// 1. 動態讀取有效車站名單 (取代寫死的 VALID_STATIONS)
+// 1. 動態讀取有效車站名單 (透過靜態引入)
 let VALID_STATIONS = new Set();
 try {
-  const dataPath = path.join(process.cwd(), 'public', 'data.json');
-  const fileContent = fs.readFileSync(dataPath, 'utf8');
-  const staticData = JSON.parse(fileContent);
-  // 合併北上與南下所有車站並去重
   const allStations = [...(staticData.Northbound?.stations || []), ...(staticData.Southbound?.stations || [])];
   VALID_STATIONS = new Set(allStations);
 } catch (e) {
-  console.error("無法讀取 data.json，使用預設白名單防護", e);
+  console.error("解析 data.json 失敗，使用預設白名單防護", e);
   VALID_STATIONS = new Set(["桃園", "基隆", "臺北", "板橋"]); 
 }
 

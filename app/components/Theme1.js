@@ -70,7 +70,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           --train-express: #FF6B6B;
           background: transparent; 
           color: var(--text-main); 
-          min-height: 100vh; 
+          min-height: 100dvh; 
           display: flex; 
           flex-direction: column; 
           align-items: center; 

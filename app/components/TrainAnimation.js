@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
+function TrainAnimation({ isAnimating, direction = 'ltr' }) {
   if (!isAnimating) return null;
 
   const generateCommuterDetails = () => {
@@ -312,3 +312,5 @@ export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
     </>
   );
 }
+
+export default memo(TrainAnimation);
