@@ -48,11 +48,24 @@ export async function GET(request) {
   }
 
   try {
-    // 檢查記憶體快取：如果沒有強制繞過，且距離上次抓取同一站的資料不到 3 分鐘 (180,000 ms)，直接回傳快取資料
     const nowMs = Date.now();
-    if (!bypass && apiCache[origin] && (nowMs - apiCache[origin].timestamp < 180000)) {
-      console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
-      return NextResponse.json({ data: apiCache[origin].data });
+    const cachedData = apiCache[origin];
+
+    // 【安全加固區塊】
+    if (cachedData) {
+      const timeDiff = nowMs - cachedData.timestamp;
+      
+      // 1. 絕對硬性防護：無論是否 bypass，15 秒內絕對不允許向 TDX 發送新請求 (防止惡意 DDoS)
+      if (timeDiff < 15000) {
+        console.log(`[Security Block] Blocked rapid bypass attempt for ${origin}. Serving cache.`);
+        return NextResponse.json({ data: cachedData.data });
+      }
+
+      // 2. 常規快取：如果沒有強制 bypass，且在 3 分鐘內，回傳快取
+      if (!bypass && timeDiff < 180000) {
+        console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
+        return NextResponse.json({ data: cachedData.data });
+      }
     }
 
     const token = await getTdxToken();
