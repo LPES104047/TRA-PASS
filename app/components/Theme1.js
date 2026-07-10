@@ -147,7 +147,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
             opacity: 0.7;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--train-local); border-radius: 6px 0 0 6px; box-shadow: 0 0 15px var(--train-local); }
+        .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 6px; background: var(--train-local); border-radius: 6px; box-shadow: 0 0 15px var(--train-local); }
         .theme1-root .train-card.fast::before { background: var(--train-fast); box-shadow: 0 0 15px var(--train-fast); }
         .theme1-root .train-card.express::before { background: var(--train-express); box-shadow: 0 0 15px var(--train-express); }
         .theme1-root .train-card.express { border-left-color: var(--train-express); }
@@ -235,9 +235,9 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                         </div>
                     </div>
                 </div>
-                <button className="swap-btn" onClick={handleSwap}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
-                        <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                <button className="swap-btn" onClick={handleSwap} aria-label="對調出發地與目的地">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px' }}>
+                        <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l-4-4M17 20l4-4"/>
                     </svg>
                 </button>
                 <div className="select-group" ref={destRef}>

@@ -117,7 +117,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
 
   // 計算小火車 Icon 的垂直位置 (每一站高度設定為 65px)
   const stopHeight = 65;
-  const trainTopOffset = (trainPositionIndex * stopHeight) + (segmentProgress * stopHeight) + 12; // 12px 為微調置中偏差
+  const trainTopOffset = (trainPositionIndex * stopHeight) + (segmentProgress * stopHeight) + 15; // 15px 為微調置中偏差
 
   // 是否是已經通過的站
   const isStopPassed = (index) => {
@@ -299,14 +299,18 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
 
         .station-dot {
           position: absolute;
-          left: -41px; /* 18px - 41px = -23px, 圓點直徑 10px 居中置於 3px 軌道 */
-          top: 11px;
+          left: -35.5px; 
+          /* 💡 精準修正：置於 19.5px 的軌道中線 (-35.5px + 55px padding) */
+          top: 15px;    
+          /* 💡 精準修正：與 30px 高度的文字行保持完美的絕對垂直居中 */
           width: 9px;
           height: 9px;
           border-radius: 50%;
           background: #777;
           border: 2px solid #1a1a24;
           z-index: 2;
+          transform: translate(-50%, -50%); 
+          /* 💡 運用位移確保絕對中心對齊 */
           transition: background 0.3s, box-shadow 0.3s;
         }
 
@@ -387,7 +391,8 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
         /* 🚂 實時動態小火車圖標 */
         .live-train-indicator {
           position: absolute;
-          left: 10px; /* 對準軌道中線 */
+          left: 19.5px; 
+          /* 💡 修正資安/介面地雷：原先 10px 導致火車偏左脫軌，改為 19.5px 完美契合軌道中線 */
           width: 19px;
           height: 19px;
           background: #2ECC71;
@@ -566,7 +571,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
                     <div className="station-name-row">
                       <span className="station-name">{stop.name}</span>
                       {isOrigin(stop.name) && <span className="station-badge origin">出發站 🛫</span>}
-                      {isDest(stop.name) && <span className="station-badge dest">目的地 🛬</span>}
+                      {isDest(stop.name) && <span className="station-badge dest">目的地 🏁</span>}
                     </div>
                   </div>
                 );
