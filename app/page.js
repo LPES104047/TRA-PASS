@@ -186,10 +186,16 @@ export default function Home() {
         const cached = sessionStorage.getItem(`live_data_cache_${origin}`);
         if (cached) {
           try {
-            setLiveData(JSON.parse(cached));
-            setRefreshCountdown(Math.ceil((lastFetch + refreshInterval * 1000 - now) / 1000));
+            const parsedData = JSON.parse(cached);
+            // 🛡️ 資訊安全防禦：防範 Storage Poisoning，確保解析出來的是正常的物件且不是陣列
+            if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+              setLiveData(parsedData);
+              setRefreshCountdown(Math.ceil((lastFetch + refreshInterval * 1000 - now) / 1000));
+            } else {
+              throw new Error("Invalid cache format");
+            }
           } catch (e) {
-            console.error("Cache parsing error", e);
+            console.error("Cache parsing/validation error", e);
             sessionStorage.removeItem(`live_data_cache_${origin}`);
             fetchLive(false);
           }

@@ -48,7 +48,8 @@ async function getTdxToken(forceRefresh = false) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
-      cache: 'no-store' // 捨棄原生快取，由上方邏輯接管
+      cache: 'no-store', // 捨棄原生快取，由上方邏輯接管
+      signal: AbortSignal.timeout(5000) // 🛡️ 資訊安全防禦：5秒強制超時
     });
     
     if (!res.ok) throw new Error('Failed to fetch TDX token');
@@ -104,7 +105,8 @@ export async function GET(request) {
     
     let res = await fetch(tdxUrl, {
       headers: { 'Authorization': `Bearer ${token}` },
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: AbortSignal.timeout(8000) // 🛡️ 資訊安全防禦：8秒強制超時
     });
 
     // 🛡️ 【401 自癒機制】如果 TDX 提前撤銷 Token，強制重啟並重試一次
@@ -113,7 +115,8 @@ export async function GET(request) {
       token = await getTdxToken(true);
       res = await fetch(tdxUrl, {
         headers: { 'Authorization': `Bearer ${token}` },
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: AbortSignal.timeout(8000) // 🛡️ 資訊安全防禦：8秒強制超時
       });
     }
 
