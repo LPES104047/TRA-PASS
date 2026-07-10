@@ -1,0 +1,3834 @@
+=== 檔案：package.json ===
+{
+  "name": "temp-next",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+
+=== 檔案：next.config.ts ===
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  devIndicators: {
+    position: 'bottom-right',
+  },
+};
+
+export default nextConfig;
+
+
+=== 檔案：app/page.js ===
+"use client";
+import { useState, useEffect, useRef } from "react";
+import Theme1 from "./components/Theme1";
+import Theme2 from "./components/Theme2";
+import Theme3 from "./components/Theme3";
+import TrainAnimation from "./components/TrainAnimation";
+import TrainJourneyModal from "./components/TrainJourneyModal";
+import MaintenanceDepot from "./components/MaintenanceDepot";
+
+export default function Home() {
+  const [data, setData] = useState(null);
+  const [origin, setOrigin] = useState("桃園");
+  const [dest, setDest] = useState("基隆");
+  const [theme, setTheme] = useState(1);
+  const [liveData, setLiveData] = useState({});
+  const [animDirection, setAnimDirection] = useState('ltr');
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [refreshCountdown, setRefreshCountdown] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isTomorrow, setIsTomorrow] = useState(false);
+  const [activeTrain, setActiveTrain] = useState(null);
+
+  // 智慧防護與節流狀態
+  const [isLiveConnected, setIsLiveConnected] = useState(false);
+  const [connectionTimeLeft, setConnectionTimeLeft] = useState(300); // 5 分鐘安全限制 (300 秒)
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0); // 手動刷新冷卻 (20 秒)
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // 觸發更新計數器
+  const lastFetchTimeRef = useRef(0);
+  const bypassCacheRef = useRef(false); // 強制更新標記 (繞過快取)
+
+  // 初始化時讀取 LocalStorage
+  useEffect(() => {
+    const savedOrigin = localStorage.getItem("train_origin");
+    const savedDest = localStorage.getItem("train_dest");
+    const savedTheme = localStorage.getItem("train_theme");
+
+    if (savedOrigin) setOrigin(savedOrigin);
+    if (savedDest) setDest(savedDest);
+    if (savedTheme) setTheme(Number(savedTheme));
+    
+    const nowMs = Date.now();
+    const savedExpire = localStorage.getItem("live_connection_expire_time");
+    if (savedExpire) {
+      const expireTime = Number(savedExpire);
+      if (expireTime > nowMs) {
+        setIsLiveConnected(true);
+        setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
+      } else {
+        localStorage.removeItem("live_connection_expire_time");
+      }
+    }
+    
+    const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
+    if (savedCooldown) {
+      const cooldownTime = Number(savedCooldown);
+      if (cooldownTime > nowMs) {
+        setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000));
+      } else {
+        localStorage.removeItem("manual_refresh_cooldown_expire_time");
+      }
+    }
+
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    localStorage.setItem("train_theme", theme);
+
+    // Dynamically update body background to place it behind the TrainAnimation
+    if (theme === 1) {
+      document.body.style.background = 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else if (theme === 2) {
+      document.body.style.background = '#ebeff7';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else if (theme === 3) {
+      document.body.style.background = 'linear-gradient(135deg, #1A0B2E, #3B1B54, #120822)';
+      document.body.style.backgroundAttachment = 'fixed';
+    }
+  }, [theme, isLoaded]);
+
+  const isLiveRef = useRef(isLiveConnected);
+  useEffect(() => {
+    isLiveRef.current = isLiveConnected;
+  }, [isLiveConnected]);
+
+  // 中央時鐘 (處理 5 分鐘防呆、手動冷卻、與自動刷新倒數)
+  useEffect(() => {
+    if (!isLoaded) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      
+      if (isLiveRef.current) {
+        const connExpire = Number(localStorage.getItem("live_connection_expire_time") || 0);
+        if (connExpire > now) {
+          setConnectionTimeLeft(Math.ceil((connExpire - now) / 1000));
+        } else if (connExpire !== 0) {
+          setIsLiveConnected(false);
+          localStorage.removeItem("live_connection_expire_time");
+        }
+      }
+
+      const cooldownExpire = Number(localStorage.getItem("manual_refresh_cooldown_expire_time") || 0);
+      if (cooldownExpire > now) {
+        setCooldownTimeLeft(Math.ceil((cooldownExpire - now) / 1000));
+      } else {
+        setCooldownTimeLeft(0);
+      }
+
+      if (isLiveRef.current && origin) {
+        const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+        const refreshInterval = 180;
+        
+        if (lastFetch > 0) {
+          const nextFetchTime = lastFetch + refreshInterval * 1000;
+          if (nextFetchTime > now) {
+            setRefreshCountdown(Math.ceil((nextFetchTime - now) / 1000));
+          } else {
+            setRefreshCountdown(prev => {
+              if (prev !== null) {
+                setRefreshTrigger(t => t + 1);
+                return null; // 標記為同步中
+              }
+              return prev;
+            });
+          }
+        } else {
+          setRefreshCountdown(null);
+        }
+      } else {
+        setRefreshCountdown(null);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isLoaded, origin]);
+
+  useEffect(() => {
+    fetch(`/data.json?v=${Date.now()}`)
+      .then((res) => res.json())
+      .then((d) => setData(d));
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !origin || !isLiveConnected) return;
+    
+    let isCurrent = true;
+
+    const fetchLive = async (bypass = false) => {
+      if (!isCurrent) return;
+      setRefreshCountdown(null); // 同步中
+      try {
+        const url = `/api/trains?origin=${origin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
+        const res = await fetch(url);
+        const result = await res.json();
+        
+        if (!isCurrent) return;
+        
+        if (result.data) {
+          setLiveData(result.data);
+          sessionStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
+          localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
+        }
+      } catch (e) {
+        console.error("Live fetch error", e);
+      }
+    };
+
+    const shouldBypass = bypassCacheRef.current;
+    if (shouldBypass) {
+      bypassCacheRef.current = false;
+      fetchLive(true);
+    } else {
+      const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+      const refreshInterval = 180;
+      
+      const now = Date.now();
+      if (now - lastFetch >= refreshInterval * 1000 || lastFetch === 0) {
+        fetchLive(false);
+      } else {
+        const cached = sessionStorage.getItem(`live_data_cache_${origin}`);
+        if (cached) {
+          setLiveData(JSON.parse(cached));
+        } else {
+          fetchLive(false);
+        }
+      }
+    }
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
+
+  if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
+
+  const allStations = data.Northbound.stations;
+
+  // Compute schedules
+  let dirInfo = null;
+  const nO = data.Northbound.stations.indexOf(origin); 
+  const nD = data.Northbound.stations.indexOf(dest);
+  if(nO !== -1 && nD !== -1 && nO < nD) dirInfo = { dir: "Northbound", oIdx: nO, dIdx: nD };
+  
+  const sO = data.Southbound.stations.indexOf(origin); 
+  const sD = data.Southbound.stations.indexOf(dest);
+  if(sO !== -1 && sD !== -1 && sO < sD) dirInfo = { dir: "Southbound", oIdx: sO, dIdx: sD };
+
+  // const now = new Date();
+  // 記住這位置！記住記住記住！
+  const currentMins = 23 * 60 + 59; // 為了開發，固定在半夜 23:59 (收班無車狀態)
+  // const currentMins = now.getHours() * 60 + now.getMinutes();
+  
+  let validTrains = [];
+  if (dirInfo) {
+    data[dirInfo.dir].trains.forEach(t => {
+      const oTime = t.times[dirInfo.oIdx];
+      const dTime = t.times[dirInfo.dIdx];
+      if(oTime && dTime) {
+        const [h, m] = oTime.split(':').map(Number);
+        // 若為明天，即時誤點時間強制為 0 分
+        let delay = isTomorrow ? 0 : (liveData[t.number] || 0);
+        let actualDepMins = h * 60 + m + delay;
+        
+        validTrains.push({ 
+          ...t, 
+          depTime: oTime, 
+          arrTime: dTime, 
+          depMins: h * 60 + m,
+          actualDepMins,
+          delay
+        });
+      }
+    });
+    
+    validTrains.sort((a, b) => a.actualDepMins - b.actualDepMins);
+    validTrains = validTrains.filter(t => {
+      // 若為明天，則不過濾「目前時間點之前發車」的列車
+      if (!isTomorrow && t.actualDepMins < currentMins) return false;
+      let [dh, dm] = t.depTime.split(':').map(Number);
+      let [ah, am] = t.arrTime.split(':').map(Number);
+      let diff = (ah * 60 + am) - (dh * 60 + dm);
+      if (diff < 0) diff += 24 * 60;
+      return diff <= 12 * 60;
+    });
+  }
+
+  const triggerAnimation = (stateUpdateCallback, direction = 'ltr') => {
+    if (isAnimating) return; 
+    const isDepotShown = validTrains.length === 0;
+    if (isDepotShown) {
+      stateUpdateCallback();
+      return;
+    }
+    setAnimDirection(direction);
+    setIsAnimating(true);
+    // The continuous train takes 4.0s total.
+    // Update state at 2000ms (when train is stopped at the center).
+    setTimeout(() => {
+      stateUpdateCallback();
+    }, 2000);
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 4000);
+  };
+
+  const getDirectionAnim = (from, to) => {
+    if (!data) return 'ltr';
+    const nO = data.Northbound.stations.indexOf(from);
+    const nD = data.Northbound.stations.indexOf(to);
+    // 北上 (Northbound) -> LTR (由左至右), 南下 (Southbound) -> RTL (由右至左)
+    if (nO !== -1 && nD !== -1 && nO < nD) return 'ltr';
+    return 'rtl';
+  };
+
+  const resetConnectionTimer = () => {
+    if (isLiveConnected) {
+      setConnectionTimeLeft(300); // 重新填滿為 5 分鐘
+      localStorage.setItem("live_connection_expire_time", String(Date.now() + 300000));
+    }
+  };
+
+  const handleOriginChange = (newOrigin) => {
+    if (newOrigin === origin) return;
+    setOrigin(newOrigin); // 立即更新，不觸發動畫
+    localStorage.setItem("train_origin", newOrigin);
+    resetConnectionTimer();
+  };
+
+  const handleDestChange = (newDest) => {
+    if (newDest === dest) return;
+    const animDir = getDirectionAnim(origin, newDest);
+    triggerAnimation(() => {
+      setDest(newDest);
+      localStorage.setItem("train_dest", newDest);
+      resetConnectionTimer();
+    }, animDir);
+  };
+
+  const handleSwap = () => {
+    if (origin === dest) return;
+    const animDir = getDirectionAnim(dest, origin);
+    triggerAnimation(() => {
+      const currentOrigin = origin;
+      const currentDest = dest;
+      setOrigin(currentDest);
+      setDest(currentOrigin);
+      localStorage.setItem("train_origin", currentDest);
+      localStorage.setItem("train_dest", currentOrigin);
+      resetConnectionTimer();
+    }, animDir);
+  };
+
+  const toggleLiveConnection = () => {
+    setIsLiveConnected(prev => {
+      const next = !prev;
+      if (next) {
+        setConnectionTimeLeft(300); // 重置為 5 分鐘
+        localStorage.setItem("live_connection_expire_time", String(Date.now() + 300000));
+      } else {
+        localStorage.removeItem("live_connection_expire_time");
+      }
+      return next;
+    });
+  };
+
+  const handleManualRefresh = () => {
+    if (!isLiveConnected || cooldownTimeLeft > 0) return;
+    setCooldownTimeLeft(20); // 20 秒手動更新冷卻
+    localStorage.setItem("manual_refresh_cooldown_expire_time", String(Date.now() + 20000));
+    bypassCacheRef.current = true; // 標記強制刷新以繞過後台快取
+    setRefreshTrigger(prev => prev + 1); // 觸發 useEffect 重新整理
+    resetConnectionTimer(); // 重置防呆倒數
+  };
+
+  const formatTimeLeft = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}m ${String(s).padStart(2, '0')}s`;
+  };
+
+  const props = {
+    origin, setOrigin: handleOriginChange, 
+    dest, setDest: handleDestChange, 
+    handleSwap,
+    allStations, validTrains, currentMins,
+    isTomorrow, setIsTomorrow,
+    onTrainSelect: setActiveTrain
+  };
+
+  return (
+    <>
+      {/* 📡 膠囊一：即時連線開關 */}
+      {isLoaded && (
+        <button 
+          onClick={toggleLiveConnection}
+          style={{
+            position: 'fixed', top: 10, left: 10, zIndex: 9999, 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)', 
+            padding: '6px 14px', borderRadius: '20px', 
+            color: isLiveConnected ? '#2ECC71' : '#BDC3C7', 
+            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+            border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
+            cursor: 'pointer', transition: 'all 0.3s ease',
+            boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
+          }}
+        >
+          <span style={{
+            display: 'inline-block', width: 8, height: 8, borderRadius: '50%', 
+            background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D', 
+            boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
+          }}></span>
+          {isLiveConnected ? (
+            <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕</span>
+          ) : (
+            <span>● 離線模式 (點擊連線)</span>
+          )}
+        </button>
+      )}
+
+      {/* 🔄 膠囊二：手動立即更新 */}
+      {isLoaded && (
+        <button 
+          onClick={handleManualRefresh}
+          disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
+          style={{
+            position: 'fixed', top: 50, left: 10, zIndex: 9999, 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'), 
+            padding: '6px 14px', borderRadius: '20px', 
+            color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'), 
+            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+            border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
+            cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s ease',
+            opacity: isLiveConnected ? 1 : 0.5,
+            pointerEvents: isLiveConnected ? 'auto' : 'none'
+          }}
+        >
+          <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '🔄 立即手動更新'}</span>
+        </button>
+      )}
+      <div style={{position: 'fixed', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: 5}}>
+        <button onClick={() => setTheme(1)} style={{padding: '5px 10px', background: theme===1?'#00F2FE':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>極簡風</button>
+        <button onClick={() => setTheme(2)} style={{padding: '5px 10px', background: theme===2?'#1B3B6F':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>車票風</button>
+        <button onClick={() => setTheme(3)} style={{padding: '5px 10px', background: theme===3?'#00F0FF':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>儀表板風</button>
+      </div>
+      {theme === 1 && <Theme1 {...props} />}
+      {theme === 2 && <Theme2 {...props} />}
+      {theme === 3 && <Theme3 {...props} />}
+      <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
+      <MaintenanceDepot show={validTrains.length === 0} />
+
+      {activeTrain && (
+        <TrainJourneyModal
+          train={activeTrain}
+          onClose={() => setActiveTrain(null)}
+          stations={allStations}
+          dirInfo={dirInfo}
+          isTomorrow={isTomorrow}
+          origin={origin}
+          dest={dest}
+          theme={theme}
+        />
+      )}
+    </>
+  );
+}
+
+
+=== 檔案：app/layout.tsx ===
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">{children}</body>
+    </html>
+  );
+}
+
+
+=== 檔案：app/components/Theme2.js ===
+import React, { useState, useEffect, useRef } from "react";
+
+export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
+  const [tearingTrainNo, setTearingTrainNo] = useState(null);
+
+  const handleTicketClick = (t) => {
+    if (tearingTrainNo) return;
+    setTearingTrainNo(t.number);
+    setTimeout(() => {
+      onTrainSelect(t);
+      setTearingTrainNo(null);
+    }, 550);
+  };
+  const [isOriginOpen, setIsOriginOpen] = useState(false);
+  const [isDestOpen, setIsDestOpen] = useState(false);
+  const originRef = useRef(null);
+  const destRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (originRef.current && !originRef.current.contains(event.target)) {
+        setIsOriginOpen(false);
+      }
+      if (destRef.current && !destRef.current.contains(event.target)) {
+        setIsDestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+
+  const getDotColor = (type) => {
+    if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return '#FF6B6B';
+    if(type.includes('莒光')) return '#FFB84D';
+    return '#1B3B6F';
+  };
+
+  const enNames = {
+    "桃園": "TAOYUAN", "鳳鳴": "FENGMING", "鶯歌": "YINGGE", "山佳": "SHANJIA", "南樹林": "NANSHULIN",
+    "樹林": "SHULIN", "浮洲": "FUZHOU", "板橋": "BANQIAO", "萬華": "WANHUA", "臺北": "TAIPEI",
+    "松山": "SONGSHAN", "南港": "NANGANG", "汐科": "XIKE", "汐止": "XIZHI", "五堵": "WUDU",
+    "百福": "BAIFU", "七堵": "QIDU", "八堵": "BADU", "三坑": "SANKENG", "基隆": "KEELUNG"
+  };
+
+  const enOrigin = enNames[origin] || "STATION";
+  const enDest = enNames[dest] || "STATION";
+
+  const formatTime = (mins) => {
+    let h = Math.floor(mins / 60) % 24;
+    let m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  return (
+    <>
+      <style>{`
+        .theme2-root {
+          background: transparent; 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          padding: 20px;
+          color: #333;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
+        }
+        
+        .theme2-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #1B3B6F; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+        
+        .theme2-root .selector-box { 
+          background: #FFFFFF; 
+          border-radius: 20px; 
+          box-shadow: 0 10px 30px rgba(27, 59, 111, 0.08); 
+          display: flex; 
+          align-items: center; 
+          width: 100%; 
+          max-width: 500px; 
+          position: relative; 
+          z-index: 200; 
+          padding: 0; 
+          height: 75px; 
+          margin-bottom: 30px; 
+          border: 1px solid rgba(27, 59, 111, 0.12); 
+        }
+        .theme2-root .selector-box::after { 
+          content: ""; 
+          position: absolute; 
+          left: 50%; 
+          top: 15%; 
+          bottom: 15%; 
+          width: 1px; 
+          background: #E2E8F0; 
+          z-index: 1; 
+        }
+        
+        .theme2-root .custom-select { 
+          flex: 1; 
+          background: transparent; 
+          height: 100%; 
+          display: flex; 
+          flex-direction: column; 
+          justify-content: center; 
+          position: relative; 
+          transition: background 0.2s; 
+          cursor: pointer; 
+        }
+        .theme2-root #originContainer { 
+            border-top-left-radius: 20px; border-bottom-left-radius: 20px; 
+            border-top-right-radius: 0; border-bottom-right-radius: 0; 
+            padding-left: 30px; 
+            padding-right: 20px;
+            align-items: flex-start;
+        }
+        .theme2-root #destContainer { 
+            border-top-right-radius: 20px; border-bottom-right-radius: 20px; 
+            border-top-left-radius: 0; border-bottom-left-radius: 0; 
+            padding-right: 30px; 
+            padding-left: 20px;
+            align-items: flex-end;
+        }
+        .theme2-root .custom-select:hover { background: #F8FAFC; }
+        .theme2-root #originContainer::before { content: "出發 Origin"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
+        .theme2-root #destContainer::before { content: "抵達 Destination"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
+        
+        .theme2-root #originContainer .select-trigger { 
+          font-size: 18px; 
+          font-weight: 800; 
+          color: #1B3B6F; 
+          width: 100%; 
+          text-align: left; 
+          display: flex; 
+          justify-content: flex-start; 
+          align-items: center; 
+          gap: 6px;
+        }
+        .theme2-root #destContainer .select-trigger { 
+          font-size: 18px; 
+          font-weight: 800; 
+          color: #1B3B6F; 
+          width: 100%; 
+          text-align: right; 
+          display: flex; 
+          justify-content: flex-start; 
+          align-items: center; 
+          gap: 6px;
+          flex-direction: row-reverse;
+        }
+        
+        .theme2-root .select-options { 
+          position: absolute; 
+          top: 100%; 
+          background: #FFFFFF; 
+          border: 1px solid #E0E5EC; 
+          border-radius: 12px; 
+          margin-top: 5px; 
+          max-height: 250px; 
+          overflow-y: auto; 
+          display: none; 
+          z-index: 300; 
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
+          padding: 10px; 
+          min-width: 300px; 
+        }
+        .theme2-root #originContainer .select-options { left: 0; }
+        .theme2-root #destContainer .select-options { right: 0; left: auto; }
+        .theme2-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme2-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: background 0.2s; background: #F2F4F8; border: none; color: #1B3B6F; font-weight: 500; }
+        .theme2-root .option-item:hover { background: #E0E5EC; }
+        .theme2-root .option-item.selected { background: #1B3B6F; color: #FFFFFF; font-weight: bold; }
+        
+        .theme2-root .swap-btn { 
+          position: absolute; 
+          left: 50%; 
+          top: 50%; 
+          transform: translate(-50%, -50%); 
+          background: #1B3B6F; 
+          color: #FFFFFF; 
+          border: 3px solid #FFFFFF; 
+          border-radius: 50%; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          font-size: 18px; 
+          box-shadow: 0 4px 15px rgba(27, 59, 111, 0.15); 
+          z-index: 10; 
+          cursor: pointer; 
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .theme2-root .swap-btn:hover { 
+          transform: translate(-50%, -50%) rotate(180deg) scale(1.05); 
+          background: #2A5298; 
+        }
+
+        .theme2-root .ticket {
+            width: 100%; max-width: 500px; margin: 0 auto;
+            background: #F2F4F8;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            transition: background 0.5s ease;
+        }
+        .theme2-root .ticket.empty {
+            background: rgba(242, 244, 248, 0.7);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .theme2-root .ticket-header { padding: 25px 25px 35px 25px; position: relative; }
+        .theme2-root .top-row { display: flex; justify-content: space-between; align-items: center; position: relative; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
+        .theme2-root .top-row .logo { font-weight: 700; font-family: 'Space Grotesk', sans-serif; letter-spacing: 1px; color: #1B3B6F; }
+        .theme2-root .top-row .date { font-size: 12px; color: #555; text-align: right; }
+        
+        .theme2-root .route-row { display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .theme2-root .station-col { text-align: center; flex: 1; }
+        .theme2-root .station-en { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #1B3B6F; text-transform: uppercase; }
+        .theme2-root .station-zh { font-size: 18px; font-weight: 600; color: #1B3B6F; margin-top: 5px; }
+        .theme2-root .arrow { font-size: 24px; color: #888; text-align: center; width: 40px; font-weight: normal; transform: translateY(-12px); }
+        
+        .theme2-root .punched-line {
+            position: absolute; bottom: -10px; left: 0; right: 0;
+            height: 20px;
+            background-image: radial-gradient(circle at 15px 10px, transparent 11px, #F2F4F8 12px);
+            background-size: 30px 20px;
+            background-repeat: repeat-x;
+            z-index: 10;
+        }
+        .theme2-root .punched-shadow {
+            position: absolute; bottom: -10px; left: 0; right: 0;
+            height: 20px;
+            background-image: radial-gradient(circle at 15px 10px, rgba(0,0,0,0.15) 11px, transparent 12px);
+            background-size: 30px 20px;
+            background-repeat: repeat-x;
+            z-index: 9;
+            transform: translateY(2px);
+        }
+        .theme2-root .ticket-body { padding: 30px 20px 20px 20px; }
+        
+        .theme2-root .dashboard { width: 100%; position: relative; margin-top: 20px; }
+        
+        /* Base Timeline Styles (Tablet 481px - 767px) */
+        .theme2-root .dashboard::before {
+            content: ''; position: absolute; top: 0; bottom: 0; 
+            left: 65px; width: 2px; /* Center is 66px */
+            background: #D0D5E0;
+            border-radius: 2px; z-index: 1;
+        }
+        .theme2-root .train-item { position: relative; margin-bottom: 20px; padding-left: 80px; }
+        
+        .theme2-root .train-item::before {
+            content: ''; position: absolute; top: 18px; 
+            left: 57px; width: 14px; height: 14px; /* Total width 18px, Center is 66px */
+            border-radius: 50%;
+            background: var(--dot-color, #1B3B6F); border: 2px solid #FFFFFF; z-index: 2;
+            box-shadow: 0 0 10px var(--dot-color, #1B3B6F), 0 0 20px var(--dot-color, #1B3B6F);
+            animation: pulse-dot 2s infinite;
+            box-sizing: content-box;
+        }
+        @keyframes pulse-dot {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(27, 59, 111, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(27, 59, 111, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(27, 59, 111, 0); }
+        }
+        .theme2-root .time-label {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            left: 0px; width: 50px; /* Right edge is 50px, gap to dot is 7px */
+            font-size: 15px; font-weight: 700; color: #1B3B6F;
+            text-align: right; font-variant-numeric: tabular-nums;
+        }
+
+        .theme2-root .card {
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05); 
+            padding: 15px 95px 15px 15px; /* Leave space on the right for 75px stub + 20px padding */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s ease, box-shadow 0.2s ease; 
+        }
+        .theme2-root .card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); border-color: rgba(27,59,111,0.2); }
+        .theme2-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .theme2-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 18px); color: #1B3B6F; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; font-weight: bold; white-space: normal; }
+        .theme2-root .card-header h3 > span { white-space: nowrap; display: inline-flex; align-items: baseline; }
+        .theme2-root .card-header .type { font-size: 11px; background: rgba(27,59,111,0.1); padding: 4px 8px; border-radius: 4px; color: #1B3B6F; font-weight: bold; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+        .theme2-root .card-body { display: flex; justify-content: space-between; font-size: 13px; color: #555; }
+        .theme2-root .arr-time { font-weight: bold; color: #1B3B6F; }
+        .theme2-root .progress-track { height: 4px; background: rgba(0,0,0,0.05); border-radius: 2px; margin-top: 12px; position: relative; overflow: hidden; }
+        .theme2-root .progress-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; transition: width 0.3s; }
+        .theme2-root .countdown-text { margin-top: 8px; font-size: 12px; font-weight: 600; text-align: right; color: #1B3B6F; }
+        .theme2-root .ticket-footer { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-top: 2px dashed rgba(0,0,0,0.1); background: #E8ECF3; }
+        .theme2-root .ticket-footer .meta { text-align: right; }
+        .theme2-root .ticket-footer .meta p { margin: 0; font-size: 12px; font-weight: bold; color: #1B3B6F; }
+        .theme2-root .ticket-footer .meta span { font-size: 10px; color: #64748B; }
+        
+        .theme2-root .delay-badge {
+          background: #FF6B6B; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 6px;
+        }
+
+        .theme2-root .card::after {
+            content: ''; position: absolute; top: 0; bottom: 0; right: 75px;
+            border-left: 2px dashed rgba(0,0,0,0.1);
+        }
+        .theme2-root .ticket-stub-content {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1B3B6F;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            opacity: 0.2;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 📅 Today/Tomorrow Toggle Badge */
+        .theme2-root .date-toggle-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 25px;
+          margin-top: 10px;
+        }
+
+        .theme2-root .date-toggle {
+          background: #FFFFFF;
+          border: 1.5px solid rgba(27, 59, 111, 0.12);
+          border-radius: 20px;
+          padding: 3px;
+          display: flex;
+          width: 200px;
+          box-shadow: 0 4px 15px rgba(27, 59, 111, 0.06);
+        }
+
+        .theme2-root .toggle-btn {
+          flex: 1;
+          border: none;
+          background: transparent;
+          color: #64748B;
+          padding: 6px 12px;
+          border-radius: 17px;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        
+        .theme2-root .toggle-btn:hover {
+          color: #1B3B6F;
+        }
+
+        .theme2-root .toggle-btn.active {
+          background: #1B3B6F;
+          color: #FFFFFF;
+          box-shadow: 0 2px 8px rgba(27, 59, 111, 0.2);
+        }
+
+        /* 🎫 撕票根動畫 */
+        .theme2-root .card.tearing {
+          animation: ticketShake 0.5s ease-out;
+        }
+
+        .theme2-root .card.tearing::after {
+          opacity: 0;
+          transition: opacity 0.15s ease-out;
+        }
+
+        .theme2-root .card.tearing .ticket-stub-content {
+          animation: tearOffStub 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes ticketShake {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          20% { transform: scale(0.97) rotate(-1deg); }
+          40% { transform: scale(0.98) rotate(0.8deg); }
+          60% { transform: scale(0.99) rotate(-0.4deg); }
+        }
+
+        @keyframes tearOffStub {
+          0% {
+            transform: rotate(0deg) translate(0, 0);
+            opacity: 0.2;
+          }
+          20% {
+            transform: rotate(6deg) translate(5px, 15px);
+            opacity: 0.8;
+          }
+          100% {
+            transform: rotate(24deg) translate(40px, 180px);
+            opacity: 0;
+          }
+        }
+
+        /* Desktop Overrides */
+        @media (min-width: 768px) {
+            .theme2-root .ticket { max-width: 650px; width: 100%; }
+            .theme2-root .selector-box { max-width: 650px; height: 90px; margin: 0 auto 40px auto; }
+            .theme2-root #originContainer { padding-left: 45px; padding-right: 25px; }
+            .theme2-root #destContainer { padding-right: 45px; padding-left: 25px; }
+            .theme2-root #originContainer::before, .theme2-root #destContainer::before { font-size: 12px; margin-bottom: 4px; }
+            .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { font-size: 24px; }
+            .theme2-root .swap-btn { width: 44px; height: 44px; border: 3px solid #FFFFFF; font-size: 20px; }
+            
+            .theme2-root .dashboard { max-width: 650px; margin-top: 40px; }
+            .theme2-root .train-item { padding-left: 100px; }
+            
+            /* Math perfectly aligned for desktop */
+            .theme2-root .time-label { left: -10px; width: 60px; font-size: 18px; } /* Right edge: 50px */
+            .theme2-root .dashboard::before { left: 65px; width: 4px; } /* Center: 67px */
+            .theme2-root .train-item::before { left: 56px; width: 18px; height: 18px; border-width: 2px; } /* Total width: 22px, Center: 67px */
+            
+            .theme2-root .card { padding: 25px 155px 25px 35px; } /* Leave space for 120px stub + 35px padding */
+            .theme2-root .card::after { right: 120px; }
+            .theme2-root .ticket-stub-content { width: 120px; font-size: 13px; letter-spacing: 4px; }
+            .theme2-root .card-header h3 { font-size: 32px; }
+            .theme2-root .card-body { font-size: 16px; }
+            .theme2-root .countdown-text { font-size: 16px; margin-top: 15px; }
+        }
+
+        /* Mobile Overrides */
+        @media (max-width: 480px) {
+            .theme2-root .selector-box { flex-direction: column; gap: 10px; padding: 15px 0; }
+            .theme2-root #originContainer, .theme2-root #destContainer { width: 100%; border-radius: 16px; padding: 12px 20px; height: 75px; align-items: center; }
+            .theme2-root #originContainer::before, .theme2-root #destContainer::before { text-align: center; }
+            .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { justify-content: center; text-align: center; font-size: 20px; flex-direction: row; }
+            .theme2-root .swap-btn { position: relative; margin: -10px auto; border: 3.5px solid #FFFFFF; }
+            
+            .theme2-root .dashboard { margin-top: 10px; }
+            
+            /* Math perfectly aligned for mobile */
+            .theme2-root .train-item { padding-left: 65px; margin-bottom: 15px; }
+            .theme2-root .time-label { left: 0px; width: 42px; font-size: 13px; } /* Right edge: 42px */
+            .theme2-root .dashboard::before { left: 52px; width: 2px; } /* Center: 53px */
+            .theme2-root .train-item::before { left: 46px; width: 10px; height: 10px; border-width: 2px; } /* Total width: 14px, Center: 53px */
+            
+            .theme2-root .card { padding: 15px 95px 15px 15px; }
+            .theme2-root .station-col { min-width: 0; }
+            .theme2-root .station-en { font-size: 14px; word-break: break-word; line-height: 1.2; }
+            .theme2-root .station-zh { font-size: 15px; margin-top: 2px; }
+            .theme2-root .arrow { font-size: 16px; width: 20px; }
+        }
+      `}</style>
+
+      <div className="theme2-root">
+        <h1>個人時刻表 TICKET STYLE</h1>
+        <div className="selector-box">
+            <div className="custom-select" id="originContainer" ref={originRef} onClick={() => { setIsOriginOpen(!isOriginOpen); setIsDestOpen(false); }}>
+                <div className="select-trigger">{origin} <span style={{ fontSize: '0.6em', opacity: 0.6 }}>▼</span></div>
+                <div className={`select-options ${isOriginOpen ? 'open' : ''}`}>
+                    {allStations.map(s => (
+                        <div key={s} className={`option-item ${s === origin ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setOrigin(s); setIsOriginOpen(false); }}>
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <button className="swap-btn" onClick={handleSwap}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                    <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                </svg>
+            </button>
+            <div className="custom-select" id="destContainer" ref={destRef} onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
+                <div className="select-trigger">{dest} <span style={{ fontSize: '0.6em', opacity: 0.6 }}>▼</span></div>
+                <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
+                    {allStations.map(s => (
+                        <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+
+        {/* 📅 Date Toggle Buttons */}
+        <div className="date-toggle-container">
+          <div className="date-toggle">
+            <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+            <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+          </div>
+        </div>
+
+        <div className={`ticket ${validTrains.length === 0 ? 'empty' : ''}`}>
+            <div className="ticket-header">
+                <div className="top-row">
+                    <div className="logo">🚆 TRA PASS</div>
+                    <div className="date">{isTomorrow ? 'Valid Tomorrow' : 'Valid Today'}</div>
+                </div>
+                <div className="route-row">
+                    <div className="station-col">
+                        <div className="station-en">{enOrigin}</div>
+                        <div className="station-zh">{origin}</div>
+                    </div>
+                    <div className="arrow" style={{fontWeight: 'normal', color: '#888', position: 'relative', top: '-14px'}}>⟶</div>
+                    <div className="station-col">
+                        <div className="station-en">{enDest}</div>
+                        <div className="station-zh">{dest}</div>
+                    </div>
+                </div>
+                <div className="punched-shadow"></div>
+                <div className="punched-line"></div>
+            </div>
+            
+
+            <div className="ticket-body">
+                <div className="dashboard">
+                  {validTrains.length === 0 ? (
+                    <div className="empty-state-card" style={{
+                      background: '#FFFFFF',
+                      border: '1.5px dashed rgba(27, 59, 111, 0.2)',
+                      borderRadius: '12px',
+                      padding: '30px 20px',
+                      textAlign: 'center',
+                      color: '#2C3E50',
+                      boxShadow: '0 4px 15px rgba(27, 59, 111, 0.05)',
+                      margin: '10px 0 20px 0'
+                    }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        background: 'rgba(27, 59, 111, 0.05)',
+                        border: '1px solid rgba(27, 59, 111, 0.15)',
+                        padding: '6px 16px',
+                        borderRadius: '20px',
+                        color: '#1B3B6F',
+                        fontSize: '13px',
+                        fontWeight: 'bold',
+                        marginBottom: '15px'
+                      }}>
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#1B3B6F' }}></span>
+                        {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+                      </div>
+                      <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748B', lineHeight: '1.6' }}>
+                        本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+                      </p>
+                      <button 
+                        onClick={() => setIsTomorrow(!isTomorrow)}
+                        style={{
+                          background: '#1B3B6F',
+                          border: 'none',
+                          borderRadius: '20px',
+                          color: '#fff',
+                          padding: '8px 24px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 10px rgba(27, 59, 111, 0.2)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'transform 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                        onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                          <path d="M16 2v4M8 2v4M2 10h20" />
+                        </svg>
+                        {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
+                      </button>
+                    </div>
+                  ) : (
+                    validTrains.map((t) => {
+                      const diffMins = t.actualDepMins - currentMins;
+                      const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
+                      
+                      let [dh, dm] = t.depTime.split(':').map(Number);
+                      let [ah, am] = t.arrTime.split(':').map(Number);
+                      let diff = (ah * 60 + am) - (dh * 60 + dm);
+                      if (diff < 0) diff += 24 * 60;
+                      let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                      const dotColor = getDotColor(t.type);
+                      let actualArrMins = (ah * 60 + am) + t.delay;
+                      const isTearing = tearingTrainNo === t.number;
+
+                      return (
+                        <div 
+                          key={t.number} 
+                          className="train-item" 
+                          style={{
+                            "--dot-color": dotColor,
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => handleTicketClick(t)}
+                        >
+                            <div className="time-label">{t.depTime}</div>
+                            <div className={`card ${isTearing ? 'tearing' : ''}`} style={{borderLeft: `6px solid ${dotColor}`}}>
+                                <div className="ticket-stub-content">TRA PASS</div>
+                                <div className="card-header">
+                                    <h3>
+                                        <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 
+                                        <span style={{color:'#888', fontSize:'16px', fontWeight: 'normal', position: 'relative', top: '-2px', margin: '0 4px'}}>⟶</span>
+                                        <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: '#888'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}</span>
+                                    </h3>
+                                    <div className="type" style={{color: dotColor, background: `${dotColor}15`}}>{t.type}</div>
+                                </div>
+                                <div className="card-body">
+                                    <div style={{display:'flex', alignItems:'center', zIndex: 5, position: 'relative'}}>{t.number} 往 {t.route.split('－')[1] || t.route} <span style={{marginLeft: '8px', background: 'rgba(0,0,0,0.05)', padding: '3px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'}}>車程 {dur}</span></div>
+                                    <div style={{zIndex: 5, position: 'relative'}}>
+                                      {t.delay > 0 && <span className="delay-badge">晚 {t.delay} 分</span>}
+                                    </div>
+                                </div>
+                                <div className="progress-track" style={{zIndex: 5, position: 'relative'}}>
+                                    <div className="progress-fill" style={{width: `${percent}%`, background: `linear-gradient(90deg, transparent, ${dotColor})`}}></div>
+                                </div>
+                                <div className="countdown-text" style={{color: dotColor, zIndex: 5, position: 'relative'}}>
+                                  {isTomorrow ? "明天車次" : `Departs in ${diffMins} min`}
+                                </div>
+                            </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+            </div>
+            
+            <div className="ticket-footer">
+                <div style={{fontSize: '24px'}}>🎫</div>
+                <div className="meta">
+                    <p>BOOKING: TRA-PASS</p>
+                    <span>Taiwan Railway Company</span>
+                </div>
+            </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/components/Theme3.js ===
+import React, { useState, useEffect, useRef } from "react";
+
+export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
+  const [isOriginOpen, setIsOriginOpen] = useState(false);
+  const [isDestOpen, setIsDestOpen] = useState(false);
+  const originRef = useRef(null);
+  const destRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (originRef.current && !originRef.current.contains(event.target)) {
+        setIsOriginOpen(false);
+      }
+      if (destRef.current && !destRef.current.contains(event.target)) {
+        setIsDestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+
+  const getDotColor = (type) => {
+    if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return '#FF0076';
+    if(type.includes('莒光')) return '#FFB84D';
+    return '#00F0FF';
+  };
+
+  const formatTime = (mins) => {
+    let h = Math.floor(mins / 60) % 24;
+    let m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  return (
+    <>
+      <style>{`
+        .theme3-root {
+          background: transparent; 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          padding: 20px;
+          color: #FFF;
+          font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
+        }
+        
+        .theme3-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #FFF; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0,240,255,0.5); }
+        
+        .theme3-root .card {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: all 0.5s ease;
+        }
+        .theme3-root .card.empty {
+            background: rgba(10, 10, 10, 0.2);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 240, 255, 0.1);
+            box-shadow: none;
+        }
+        
+        .theme3-root .selector-box { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1); display: flex; align-items: center; width: 100%; max-width: 500px; position: relative; z-index: 200; padding: 0; height: 70px; margin-bottom: 30px; }
+        .theme3-root .selector-box::after { content: ""; position: absolute; left: 50%; top: 25%; bottom: 25%; width: 1px; background: rgba(255, 255, 255, 0.1); z-index: 1; }
+        
+        .theme3-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; position: relative; transition: background 0.2s; cursor: pointer; }
+        .theme3-root #originContainer { 
+            border-top-left-radius: 16px; border-bottom-left-radius: 16px; 
+            border-top-right-radius: 0; border-bottom-right-radius: 0; 
+            padding: 0 30px 0 20px; 
+        }
+        .theme3-root #destContainer { 
+            border-top-right-radius: 16px; border-bottom-right-radius: 16px; 
+            border-top-left-radius: 0; border-bottom-left-radius: 0; 
+            padding: 0 20px 0 30px; 
+        }
+        .theme3-root .custom-select:hover { background: rgba(255, 255, 255, 0.05); }
+        .theme3-root #originContainer::before { content: "DEPARTURE"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
+        .theme3-root #destContainer::before { content: "ARRIVAL"; font-size: 10px; color: #94A3B8; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
+        .theme3-root .select-trigger { font-size: 18px; font-weight: 700; color: #F8FAFC; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; border: none; background: transparent; padding: 0; }
+        
+        .theme3-root .select-options {
+            position: absolute; top: calc(100% + 5px);
+            background: rgba(30, 15, 60, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+            max-height: 250px; overflow-y: auto; display: none; z-index: 300;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(20px); padding: 10px;
+            min-width: 300px; max-width: 100vw;
+        }
+        .theme3-root #originContainer .select-options { left: 15px; }
+        .theme3-root #destContainer .select-options { right: 15px; left: auto; }
+        .theme3-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme3-root .option-item { padding: 10px 5px; text-align: center; border-radius: 6px; font-size: 14px; cursor: pointer; transition: background 0.2s; background: rgba(255,255,255,0.05); color: #fff; }
+        .theme3-root .option-item:hover { background: rgba(255,255,255,0.1); }
+        .theme3-root .option-item.selected { background: #00F0FF; color: #1A0B2E; font-weight: bold; box-shadow: 0 0 10px #00F0FF; }
+        
+        .theme3-root .swap-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #0F172A; color: #38BDF8; border: 2px solid rgba(56, 189, 248, 0.3); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); z-index: 10; cursor: pointer; transition: all 0.3s ease; }
+        .theme3-root .swap-btn:hover { transform: translate(-50%, -50%) rotate(180deg) scale(1.05); background: #38BDF8; color: #0F172A; box-shadow: 0 0 30px rgba(56, 189, 248, 0.5); }
+
+        .theme3-root .dashboard {
+            width: 100%; max-width: 500px; margin: 0 auto;
+            position: relative;
+            margin-top: 20px;
+        }
+        
+        /* Timeline line */
+        .theme3-root .dashboard::before {
+            content: ''; position: absolute; top: 0; bottom: 0; left: 30px;
+            width: 4px; background: linear-gradient(180deg, #00F0FF 0%, #FF00E4 100%);
+            border-radius: 2px; z-index: 1; box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+        }
+        .theme3-root .dashboard.empty::before {
+            display: none;
+        }
+        .theme3-root .train-item {
+            position: relative; margin-bottom: 20px; padding-left: 70px;
+        }
+        
+        /* Added box-sizing: content-box to fix border scale issue from Tailwind */
+        .theme3-root .train-item::before {
+            content: ''; position: absolute; left: 23px; top: 50%; transform: translateY(-50%);
+            width: 12px; height: 12px; border-radius: 50%;
+            background: #0A0A0A; border: 3px solid var(--dot-color, #00F0FF); z-index: 2;
+            box-shadow: 0 0 15px var(--dot-color, #00F0FF); transition: all 0.3s;
+            box-sizing: content-box;
+        }
+        .theme3-root .train-item:hover::before {
+            transform: translateY(-50%) scale(1.3);
+            box-shadow: 0 0 25px var(--dot-color, #00F0FF);
+            background: var(--dot-color, #00F0FF);
+        }
+        
+        .theme3-root .time-label {
+            position: absolute; left: -30px; top: 50%; transform: translateY(-50%);
+            font-size: 15px; font-weight: 700; color: #FFF;
+            text-align: right; width: 50px; font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 8px rgba(255,255,255,0.4);
+        }
+        
+        .theme3-root .card {
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            border-radius: 0;
+            position: relative;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15);
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .theme3-root .card::before {
+            content: ''; position: absolute; top: 0; left: 15px; width: 30px; height: 2px; background: var(--dot-color, #00F0FF);
+        }
+        
+        .theme3-root .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .theme3-root .card-header h3 { margin: 0; font-size: clamp(13px, 4vw, 24px); font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; white-space: normal; }
+        .theme3-root .card-header h3 > span { white-space: nowrap; display: inline-flex; align-items: baseline; }
+        .theme3-root .card-header .type { font-size: 12px; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+        
+        .theme3-root .card-body { display: flex; justify-content: space-between; font-size: 14px; color: rgba(255,255,255,0.7); }
+        .theme3-root .arr-time { color: #00FF87; font-weight: 600; }
+        
+        .theme3-root .progress-track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 15px; position: relative; overflow: hidden; }
+        .theme3-root .progress-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+
+        .theme3-root .countdown-text { margin-top: 8px; font-size: 12px; font-weight: 600; text-align: right; }
+        .theme3-root .empty-state { text-align: center; padding: 40px; color: rgba(255,255,255,0.5); margin-left: 70px; }
+        .theme3-root .delay-badge {
+          background: #FF0076; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 6px;
+          box-shadow: 0 0 10px rgba(255,0,118,0.5);
+        }
+
+        /* 📅 Today/Tomorrow Toggle Badge (Cyberpunk style) */
+        .theme3-root .date-toggle-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 25px;
+          margin-top: 10px;
+        }
+
+        .theme3-root .date-toggle {
+          background: rgba(18, 8, 34, 0.8);
+          border: 1.5px solid #00F0FF;
+          border-radius: 20px;
+          padding: 2px;
+          display: flex;
+          width: 200px;
+          box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .theme3-root .toggle-btn {
+          flex: 1;
+          border: none;
+          background: transparent;
+          color: rgba(0, 240, 255, 0.5);
+          padding: 6px 12px;
+          border-radius: 17px;
+          font-size: 12px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+          text-shadow: 0 0 5px rgba(0, 240, 255, 0.1);
+        }
+
+        .theme3-root .toggle-btn.active {
+          background: #00F0FF;
+          color: #110826;
+          box-shadow: 0 0 10px #00F0FF;
+          text-shadow: none;
+        }
+
+        /* Responsive Overrides */
+        @media (min-width: 768px) {
+            .theme3-root h1 { font-size: 24px; letter-spacing: 4px; margin-bottom: 30px; }
+            .theme3-root .selector-box { max-width: 650px; height: 90px; margin: 0 auto 40px auto; }
+             .theme3-root #originContainer { padding: 0 50px 0 40px; }
+             .theme3-root #destContainer { padding: 0 40px 0 50px; }
+            .theme3-root #originContainer::before, .theme3-root #destContainer::before { font-size: 11px; margin-bottom: 4px; }
+            .theme3-root .select-trigger { font-size: 24px; }
+            .theme3-root .swap-btn { width: 48px; height: 48px; font-size: 20px; }
+            .theme3-root .dashboard { max-width: 650px; }
+        }
+      `}</style>
+
+      <div className="theme3-root">
+        <h1>儀表板風格時刻表</h1>
+        <div className="selector-box">
+            <div className="custom-select" id="originContainer" ref={originRef} onClick={() => { setIsOriginOpen(!isOriginOpen); setIsDestOpen(false); }}>
+                <div className="select-trigger">{origin} <span style={{ fontSize: '0.6em', opacity: 0.6, color: '#38BDF8' }}>▼</span></div>
+                <div className={`select-options ${isOriginOpen ? 'open' : ''}`}>
+                    {allStations.map(s => (
+                        <div key={s} className={`option-item ${s === origin ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setOrigin(s); setIsOriginOpen(false); }}>
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <button className="swap-btn" onClick={handleSwap}>
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                     <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                 </svg>
+             </button>
+            <div className="custom-select" id="destContainer" ref={destRef} onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
+                <div className="select-trigger">{dest} <span style={{ fontSize: '0.6em', opacity: 0.6, color: '#38BDF8' }}>▼</span></div>
+                <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
+                    {allStations.map(s => (
+                        <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
+                            {s}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+
+        {/* 📅 Date Toggle Buttons */}
+        <div className="date-toggle-container">
+          <div className="date-toggle">
+            <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+            <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+          </div>
+        </div>
+
+        <div className={`dashboard ${validTrains.length === 0 ? 'empty' : ''}`}>
+          {validTrains.length === 0 ? (
+            <div className="empty-state-card" style={{
+              background: 'rgba(17, 8, 38, 0.85)',
+              border: '1.5px solid rgba(0, 240, 255, 0.2)',
+              borderRadius: '16px',
+              padding: '30px 20px',
+              textAlign: 'center',
+              color: '#fff',
+              boxShadow: '0 0 15px rgba(0, 240, 255, 0.15)',
+              backdropFilter: 'blur(15px)',
+              WebkitBackdropFilter: 'blur(15px)',
+              margin: '10px 0 20px 0' /* Centered */
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255,0,118,0.15)',
+                border: '1px solid #FF0076',
+                padding: '6px 16px',
+                borderRadius: '20px',
+                color: '#FF0076',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                marginBottom: '15px',
+                boxShadow: '0 0 10px rgba(255,0,118,0.2)',
+                textShadow: '0 0 5px rgba(255,0,118,0.5)'
+              }}>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF0076', boxShadow: '0 0 6px #FF0076' }}></span>
+                {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+              </div>
+              <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(0, 240, 255, 0.7)', lineHeight: '1.6', textShadow: '0 0 3px rgba(0,240,255,0.1)' }}>
+                本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+              </p>
+              <button 
+                onClick={() => setIsTomorrow(!isTomorrow)}
+                style={{
+                  background: '#00F0FF',
+                  border: 'none',
+                  borderRadius: '20px',
+                  color: '#110826',
+                  padding: '8px 24px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 12px #00F0FF',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <path d="M16 2v4M8 2v4M2 10h20" />
+                </svg>
+                {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
+              </button>
+            </div>
+          ) : (
+            validTrains.map((t) => {
+              const diffMins = t.actualDepMins - currentMins;
+              const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
+              
+              let [dh, dm] = t.depTime.split(':').map(Number);
+              let [ah, am] = t.arrTime.split(':').map(Number);
+              let diff = (ah * 60 + am) - (dh * 60 + dm);
+              if (diff < 0) diff += 24 * 60;
+              let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+              const dotColor = getDotColor(t.type);
+              let actualArrMins = (ah * 60 + am) + t.delay;
+
+              return (
+                <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
+                    <div className="time-label">{t.depTime}</div>
+                    <div 
+                      className="card" 
+                      style={{ borderLeft: `4px solid ${dotColor}`, cursor: 'pointer' }}
+                      onClick={() => onTrainSelect && onTrainSelect(t)}
+                    >
+                        <div className="card-header">
+                            <h3>
+                                <span>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.5)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime}</span> 
+                                <span style={{color:'rgba(0,240,255,0.6)', fontWeight:'300', position: 'relative', top: '-6px'}}>⟶</span>
+                                <span style={{color: t.delay > 0 ? '#FF6B6B' : '#00FF87'}}>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.5)'}}>{t.arrTime}</del><span>{formatTime(actualArrMins)}</span></> : t.arrTime}</span>
+                            </h3>
+                            <div className="type" style={{color: dotColor}}>{t.type}</div>
+                        </div>
+                        <div className="card-body">
+                            <div style={{display:'flex', alignItems:'center'}}>{t.number} 往 {t.route.split('－')[1] || t.route} <span style={{marginLeft: '8px', background: 'rgba(255,255,255,0.1)', padding: '3px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'}}>車程 {dur}</span></div>
+                            <div>
+                              {t.delay > 0 && <span className="delay-badge">晚 {t.delay} 分</span>}
+                            </div>
+                        </div>
+                        <div className="progress-track">
+                            <div className="progress-fill" style={{width: `${percent}%`, background: `linear-gradient(90deg, transparent, ${dotColor})`}}></div>
+                        </div>
+                        <div className="countdown-text" style={{color: dotColor}}>
+                          {isTomorrow ? "明天車次" : `Departs in ${diffMins} min`}
+                        </div>
+                    </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/components/TrainAnimation.js ===
+import React from 'react';
+
+export default function TrainAnimation({ isAnimating, direction = 'ltr' }) {
+  if (!isAnimating) return null;
+
+  const generateCommuterDetails = () => {
+    const details = [];
+    // Cars are 450 units long. Loop from -1500 to 1200
+    for (let x = -1500; x < 1200; x += 450) {
+      // 3 doors per car segment
+      const doors = [x + 35, x + 205, x + 375];
+      doors.forEach((pos, idx) => {
+        details.push(
+          <g key={`door-${x}-${idx}`}>
+            {/* Door pocket/frame */}
+            <rect x={pos} y={75} width={50} height={112} fill="#7F8C8D" rx={2} />
+            {/* Left and right glass panes */}
+            <rect x={pos + 4} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 4},85 L ${pos + 15},85 L ${pos + 4},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <rect x={pos + 27} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 27},85 L ${pos + 38},85 L ${pos + 27},110 Z`} fill="rgba(255,255,255,0.12)" />
+            {/* Center seam */}
+            <line x1={pos + 25} y1={75} x2={pos + 25} y2={187} stroke="#333" strokeWidth={1} />
+            {/* Door warning indicator light above the door */}
+            <circle cx={pos + 25} cy={70} r={2} fill="#FFD700" />
+          </g>
+        );
+      });
+
+      // 4 windows per car segment (2 between doors)
+      const windows = [x + 101, x + 151, x + 271, x + 321];
+      windows.forEach((pos, idx) => {
+        details.push(
+          <g key={`win-${x}-${idx}`}>
+            <rect
+              x={pos}
+              y={83}
+              width={44}
+              height={52}
+              fill="#1A1A1A"
+              rx={6}
+              stroke="#BDC3C7"
+              strokeWidth={1.5}
+            />
+            {/* Glossy reflection */}
+            <path d={`M ${pos + 4},85 L ${pos + 24},85 L ${pos + 4},115 Z`} fill="rgba(255,255,255,0.12)" />
+          </g>
+        );
+      });
+    }
+    return details;
+  };
+
+  const generateBogiesAndWheels = () => {
+    const wheels = [];
+    // Every car has two bogies. Let's place them at x + 80 and x + 370 for each segment
+    for (let x = -1500; x < 1200; x += 450) {
+      const bogiePositions = [x + 80, x + 370];
+      bogiePositions.forEach((pos, idx) => {
+        wheels.push(
+          <g key={`bogie-${x}-${idx}`}>
+            {/* Bogie frame */}
+            <rect x={pos - 25} y={188} width={50} height={8} fill="#333" rx={2} />
+            {/* Left wheel */}
+            <circle cx={pos - 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+            <circle cx={pos - 15} cy={198} r={3} fill="#7F8C8D" />
+            {/* Right wheel */}
+            <circle cx={pos + 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+            <circle cx={pos + 15} cy={198} r={3} fill="#7F8C8D" />
+          </g>
+        );
+      });
+    }
+    // Also add bogies for the head cab
+    const headBogies = [1280, 1450];
+    headBogies.forEach((pos, idx) => {
+      wheels.push(
+        <g key={`head-bogie-${idx}`}>
+          <rect x={pos - 25} y={188} width={50} height={8} fill="#333" rx={2} />
+          <circle cx={pos - 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+          <circle cx={pos - 15} cy={198} r={3} fill="#7F8C8D" />
+          <circle cx={pos + 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+          <circle cx={pos + 15} cy={198} r={3} fill="#7F8C8D" />
+        </g>
+      );
+    });
+    return wheels;
+  };
+
+  const generateTrainBodies = () => {
+    const bodies = [];
+    // 6 passenger cars
+    for (let x = -1500; x < 1200; x += 450) {
+      bodies.push(
+        <g key={`body-${x}`}>
+          {/* Passenger Car Body */}
+          <rect x={x} y={50} width={440} height={140} fill="url(#emuBody)" rx={6} />
+          
+          {/* Top green roofline stripe */}
+          <rect x={x} y={58} width={440} height={4} fill="#00A859" />
+
+          {/* Bottom green wave belt */}
+          <rect x={x} y={144} width={440} height={8} fill="#00A859" />
+
+          {/* Subtle gap accent borders to enhance car separation */}
+          <rect x={x} y={50} width={440} height={140} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={1} rx={6} />
+
+          {/* Gangway connector between cars */}
+          {x < 750 && (
+            <g>
+              {/* Dark inner connector */}
+              <rect x={x + 440} y={54} width={10} height={132} fill="#222" />
+              {/* Outer bellows line */}
+              <rect x={x + 442} y={52} width={6} height={136} fill="#111" rx={1} />
+              {/* Horizontal rib lines to simulate accordion bellows */}
+              <line x1={x + 440} y1={65} x2={x + 450} y2={65} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={85} x2={x + 450} y2={85} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={105} x2={x + 450} y2={105} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={125} x2={x + 450} y2={125} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={145} x2={x + 450} y2={145} stroke="#333" strokeWidth={1.5} />
+              <line x1={x + 440} y1={165} x2={x + 450} y2={165} stroke="#333" strokeWidth={1.5} />
+            </g>
+          )}
+        </g>
+      );
+    }
+    
+    // Add gangway connector between the 6th car (ends at 1190) and the head cab (starts at 1200)
+    bodies.push(
+      <g key="gangway-head">
+        <rect x={1190} y={54} width={10} height={132} fill="#222" />
+        <rect x={1192} y={52} width={6} height={136} fill="#111" rx={1} />
+        <line x1={1190} y1={65} x2={1200} y2={65} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={85} x2={1200} y2={85} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={105} x2={1200} y2={105} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={125} x2={1200} y2={125} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={145} x2={1200} y2={145} stroke="#333" strokeWidth={1.5} />
+        <line x1={1190} y1={165} x2={1200} y2={165} stroke="#333" strokeWidth={1.5} />
+      </g>
+    );
+
+    return bodies;
+  };
+
+  return (
+    <>
+      <style>{`
+        .bg-train-root {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: 2;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .bg-train-container {
+          position: absolute;
+          width: 250vw;
+          max-width: 3500px;
+          height: 150px;
+          display: flex;
+          align-items: center;
+          will-change: transform; /* ✨ 啟用 GPU 加速 */
+        }
+
+        .bg-train-container.ltr {
+          animation: trainLtr 4s linear forwards; /* ✨ 改為 4s 以展示重力感物理動畫 */
+        }
+
+        .bg-train-container.rtl {
+          animation: trainRtl 4s linear forwards; /* ✨ 改為 4s */
+        }
+
+        /* 
+          Keyframes: 模擬火車進站停靠的真實物理動作 (高慣性)
+          - 0% ~ 40%: 進站減速期 (1.6s) - 使用高平滑度 ease-out (0.25, 1, 0.5, 1)
+          - 40% ~ 60%: 月台停靠期 (0.8s) - 完全靜止，進行資料 Swap
+          - 60% ~ 100%: 離站加速期 (1.6s) - 使用高慣性/慢起步 ease-in (0.5, 0, 0.75, 0)
+        */
+        @keyframes trainLtr {
+          0% { 
+            transform: translateX(-100%); 
+            animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); /* ✨ 超滑順漸慢煞車 */
+          }
+          40% { 
+            transform: translateX(0%); 
+            animation-timing-function: linear;
+          }
+          60% { 
+            transform: translateX(0%); 
+            animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); /* ✨ 重力感慢速起步 */
+          }
+          100% { 
+            transform: translateX(100%); 
+          }
+        }
+
+        @keyframes trainRtl {
+          0% { 
+            transform: translateX(100%) scaleX(-1); 
+            animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); /* ✨ 超滑順漸慢煞車 */
+          }
+          40% { 
+            transform: translateX(0%) scaleX(-1); 
+            animation-timing-function: linear;
+          }
+          60% { 
+            transform: translateX(0%) scaleX(-1); 
+            animation-timing-function: cubic-bezier(0.5, 0, 0.75, 0); /* ✨ 重力感慢速起步 */
+          }
+          100% { 
+            transform: translateX(-100%) scaleX(-1); 
+          }
+        }
+
+        .svg-emu900 {
+          width: 100%;
+          height: 100%;
+          overflow: visible; /* ✨ 重點：防止火車尾巴與輪胎被切斷/閃爍消失 */
+        }
+      `}</style>
+
+      <div className="bg-train-root">
+        <div className={`bg-train-container ${direction}`}>
+          <svg className="svg-emu900" viewBox="-1500 0 3100 220" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="emuBody" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ECEFF1" />
+                <stop offset="35%" stopColor="#CFD8DC" />
+                <stop offset="70%" stopColor="#90A4AE" />
+                <stop offset="100%" stopColor="#455A64" />
+              </linearGradient>
+              <linearGradient id="headlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="rgba(255,255,255,1)" />
+                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              </linearGradient>
+            </defs>
+
+            {/* Rooftop Pantographs (集電弓) */}
+            <g stroke="#7F8C8D" strokeWidth="2" fill="none">
+              {/* Pantograph 1 */}
+              <rect x="-1020" y="46" width="40" height="4" fill="#555" stroke="none" />
+              <line x1="-1015" y1="46" x2="-1000" y2="30" />
+              <line x1="-1000" y1="30" x2="-985" y2="46" />
+              <line x1="-1000" y1="30" x2="-1010" y2="22" />
+              <line x1="-1010" y1="22" x2="-990" y2="22" />
+              <line x1="-1015" y1="22" x2="-985" y2="22" strokeWidth="3" />
+
+              {/* Pantograph 2 */}
+              <rect x="-20" y="46" width="40" height="4" fill="#555" stroke="none" />
+              <line x1="-15" y1="46" x2="0" y2="30" />
+              <line x1="0" y1="30" x2="15" y2="46" />
+              <line x1="0" y1="30" x2="-10" y2="22" />
+              <line x1="-10" y1="22" x2="10" y2="22" />
+              <line x1="-15" y1="22" x2="15" y2="22" strokeWidth="3" />
+            </g>
+
+            {/* Segmented Train bodies with gangway connectors */}
+            {generateTrainBodies()}
+
+            {/* Head Cab Body */}
+            <path d="M 1200,50 L 1420,50 C 1480,50 1520,70 1535,120 C 1545,155 1525,185 1500,190 L 1200,190 Z" fill="url(#emuBody)" stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+            
+            {/* Top green roofline stripe for Head Cab */}
+            <rect x="1200" y="58" width="210" height="4" fill="#00A859" />
+
+            {/* Bottom green wave belt for Head Cab - sweeping up at the front */}
+            <path d="M 1200,144 L 1380,144 Q 1420,144 1445,153 Q 1470,162 1495,163" fill="none" stroke="#00A859" strokeWidth="8" strokeLinecap="round" />
+
+            {/* Commuter doors and windows */}
+            {generateCommuterDetails()}
+
+            {/* Under-train Bogies and Wheels */}
+            {generateBogiesAndWheels()}
+
+            {/* Cab details */}
+            <g>
+              {/* Cab Door */}
+              <rect x="1370" y="75" width="34" height="112" fill="#7F8C8D" rx="2" />
+              <rect x="1375" y="83" width="24" height="52" fill="#1A1A1A" rx="2" />
+              <path d="M 1375,85 L 1385,85 L 1375,110 Z" fill="rgba(255,255,255,0.12)" />
+
+              {/* Black Mask (Driver visor & front face) */}
+              <path d="M 1420,60 L 1465,60 C 1490,60 1515,80 1528,120 C 1535,145 1525,170 1505,175 L 1420,175 Z" fill="#111" />
+              
+              {/* Neon green smile profile */}
+              <path d="M 1440,175 L 1505,175 C 1525,170 1535,145 1528,120" fill="none" stroke="#00FF66" strokeWidth="5" strokeLinecap="round" />
+              
+              {/* Cab window highlight */}
+              <path d="M 1430,70 L 1460,70 C 1480,70 1495,85 1502,110 L 1485,110 C 1480,85 1465,75 1445,75 Z" fill="rgba(255,255,255,0.15)" />
+            </g>
+
+            {/* Glowing headlights */}
+            <g transform="translate(1523, 148)">
+              <circle cx="0" cy="0" r="5" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+              <circle cx="0" cy="0" r="2.5" fill="#FFF" />
+              <path d="M 0,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" />
+            </g>
+
+            {/* Front Coupler (連結器) */}
+            <rect x="1510" y="178" width="25" height="10" fill="#333" rx={2} />
+            <circle cx="1530" cy="183" r="4" fill="#555" />
+          </svg>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/components/MaintenanceDepot.js ===
+import React from 'react';
+
+// ============================================================================
+// HIGH-DETAIL RAILWAY VECTOR ASSET SUBCOMPONENTS (STATION TRAIN SPECIFICATIONS)
+// ============================================================================
+
+const TrainBogie = ({ x }) => (
+  <g>
+    {/* Bogie frame */}
+    <rect x={x - 25} y={188} width={50} height={8} fill="#333" rx={2} />
+    {/* Left wheel */}
+    <circle cx={x - 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+    <circle cx={x - 15} cy={198} r={3} fill="#7F8C8D" />
+    {/* Right wheel */}
+    <circle cx={x + 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+    <circle cx={x + 15} cy={198} r={3} fill="#7F8C8D" />
+  </g>
+);
+
+const TrainPantograph = ({ x }) => (
+  <g stroke="#7F8C8D" strokeWidth={2} fill="none">
+    <rect x={x - 20} y="46" width="40" height="4" fill="#555" stroke="none" />
+    <line x1={x - 15} y1="46" x2={x} y2="30" />
+    <line x1={x} y1="30" x2={x + 15} y2="46" />
+    <line x1={x} y1="30" x2={x - 10} y2="22" />
+    <line x1={x - 10} y1="22" x2={x + 10} y2="22" />
+    <line x1={x - 15} y1="22" x2={x + 15} y2="22" strokeWidth={3} />
+  </g>
+);
+
+const GangwayConnector = () => (
+  <g>
+    {/* Dark inner connector */}
+    <rect x="0" y="54" width="10" height="132" fill="#222" />
+    {/* Outer bellows line */}
+    <rect x="2" y="52" width="6" height="136" fill="#111" rx="1" />
+    {/* Horizontal bellows rib lines */}
+    <line x1="0" y1="65" x2="10" y2="65" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="85" x2="10" y2="85" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="105" x2="10" y2="105" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="125" x2="10" y2="125" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="145" x2="10" y2="145" stroke="#333" strokeWidth="1.5" />
+  </g>
+);
+
+const PassengerCar = ({ model }) => {
+  const isEMU3000 = model === 'emu3000';
+  const isTaroko = model === 'emu900'; // We map emu900 to Taroko Express
+  const isEMU800 = model === 'emu800';
+
+  const bodyFill = isEMU3000 ? 'url(#emu3000Body)' : isTaroko ? 'url(#hayabusaWhite)' : 'url(#emu800Body)';
+  const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
+  const isDarkWindows = isEMU800; // EMU800 windows glow but cabs are dark
+
+  return (
+    <g>
+      {/* Passenger Car Body */}
+      {isTaroko ? (
+        <>
+          {/* Lower body (Hiun White) */}
+          <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+          {/* Upper body (Tokiwa Green) */}
+          <path d="M 0,50 L 440,50 L 440,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          {/* Azalea Pink Stripe */}
+          <rect x="0" y="136" width="440" height="4.5" fill="#E93B8E" />
+          {/* Shinkansen grey/silver metal roof panel */}
+          <path d="M 0,50 L 440,50 L 440,65 L 0,65 Z" fill="#2C3E50" opacity="0.3" />
+        </>
+      ) : (
+        <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+      )}
+      
+      {/* EMU3000 Black Window Band */}
+      {isEMU3000 && <rect x="0" y="78" width="440" height="62" fill="#111" />}
+      
+      {/* Stripes */}
+      {isEMU800 && (
+        <>
+          <rect x="0" y="58" width="440" height="4" fill="#2980B9" />
+          <rect x="0" y="144" width="440" height="8" fill="#2980B9" />
+          <rect x="0" y="152" width="440" height="2" fill="#F1C40F" />
+        </>
+      )}
+      {isEMU3000 && (
+        <rect x="0" y="144" width="440" height="3" fill="#e60012" />
+      )}
+
+      {/* Under-chassis equipment details */}
+      <g fill="#212529">
+        <rect x="95" y="190" width="70" height="12" rx="1" />
+        <rect x="180" y="190" width="80" height="10" rx="1" />
+        <rect x="275" y="190" width="60" height="14" rx="2" />
+      </g>
+      <circle cx="130" cy="196" r="4" fill="#495057" />
+      <circle cx="220" cy="195" r="3" fill="#495057" />
+
+      {/* Pantographs */}
+      {isEMU3000 && (
+        <>
+          <TrainPantograph x={80} />
+          <TrainPantograph x={360} />
+        </>
+      )}
+      {isTaroko && <TrainPantograph x={220} />}
+      {isEMU800 && <TrainPantograph x={220} />}
+
+      {/* Doors - Model Specific */}
+      {isEMU3000 && (
+        // EMU3000: 2 premium single glass doors at the ends
+        [20, 370].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={50} height={112} fill="#111" rx={2} />
+            {/* Single sliding door glass window */}
+            <rect x={pos + 8} y={83} width={34} height={52} fill="#222" rx={2} stroke="#333" strokeWidth={1} />
+            <path d={`M ${pos + 8},85 L ${pos + 25},85 L ${pos + 8},110 Z`} fill="rgba(255,255,255,0.12)" />
+            {/* Chrome door handle */}
+            <rect x={pos + 42} y={125} width={3} height={15} fill="#7F8C8D" rx={0.5} />
+          </g>
+        ))
+      )}
+
+      {isTaroko && (
+        // Shinkansen E5: 2 single narrow end doors with split color
+        [15, 395].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={30} height={112} fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
+            <path d={`M ${pos},75 L ${pos+30},75 L ${pos+30},136 L ${pos},136 Z`} fill="url(#hayabusaGreen)" />
+            <rect x={pos} y={136} width={30} height={5} fill="#E93B8E" />
+            <rect x={pos + 6} y={83} width={18} height={40} fill="#1A1A1A" rx={1} />
+            <line x1={pos + 15} y1={75} x2={pos + 15} y2={187} stroke="#4A5668" strokeWidth={0.8} opacity="0.5" />
+          </g>
+        ))
+      )}
+
+      {isEMU800 && (
+        // EMU800: 3 commuter doors per car
+        [30, 195, 360].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={50} height={112} fill="#BDC3C7" rx={2} stroke="#7F8C8D" strokeWidth={0.5} />
+            <rect x={pos + 4} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 4},85 L ${pos + 15},85 L ${pos + 4},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <rect x={pos + 27} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 27},85 L ${pos + 38},85 L ${pos + 27},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <line x1={pos + 25} y1={75} x2={pos + 25} y2={187} stroke="#333" strokeWidth={1} />
+            <circle cx={pos + 25} cy={70} r={2} fill="#FFD700" />
+          </g>
+        ))
+      )}
+
+      {/* Windows - Model Specific */}
+      {isEMU3000 && (
+        // EMU3000: 3 very large panoramic windows
+        [85, 180, 275].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={83} width={80} height={52} fill={windowFill} rx={4} stroke="#222" strokeWidth={1.5} />
+            {/* Seat silhouettes */}
+            <rect x={pos + 8} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <rect x={pos + 32} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <rect x={pos + 56} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <path d={`M ${pos + 4},85 L ${pos + 40},85 L ${pos + 4},120 Z`} fill="rgba(255,255,255,0.12)" />
+          </g>
+        ))
+      )}
+
+      {isTaroko && (
+        // Shinkansen E5: 7 small windows inside the green section
+        [65, 115, 165, 215, 265, 315, 365].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={80} width={22} height={24} fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+            {/* Passenger seat silhouette */}
+            <rect x={pos + 4} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
+            <rect x={pos + 13} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
+          </g>
+        ))
+      )}
+
+      {isEMU800 && (
+        // EMU800: 4 double-pane windows
+        [95, 142, 258, 305].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={83} width={42} height={52} fill={isDarkWindows ? "url(#cabinGlowWarm)" : windowFill} rx={4} stroke="#BDC3C7" strokeWidth={1.5} />
+            {/* Center glass divider for double-pane look */}
+            <line x1={pos + 21} y1={83} x2={pos + 21} y2={135} stroke="#BDC3C7" strokeWidth={1.5} />
+            <rect x={pos + 4} y={105} width={7} height="24" fill="#5D4037" opacity="0.45" rx="1.5" />
+            <rect x={pos + 29} y={105} width={7} height="24" fill="#5D4037" opacity="0.45" rx="1.5" />
+            <path d={`M ${pos + 2},85 L ${pos + 18},85 L ${pos + 2},110 Z`} fill="rgba(255,255,255,0.12)" />
+          </g>
+        ))
+      )}
+
+      {/* Bogies and Wheels */}
+      <TrainBogie x={80} />
+      <TrainBogie x={360} />
+    </g>
+  );
+};
+
+const TrainCab = ({ model, side }) => {
+  const isEMU3000 = model === 'emu3000';
+  const isTaroko = model === 'emu900'; // emu900 maps to Taroko
+  const isEMU800 = model === 'emu800';
+
+  const bodyFill = isEMU3000 ? 'url(#emu3000Body)' : isTaroko ? 'url(#hayabusaWhite)' : 'url(#emu800Body)';
+  const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
+  
+  // Driving cabs are dark when off-duty/parked/repaired
+  const isDarkCabs = isEMU800 || isEMU3000;
+
+  // Headlights & Tail lights mapping
+  const showHeadlights = (isTaroko && side === 'right') || (isEMU3000 && side === 'left');
+  const showTaillights = (isTaroko && side === 'left') || (isEMU3000 && side === 'right');
+
+  return (
+    <g>
+      {/* Cab Body Shape (EMU3000 slanted, EMU800 round front, Taroko sleek white bullet front) */}
+      {isEMU3000 ? (
+        <path d="M 0,50 L 220,50 L 335,115 L 335,175 L 285,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+      ) : isEMU800 ? (
+        <path d="M 0,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+      ) : (
+        <>
+          {/* Shinkansen E5 Series smooth duckbill nose body base (Hiun White) */}
+          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 330,165 315,178 285,183 L 0,183 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          {/* Upper body Tokiwa Green paint overlay */}
+          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 320,154 300,150 280,147 C 235,147 205,136 175,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          {/* Azalea Pink Stripe running along the boundary */}
+          <path d="M 0,136 L 175,136 C 205,136 235,147 280,147 C 300,147 320,154 335,160" fill="none" stroke="#E93B8E" strokeWidth="5.5" strokeLinecap="round" />
+          {/* Aerodynamic wing/fender line below cockpit */}
+          <path d="M 215,114 Q 250,118 280,134" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
+        </>
+      )}
+      
+      {/* EMU3000 Black Window Band */}
+      {isEMU3000 && (
+        <>
+          <rect x="0" y="78" width="220" height="62" fill="#111" />
+          <rect x="0" y="144" width="220" height="3" fill="#e60012" />
+        </>
+      )}
+
+      {/* Stripes */}
+      {isTaroko && (
+        <>
+          {/* Driver's side window */}
+          <rect x="145" y="85" width="18" height="24" fill="#1A1A1A" rx={1} stroke="#111" strokeWidth={1} />
+          {/* Hayabusa Falcon emblem on the green side panel */}
+          <g transform="translate(60, 95)" opacity="0.95">
+            <path d="M 0,10 L 15,2 L 30,12 L 12,20 Z" fill="#FFFFFF" />
+            <path d="M 5,12 L 12,9 L 20,15 Z" fill="#E93B8E" />
+          </g>
+        </>
+      )}
+      {isEMU800 && (
+        <>
+          <rect x="0" y="58" width="170" height="4" fill="#2980B9" />
+          {/* Yellow face paint */}
+          <path d="M 160,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 160,190 Z" fill="#F1C40F" />
+          <path d="M 0,144 L 160,144 Q 210,144 240,153 Q 275,162 298,150" fill="none" stroke="#2980B9" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 0,152 L 160,152 Q 210,152 240,161 Q 275,170 298,158" fill="none" stroke="#F1C40F" strokeWidth="2" strokeLinecap="round" />
+        </>
+      )}
+
+      {/* Under-chassis equipment details */}
+      <g fill="#212529">
+        <rect x="95" y="190" width="70" height="12" rx="1" />
+      </g>
+      <circle cx="130" cy="196" r="4" fill="#495057" />
+
+      {/* Cab Passenger Door */}
+      {isEMU3000 ? (
+        <g transform="translate(125, 0)">
+          <rect x="0" y="75" width="50" height="112" fill="#111" rx={2} />
+          <rect x="8" y="83" width="34" height="52" fill="#222" rx={2} stroke="#333" />
+          <path d="M 8,85 L 25,85 L 8,110 Z" fill="rgba(255,255,255,0.12)" />
+        </g>
+      ) : isTaroko ? (
+        <g transform="translate(110, 0)">
+          <rect x="0" y="75" width="30" height="112" fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
+          <path d="M 0,75 L 30,75 L 30,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          <rect x="0" y="136" width="30" height="5" fill="#E93B8E" />
+          <rect x="6" y="83" width="18" height="40" fill="#1A1A1A" rx={1} />
+        </g>
+      ) : (
+        <g transform="translate(110, 0)">
+          <rect x="0" y="75" width="50" height="112" fill="#BDC3C7" rx={2} stroke="#7F8C8D" />
+          <rect x="4" y="83" width="19" height="52" fill="#1A1A1A" rx={2} />
+          <path d="M 4,85 L 15,85 L 4,110 Z" fill="rgba(255,255,255,0.12)" />
+          <rect x="27" y="83" width="19" height="52" fill="#1A1A1A" rx={2} />
+          <path d="M 27,85 L 38,85 L 27,110 Z" fill="rgba(255,255,255,0.12)" />
+          <line x1="25" y1="75" x2="25" y2="187" stroke="#333" strokeWidth={1} />
+        </g>
+      )}
+
+      {/* Cab Passenger Windows */}
+      {isEMU3000 ? (
+        <g transform="translate(30, 0)">
+          <rect x="0" y="83" width="80" height="52" fill="#151d24" rx={4} stroke="#222" strokeWidth={1.5} />
+        </g>
+      ) : isTaroko ? (
+        <g transform="translate(0, 0)">
+          <rect x="35" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+          <rect x="70" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+        </g>
+      ) : (
+        <g transform="translate(30, 0)">
+          <rect x="0" y="83" width="42" height="52" fill="#151d24" rx={4} stroke="#BDC3C7" strokeWidth={1.5} />
+          <line x1="21" y1="83" x2="21" y2="135" stroke="#BDC3C7" strokeWidth={1.5} />
+        </g>
+      )}
+
+      {/* Driver Windshield & Front Mask */}
+      <g>
+        {isEMU3000 ? (
+          <>
+            <path d="M 200,58 L 222,58 L 333,115 L 333,173 L 283,173 L 200,173 Z" fill="#111" />
+            <path d="M 215,70 L 275,70 L 315,110 L 255,110 Z" fill="rgba(255,255,255,0.15)" />
+          </>
+        ) : isEMU800 ? (
+          <>
+            <path d="M 180,62 L 240,62 C 265,62 288,75 298,102 L 245,102 C 230,85 210,80 180,80 Z" fill="#111" />
+            <path d="M 185,67 L 235,67 L 240,75 L 185,75 Z" fill="rgba(255,255,255,0.15)" />
+            {/* Circular headlights under windshield */}
+            <circle cx="272" cy="122" r="3.5" fill="#444" />
+            <circle cx="282" cy="128" r="3.5" fill="#555" />
+          </>
+        ) : (
+          <>
+            {/* Shinkansen E5 style pilot cockpit canopy */}
+            <path d="M 190,95 Q 215,70 240,95 Q 215,108 190,95 Z" fill="#111" />
+            <path d="M 195,92 Q 215,75 235,92 Z" fill="rgba(255,255,255,0.2)" />
+            {/* Aerodynamic LED headlights on the side of the duckbill nose */}
+            <ellipse cx="242" cy="116" rx="8" ry="1.8" fill="#FFF" transform="rotate(-28, 242, 116)" filter="drop-shadow(0 0 4.5px #FFF)" />
+            <ellipse cx="242" cy="116" rx="5" ry="0.8" fill="#FFFAED" transform="rotate(-28, 242, 116)" />
+            {/* Streamlined nose panel joint lines */}
+            <path d="M 280,115 Q 310,135 335,155" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+            {/* Small black bottom cover for the coupler pocket */}
+            <rect x="315" y="162" width="10" height="8" fill="#222" rx="1" />
+          </>
+        )}
+      </g>
+
+      {/* Headlights and beams */}
+      {showHeadlights && (
+        isEMU3000 ? (
+          <g transform="translate(325, 145)">
+            <rect x="0" y="-2" width="10" height="4" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+            <rect x="0" y="-2" width="5" height="2" fill="#FFF" />
+            <path d="M 10,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
+          </g>
+        ) : isTaroko ? (
+          <g transform="translate(242, 116)">
+            <ellipse cx="0" cy="0" rx="8" ry="1.8" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+            <ellipse cx="0" cy="0" rx="4" ry="0.8" fill="#FFF" />
+            <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
+          </g>
+        ) : null
+      )}
+
+      {/* Taillights */}
+      {showTaillights && (
+        isEMU3000 ? (
+          <rect x="320" y="145" width="6" height="3" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+        ) : isTaroko ? (
+          <circle cx="242" cy="116" r="3.5" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+        ) : null
+      )}
+
+      {/* Front Coupler */}
+      {!isTaroko && (
+        <>
+          <rect x={isEMU3000 ? "315" : "310"} y="178" width="25" height="10" fill="#333" rx={2} />
+          <circle cx={isEMU3000 ? "330" : "325"} cy="183" r="4" fill="#555" />
+        </>
+      )}
+
+      {/* Bogies & Wheels */}
+      <TrainBogie x={80} />
+      <TrainBogie x={250} />
+    </g>
+  );
+};
+
+const DetailedTrain = ({ model, layout = ['cabLeft', 'passenger', 'cabRight'] }) => {
+  let currentX = 0;
+  return (
+    <g>
+      {layout.map((type, idx) => {
+        let element = null;
+        let width = 0;
+        
+        if (type === 'cabLeft') {
+          width = 335;
+          element = (
+            <g transform={`translate(${currentX + 335}, 0) scale(-1, 1)`}>
+              <TrainCab model={model} side="left" />
+            </g>
+          );
+        } else if (type === 'cabRight') {
+          width = 335;
+          element = (
+            <g transform={`translate(${currentX}, 0)`}>
+              <TrainCab model={model} side="right" />
+            </g>
+          );
+        } else if (type === 'passenger') {
+          width = 440;
+          element = (
+            <g transform={`translate(${currentX}, 0)`}>
+              <PassengerCar model={model} />
+            </g>
+          );
+        }
+        
+        const renderConnector = idx < layout.length - 1;
+        const connectorX = currentX + width;
+        currentX += width + (renderConnector ? 10 : 0);
+        
+        return (
+          <g key={idx}>
+            {element}
+            {renderConnector && (
+              <g transform={`translate(${connectorX}, 0)`}>
+                <GangwayConnector />
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+export default function MaintenanceDepot({ show }) {
+  if (!show) return null;
+
+  return (
+    <>
+      <style>{`
+        /* Override body background when Depot is visible */
+        body {
+          background: #11111e !important;
+        }
+
+        /* 🏭 背景機廠貨車庫結構 - 全螢幕沉浸式 */
+        .bg-depot-root {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: -2; /* 處於卡片層下方 */
+          overflow: hidden;
+          background: #11111e;
+          animation: depotFadeIn 0.8s ease-out forwards;
+        }
+
+        .depot-svg-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        @keyframes depotFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        /* 🪚 電焊火花動畫 */
+        .spark-particle {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: electroSpark 1.2s infinite ease-out;
+        }
+
+        @keyframes electroSpark {
+          0% { transform: scale(0) translate(0, 0); opacity: 0; }
+          5% { opacity: 1; }
+          15% { transform: scale(1.2) translate(var(--dx), var(--dy)); opacity: 1; }
+          90% { opacity: 0.8; }
+          100% { transform: scale(0.2) translate(calc(var(--dx) * 1.8), calc(var(--dy) * 1.8)); opacity: 0; }
+        }
+
+        /* 🧹 旋轉洗車刷 - 使用 center 搭配 fill-box 實現原地旋轉 */
+        .wash-brush {
+          animation: spinBrush 0.6s infinite linear;
+          transform-origin: center;
+          transform-box: fill-box;
+        }
+        .wash-brush-2 {
+          animation: spinBrushReverse 0.6s infinite linear;
+          transform-origin: center;
+          transform-box: fill-box;
+        }
+
+        @keyframes spinBrush {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes spinBrushReverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+
+        /* 💦 洗車噴水滴 */
+        .water-drop {
+          animation: waterSpray 0.8s infinite ease-in;
+          transform-origin: center;
+          transform-box: fill-box;
+        }
+
+        @keyframes waterSpray {
+          0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          50% { opacity: 0.8; }
+          100% { transform: translate(var(--wx), var(--wy)) scale(1.2); opacity: 0; }
+        }
+
+        /* 🚄 EMU900 洗車平移動畫 - 超慢速穿越且精準維持在 y=330 軌道 */
+        .train-washing {
+          animation: washPass 35s linear infinite;
+        }
+
+        @keyframes washPass {
+          0% { transform: translateY(261.4px) translateX(-820px); }
+          100% { transform: translateY(261.4px) translateX(850px); }
+        }
+
+        /* 🏗️ 懸吊天車平移動畫 */
+        .overhead-crane {
+          animation: craneMove 25s ease-in-out infinite;
+        }
+
+        /* 天車多段關節物理擺盪效果 */
+        .crane-joint-1 {
+          transform-origin: 0px 64px;
+          animation: swayJoint1 25s ease-in-out infinite;
+        }
+
+        .crane-joint-2 {
+          transform-origin: 0px 0px;
+          animation: swayJoint2 25s ease-in-out infinite;
+        }
+
+        .crane-joint-3 {
+          transform-origin: 0px 0px;
+          animation: swayJoint3 25s ease-in-out infinite;
+        }
+
+        @keyframes craneMove {
+          0%, 5% { transform: translateX(240px); }
+          40%, 55% { transform: translateX(740px); }
+          90%, 100% { transform: translateX(240px); }
+        }
+
+        @keyframes swayJoint1 {
+          /* Damped oscillation at left (crane static 90% to 5%) */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
+          
+          /* Move right (5% to 40%) */
+          19% { transform: rotate(8deg); } /* Max lag left */
+          
+          /* Damped right (crane static 40% to 55%) */
+          41.5% { transform: rotate(-9deg); } /* Max overshoot right (0.375s after stop) */
+          45.5% { transform: rotate(4.5deg); }
+          49.5% { transform: rotate(-1.5deg); }
+          52.5% { transform: rotate(0.3deg); }
+          55% { transform: rotate(0deg); }
+          
+          /* Move left (55% to 90%) */
+          69% { transform: rotate(-8deg); } /* Max lag right */
+          
+          /* Damped left (crane static 90% to 100%) */
+          91.5% { transform: rotate(9deg); } /* Max overshoot left (0.375s after stop) */
+          95.5% { transform: rotate(-4.5deg); }
+          98.5% { transform: rotate(1.5deg); }
+          100% { transform: rotate(0deg); }
+        }
+
+        @keyframes swayJoint2 {
+          /* Damped oscillation at left */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
+          
+          /* Move right */
+          20% { transform: rotate(7deg); }
+          
+          /* Damped right */
+          42.5% { transform: rotate(-8deg); } /* Overshoot right */
+          46.5% { transform: rotate(4deg); }
+          49.8% { transform: rotate(-1deg); }
+          51.5% { transform: rotate(0deg); }
+          55% { transform: rotate(0deg); }
+          
+          /* Move left */
+          70% { transform: rotate(-7deg); }
+          
+          /* Damped left */
+          92.5% { transform: rotate(8deg); } /* Overshoot left */
+          96.5% { transform: rotate(-4deg); }
+          99.8% { transform: rotate(1deg); }
+          100% { transform: rotate(0deg); }
+        }
+
+        @keyframes swayJoint3 {
+          /* Damped oscillation at left */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
+          
+          /* Move right */
+          21% { transform: rotate(6deg); }
+          
+          /* Damped right */
+          43.5% { transform: rotate(-7deg); } /* Overshoot right */
+          47.5% { transform: rotate(3deg); }
+          50% { transform: rotate(-0.5deg); }
+          51.5% { transform: rotate(0deg); }
+          55% { transform: rotate(0deg); }
+          
+          /* Move left */
+          71% { transform: rotate(-6deg); }
+          
+          /* Damped left */
+          93.5% { transform: rotate(7deg); } /* Overshoot left */
+          97.5% { transform: rotate(-3deg); }
+          99.9% { transform: rotate(0.5deg); }
+          100% { transform: rotate(0deg); }
+        }
+
+        /* 天花板燈光呼吸效果 */
+        .hangar-light rect {
+          animation: lightGlow 4s ease-in-out infinite alternate;
+        }
+        .hangar-light polygon {
+          animation: beamGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes lightGlow {
+          0% { fill: #E0F7FA; filter: drop-shadow(0 0 2px #00F0FF); }
+          100% { fill: #FFF; filter: drop-shadow(0 0 8px #00F0FF); }
+        }
+
+        @keyframes beamGlow {
+          0% { opacity: 0.08; }
+          100% { opacity: 0.2; }
+        }
+
+        /* Hangar Grid Lines */
+        .hangar-grid {
+          stroke: rgba(255, 255, 255, 0.02);
+          stroke-width: 1;
+        }
+
+        /* 🪚 電焊強光閃爍反射 */
+        .welding-glow-reflect {
+          animation: weldingFlicker 1.2s infinite;
+        }
+
+        @keyframes weldingFlicker {
+          0%, 100% { opacity: 0; }
+          4%, 12%, 20%, 28%, 36%, 44%, 52%, 60%, 68%, 76%, 84%, 92% { opacity: 0.45; }
+          8%, 16%, 24%, 32%, 40%, 48%, 56%, 64%, 72%, 80%, 88%, 96% { opacity: 0.05; }
+        }
+      `}</style>
+
+      <div className="bg-depot-root">
+        <div className="depot-svg-container">
+          <svg width="100%" height="100%" viewBox="0 0 800 500" preserveAspectRatio="xMidYMax slice">
+            <defs>
+              <linearGradient id="wallGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#10101b" />
+                <stop offset="50%" stopColor="#0a0a0f" />
+                <stop offset="100%" stopColor="#050507" />
+              </linearGradient>
+
+              <linearGradient id="emu3000Body" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="40%" stopColor="#E5E5E5" />
+                <stop offset="85%" stopColor="#C0C0C0" />
+                <stop offset="100%" stopColor="#888888" />
+              </linearGradient>
+
+              <linearGradient id="hayabusaGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#00A08A" />
+                <stop offset="50%" stopColor="#00806C" />
+                <stop offset="100%" stopColor="#005B4D" />
+              </linearGradient>
+
+              <linearGradient id="hayabusaWhite" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="40%" stopColor="#ECEFF1" />
+                <stop offset="100%" stopColor="#D5DBDB" />
+              </linearGradient>
+
+
+              <linearGradient id="emu800Body" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ECEFF1" />
+                <stop offset="40%" stopColor="#CFD8DC" />
+                <stop offset="80%" stopColor="#90A4AE" />
+                <stop offset="100%" stopColor="#37474F" />
+              </linearGradient>
+
+              <linearGradient id="gantryBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2c3e50" />
+                <stop offset="50%" stopColor="#34495e" />
+                <stop offset="100%" stopColor="#1a252f" />
+              </linearGradient>
+
+              <linearGradient id="cabinGlowWarm" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFE082" />
+                <stop offset="50%" stopColor="#FFF9C4" />
+                <stop offset="100%" stopColor="#FFE082" />
+              </linearGradient>
+
+              <linearGradient id="cabinGlowCool" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#B2EBF2" />
+                <stop offset="50%" stopColor="#E0F7FA" />
+                <stop offset="100%" stopColor="#B2EBF2" />
+              </linearGradient>
+
+              <linearGradient id="headlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFF9C4" stopOpacity="0.45" />
+                <stop offset="30%" stopColor="#FFF9C4" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#FFF9C4" stopOpacity="0" />
+              </linearGradient>
+
+              <linearGradient id="headlightBeamLeft" x1="100%" y1="0%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#FFF9C4" stopOpacity="0.45" />
+                <stop offset="30%" stopColor="#FFF9C4" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#FFF9C4" stopOpacity="0" />
+              </linearGradient>
+
+              <radialGradient id="weldingFlashGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FFF" stopOpacity="1" />
+                <stop offset="20%" stopColor="#00E5FF" stopOpacity="0.85" />
+                <stop offset="55%" stopColor="#00B0FF" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#00B0FF" stopOpacity="0" />
+              </radialGradient>
+
+              {/* Warning stripes pattern */}
+              <pattern id="warningStripes" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="10" height="20" fill="#F1C40F" />
+                <rect x="10" width="10" height="20" fill="#1A1A1A" />
+              </pattern>
+            </defs>
+
+            {/* Hangar Background Wall & Grids */}
+            <rect x="0" y="0" width="800" height="500" fill="url(#wallGradient)" />
+            
+            <line x1="0" y1="80" x2="800" y2="80" className="hangar-grid" />
+            <line x1="0" y1="180" x2="800" y2="180" className="hangar-grid" />
+            <line x1="0" y1="280" x2="800" y2="280" className="hangar-grid" />
+            <line x1="0" y1="380" x2="800" y2="380" className="hangar-grid" />
+            <line x1="150" y1="0" x2="150" y2="500" className="hangar-grid" />
+            <line x1="400" y1="0" x2="400" y2="500" className="hangar-grid" />
+            <line x1="650" y1="0" x2="650" y2="500" className="hangar-grid" />
+
+            {/* Steel Beams (Arching structure) - Tall layout */}
+            <g stroke="#161a24" strokeWidth="5" fill="none">
+              <line x1="80" y1="0" x2="80" y2="500" />
+              <line x1="280" y1="0" x2="280" y2="500" />
+              <line x1="480" y1="0" x2="480" y2="500" />
+              <line x1="680" y1="0" x2="680" y2="500" />
+              {/* Horizontal beams */}
+              <line x1="0" y1="60" x2="800" y2="60" strokeWidth="3" />
+              <line x1="0" y1="200" x2="800" y2="200" strokeWidth="3" />
+              {/* Diagonal trusses */}
+              <path d="M 80,60 L 280,200 M 280,60 L 80,200 M 280,60 L 480,200 M 480,60 L 280,200 M 480,60 L 680,200 M 680,60 L 480,200" strokeWidth="1.5" stroke="#1f2d3d" />
+            </g>
+
+            {/* Ceiling Lights (Upper part of screen) */}
+            <g className="hangar-light">
+              {/* Light 1 */}
+              <rect x="180" y="0" width="40" height="6" rx="1" fill="#E0F7FA" />
+              <polygon points="160,50 240,50 215,6 185,6" fill="rgba(0, 240, 255, 0.08)" />
+              {/* Light 2 */}
+              <rect x="380" y="0" width="40" height="6" rx="1" fill="#E0F7FA" />
+              <polygon points="360,50 440,50 415,6 385,6" fill="rgba(0, 240, 255, 0.08)" />
+              {/* Light 3 */}
+              <rect x="580" y="0" width="40" height="6" rx="1" fill="#E0F7FA" />
+              <polygon points="560,50 640,50 615,6 585,6" fill="rgba(0, 240, 255, 0.08)" />
+            </g>
+
+            {/* Overhead Gantry Crane (Centered around x=0, slides horizontally) */}
+            <g className="overhead-crane">
+              {/* Crane Rail Carriage */}
+              <rect x="-25" y="46" width="50" height="10" fill="#f39c12" rx="1" />
+              <rect x="-15" y="56" width="30" height="8" fill="#2c3e50" rx="1" />
+              {/* Cable & Hook Group (Swaying with Nested joints) */}
+              <g className="crane-joint-1">
+                {/* Segment 1 line */}
+                <line x1="0" y1="64" x2="0" y2="88" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                
+                {/* Translate to end of Segment 1 */}
+                <g transform="translate(0, 88)">
+                  {/* Rotate Segment 2 */}
+                  <g className="crane-joint-2">
+                    {/* Segment 2 line */}
+                    <line x1="0" y1="0" x2="0" y2="24" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                    
+                    {/* Translate to end of Segment 2 */}
+                    <g transform="translate(0, 24)">
+                      {/* Rotate Segment 3 */}
+                      <g className="crane-joint-3">
+                        {/* Segment 3 line */}
+                        <line x1="0" y1="0" x2="0" y2="23" stroke="#7f8c8d" strokeWidth="1.5" strokeDasharray="3, 3" />
+                        
+                        {/* Hook block and mechanical claw */}
+                        <g transform="translate(0, 23)">
+                          <rect x="-6" y="0" width="12" height="12" fill="#34495e" rx="1" />
+                          <circle cx="0" cy="6" r="2.5" fill="#f1c40f" />
+                          {/* Symmetric steel claw hooks */}
+                          <path d="M -8,10 Q -8,17 -4,17 Q 0,17 0,13 Q 0,17 4,17 Q 8,17 8,10" fill="none" stroke="#7f8c8d" strokeWidth="2.5" strokeLinecap="round" />
+                        </g>
+                      </g>
+                    </g>
+                  </g>
+                </g>
+              </g>
+            </g>
+
+            {/* Floor perspectives */}
+            <rect x="0" y="270" width="800" height="230" fill="#090c10" />
+            <path d="M 0,270 L 800,270 M 0,285 L 800,285 M 0,310 L 800,310 M 0,350 L 800,350 M 0,400 L 800,400 M 0,460 L 800,460" stroke="#121720" strokeWidth="1" />
+
+
+            {/* ==================== TRACK 1 (TOP, y=230) - EMU3000 Parking ==================== */}
+            {/* Sleepers */}
+            <line x1="0" y1="230" x2="800" y2="230" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            {/* Rails */}
+            <line x1="0" y1="226" x2="800" y2="226" stroke="#484d56" strokeWidth="1.5" />
+                        {/* Highly Detailed EMU3000 Train (Extended off-screen to left) */}
+            <g transform="translate(-150, 161.4) scale(0.32)">
+              <DetailedTrain model="emu3000" layout={['passenger', 'passenger', 'passenger', 'cabRight']} />
+            </g>
+
+
+            {/* ==================== TRACK 2 (MIDDLE, y=330) - Wash & Taroko Express ==================== */}
+            {/* Sleepers */}
+            <line x1="0" y1="330" x2="800" y2="330" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            {/* Rails */}
+            <line x1="0" y1="326" x2="800" y2="326" stroke="#484d56" strokeWidth="1.5" />
+            <line x1="0" y1="327" x2="800" y2="327" stroke="#777c85" strokeWidth="1" />
+            {/* OCS contact wire */}
+            <line x1="0" y1="279" x2="800" y2="279" stroke="#cd853f" strokeWidth="0.8" opacity="0.35" />
+
+            {/* Highly Detailed 6-Car Shinkansen E5 Series "Hayabusa" Train passing through washing system (beautiful green/white bullet train) */}
+            <g className="train-washing">
+              <g transform="scale(0.32)">
+                <DetailedTrain model="emu900" layout={['cabLeft', 'passenger', 'passenger', 'passenger', 'passenger', 'cabRight']} />
+              </g>
+            </g>
+
+            {/* Washing System Overlay (Layered on top of Track 2) */}
+            <g transform="translate(350, 0)">
+              {/* Spraying water drops */}
+              <circle className="water-drop" cx="-12" cy="305" r="1.8" fill="#5DADE2" style={{ '--wx': '-28px', '--wy': '-18px' }} />
+              <circle className="water-drop" cx="-10" cy="320" r="1.5" fill="#5DADE2" style={{ '--wx': '-35px', '--wy': '12px' }} />
+              <circle className="water-drop" cx="12" cy="310" r="2.0" fill="#5DADE2" style={{ '--wx': '28px', '--wy': '-12px' }} />
+              <circle className="water-drop" cx="10" cy="328" r="1.8" fill="#5DADE2" style={{ '--wx': '25px', '--wy': '18px' }} />
+
+              {/* Vertical Support Gantry */}
+              <rect x="-3" y="275" width="6" height="60" fill="url(#gantryBeam)" rx="1" />
+
+              {/* Brush 1 (Upper) - No inline transformOrigin styles to avoid offsets, spins in place */}
+              <g className="wash-brush">
+                <rect x="-7" y="287" width="14" height="22" fill="#3498DB" opacity="0.85" rx="3" />
+                <line x1="0" y1="287" x2="0" y2="309" stroke="#FFF" strokeWidth="1" />
+              </g>
+
+              {/* Brush 2 (Lower) - reverse spin */}
+              <g className="wash-brush-2">
+                <rect x="-7" y="311" width="14" height="22" fill="#2980B9" opacity="0.85" rx="3" />
+                <line x1="0" y1="311" x2="0" y2="333" stroke="#FFF" strokeWidth="1" />
+              </g>
+            </g>
+
+
+            {/* ==================== TRACK 3 (BOTTOM, y=430) - EMU800 Maintenance ==================== */}
+            {/* OCS contact wire */}
+            <line x1="0" y1="380" x2="800" y2="380" stroke="#cd853f" strokeWidth="0.8" opacity="0.35" />
+            {/* Sleepers */}
+            <line x1="0" y1="430" x2="800" y2="430" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            {/* Rails */}
+            <line x1="0" y1="426" x2="800" y2="426" stroke="#484d56" strokeWidth="1.5" />
+            <line x1="0" y1="427" x2="800" y2="427" stroke="#777c85" strokeWidth="1" />
+
+            {/* Highly Detailed EMU800 Train (Staggered further to the right by shifting to x=180) */}
+            <g transform="translate(180, 361.4) scale(0.32)">
+              <DetailedTrain model="emu800" layout={['passenger', 'passenger', 'passenger', 'cabRight']} />
+            </g>
+
+            {/* Spark generator (Welding Effect under EMU800 at x=499, y=424) */}
+            <g transform="translate(499, 424)">
+              <circle cx="0" cy="0" r="15" fill="rgba(0, 240, 255, 0.2)" />
+              <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#00F0FF" style={{ '--dx': '-18px', '--dy': '-12px' }} />
+              <circle className="spark-particle" cx="0" cy="0" r="1.0" fill="#FFF" style={{ '--dx': '12px', '--dy': '-16px' }} />
+              <circle className="spark-particle" cx="0" cy="0" r="1.8" fill="#00F0FF" style={{ '--dx': '-8px', '--dy': '-8px' }} />
+              <circle className="spark-particle" cx="0" cy="0" r="0.8" fill="#FFF" style={{ '--dx': '10px', '--dy': '-10px' }} />
+              <circle className="spark-particle" cx="0" cy="0" r="1.2" fill="#00F0FF" style={{ '--dx': '-12px', '--dy': '-4px' }} />
+              <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#FFF" style={{ '--dx': '6px', '--dy': '-18px' }} />
+            </g>
+
+            {/* Detailed Welder Operator kneeling next to Track 3 (跪姿雙腿) at x=515, y=424 */}
+            <g transform="translate(515, 424)">
+              {/* Back leg kneeling (膝蓋著地) */}
+              <path d="M 4,-3 L 8,4 L 11,4" fill="none" stroke="#1f2c3d" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Front leg planted (另一隻腿支撐) */}
+              <path d="M -1,-3 L -3,3 L 0,3" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+              {/* Torso (Orange safety suit) */}
+              <path d="M -4,-12 L 2,-13 L 4,-3 L -3,-3 Z" fill="#e67e22" stroke="#d35400" strokeWidth="0.5" />
+              {/* Welding torch wire */}
+              <line x1="-12" y1="-2" x2="-16" y2="0" stroke="#7f8c8d" strokeWidth="1" />
+              {/* Arms holding torch */}
+              <path d="M -1,-10 L -8,-4 L -13,-2" fill="none" stroke="#d35400" strokeWidth="2" strokeLinecap="round" />
+              <path d="M -3,-11 L -9,-5 L -13,-2" fill="none" stroke="#e67e22" strokeWidth="1.5" strokeLinecap="round" />
+              {/* Head and welding mask */}
+              <circle cx="0" cy="-15" r="2.8" fill="#f1c40f" />
+              <rect x="-4" y="-18" width="5" height="7" fill="#111" rx="1" />
+              {/* Blue reflection light on welder mask */}
+              <rect x="-4" y="-16" width="2" height="3" fill="#00F0FF" opacity="0.65" />
+            </g>
+
+            {/* Detailed Leaning Ladder on Track 3 (staggered & detailed) */}
+            <g stroke="#BDC3C7" strokeWidth="1.5" opacity="0.9" pointerEvents="none">
+              {/* Left Rail */}
+              <line x1="435" y1="435" x2="440" y2="395" stroke="#7F8C8D" strokeWidth="2" />
+              {/* Right Rail */}
+              <line x1="445" y1="435" x2="450" y2="395" stroke="#7F8C8D" strokeWidth="2" />
+              {/* Steps/Rungs */}
+              <line x1="436.25" y1="427" x2="446.25" y2="427" />
+              <line x1="437.5" y1="419" x2="447.5" y2="419" />
+              <line x1="438.75" y1="411" x2="448.75" y2="411" />
+              <line x1="440" y1="403" x2="450" y2="403" />
+              {/* Safety rubber pads at the bottom */}
+              <rect x="433" y="433" width="4" height="3" fill="#333" rx="0.5" />
+              <rect x="443" y="433" width="4" height="3" fill="#333" rx="0.5" />
+            </g>
+
+            {/* Red toolbox */}
+            <g fill="#c0392b" stroke="#7f0c0d" strokeWidth="0.5" pointerEvents="none">
+              <rect x="530" y="423" width="12" height="7" rx="1" />
+              <rect x="533" y="421" width="6" height="2" rx="0.5" fill="#95a5a6" />
+            </g>
+
+            {/* Welding flash overlay */}
+            <circle cx="499" cy="424" r="55" fill="url(#weldingFlashGradient)" className="welding-glow-reflect" pointerEvents="none" />
+
+            {/* Floor border warning stripes */}
+            <rect x="0" y="475" width="800" height="25" fill="url(#warningStripes)" />
+          </svg>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/components/TrainJourneyModal.js ===
+import React, { useEffect, useState } from 'react';
+
+export default function TrainJourneyModal({ train, onClose, stations, dirInfo, isTomorrow, origin, dest, theme }) {
+  const [animationClass, setAnimationClass] = useState('');
+
+  useEffect(() => {
+    // 進入時的動畫類別，產生順暢展開效果
+    setAnimationClass('modal-open');
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  const handleClose = () => {
+    setAnimationClass('');
+    setTimeout(() => {
+      onClose();
+    }, 300); // 配合 CSS transition 時間
+  };
+
+  // 1. 重構列車的停靠車站清單與表定時間
+  const stops = [];
+  stations.forEach((stationName, idx) => {
+    const time = train.times[idx];
+    if (time) {
+      stops.push({
+        name: stationName,
+        time,
+        index: idx,
+      });
+    }
+  });
+
+  // 2. 正常化時間軸，解決跨午夜時間遞減問題
+  let baseOffset = 0;
+  const stopMinutesList = [];
+  stops.forEach((stop, i) => {
+    const [h, m] = stop.time.split(':').map(Number);
+    let mins = h * 60 + m + baseOffset;
+    if (i > 0 && mins < stopMinutesList[i - 1]) {
+      baseOffset += 24 * 60;
+      mins += 24 * 60;
+    }
+    stopMinutesList.push(mins);
+  });
+
+  // 3. 取得當前時間（分鐘數）
+  const now = new Date();
+  const currentMins = now.getHours() * 60 + now.getMinutes();
+
+  // 4. 計算列車當前運行狀態與位置
+  let statusText = "";
+  let trainPositionIndex = 0; // 車子在第幾個站點
+  let segmentProgress = 0;    // 站間進度 (0 到 1)
+  let isTrainActive = false;  // 列車是否已經在跑
+
+  const delay = train.delay || 0;
+  const firstStationMins = stopMinutesList[0] + delay;
+  const lastStationMins = stopMinutesList[stopMinutesList.length - 1] + delay;
+
+  if (isTomorrow) {
+    statusText = "明日發車 | 表定準點";
+    trainPositionIndex = 0;
+    segmentProgress = 0;
+    isTrainActive = false;
+  } else {
+    if (currentMins < firstStationMins) {
+      statusText = `尚未發車 (預計 ${stops[0].time} 自 ${stops[0].name} 發車)`;
+      trainPositionIndex = 0;
+      segmentProgress = 0;
+      isTrainActive = false;
+    } else if (currentMins >= lastStationMins) {
+      statusText = "列車已抵達終點站";
+      trainPositionIndex = stops.length - 1;
+      segmentProgress = 0;
+      isTrainActive = false;
+    } else {
+      isTrainActive = true;
+      // 尋找目前處於哪兩個車站之間
+      for (let i = 0; i < stops.length - 1; i++) {
+        const t1 = stopMinutesList[i] + delay;
+        const t2 = stopMinutesList[i + 1] + delay;
+        
+        if (currentMins >= t1 && currentMins < t2) {
+          trainPositionIndex = i;
+          segmentProgress = (currentMins - t1) / (t2 - t1);
+          
+          // 如果剛好在出發點 1 分鐘內，算作「停靠中」，否則算「行駛中」
+          if (currentMins - t1 < 2) {
+            statusText = `停靠中：${stops[i].name} 站`;
+            segmentProgress = 0; // 停靠在站點上
+          } else {
+            statusText = `行駛中：${stops[i].name} ➡️ ${stops[i+1].name}`;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // 格式化時間 (加上誤點)
+  const formatStopActualTime = (tableTime, index) => {
+    const [h, m] = tableTime.split(':').map(Number);
+    let totalMins = h * 60 + m + (isTomorrow ? 0 : delay);
+    const rh = Math.floor((totalMins % 1440) / 60);
+    const rm = totalMins % 60;
+    return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
+  };
+
+  // 計算小火車 Icon 的垂直位置 (每一站高度設定為 65px)
+  const stopHeight = 65;
+  const trainTopOffset = (trainPositionIndex * stopHeight) + (segmentProgress * stopHeight) + 12; // 12px 為微調置中偏差
+
+  // 是否是已經通過的站
+  const isStopPassed = (index) => {
+    if (isTomorrow) return false;
+    const stopMins = stopMinutesList[index] + delay;
+    // 如果目前時間大於該站出發時間，則算通過
+    return currentMins > stopMins;
+  };
+
+  // 取得起迄站的狀態
+  const isOrigin = (name) => name === origin;
+  const isDest = (name) => name === dest;
+
+  // 動態主題外觀樣式
+  const getThemeClass = () => {
+    if (theme === 2) return 'theme2-modal';
+    if (theme === 3) return 'theme3-modal';
+    return 'theme1-modal';
+  };
+
+  return (
+    <>
+      <style>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(0px);
+          -webkit-backdrop-filter: blur(0px);
+          z-index: 10000;
+          display: flex;
+          align-items: flex-end; /* 從底部滑出 */
+          justify-content: center;
+          transition: background 0.3s ease, backdrop-filter 0.3s ease;
+          pointer-events: auto;
+        }
+
+        .modal-overlay.modal-open {
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .modal-sheet {
+          width: 100%;
+          max-width: 500px;
+          background: #1a1a24;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 24px 24px 0 0;
+          padding: 24px;
+          box-sizing: border-box;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          transform: translateY(100%);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          color: #fff;
+          box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-open .modal-sheet {
+          transform: translateY(0);
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          padding-bottom: 16px;
+          margin-bottom: 16px;
+        }
+
+        .modal-header h2 {
+          margin: 0 0 6px 0;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .modal-header p {
+          margin: 0;
+          font-size: 13px;
+          color: rgba(255,255,255,0.5);
+        }
+
+        .close-btn {
+          background: rgba(255,255,255,0.08);
+          border: none;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+          background: rgba(255,255,255,0.15);
+        }
+
+        /* 🟢 運行狀態 Badge */
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(0, 242, 254, 0.1);
+          border: 1px solid rgba(0, 242, 254, 0.2);
+          color: #00F2FE;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 16px;
+          align-self: flex-start;
+        }
+
+        .status-badge.delayed {
+          background: rgba(255, 79, 79, 0.1);
+          border-color: rgba(255, 79, 79, 0.2);
+          color: #FF4B30;
+        }
+
+        .status-badge.completed {
+          background: rgba(79, 255, 120, 0.1);
+          border-color: rgba(79, 255, 120, 0.2);
+          color: #2ECC71;
+        }
+
+        .modal-body {
+          flex: 1;
+          overflow-y: auto;
+          padding-right: 4px;
+          position: relative;
+        }
+
+        /* 🚂 垂直進度軸線軌道 */
+        .timeline-container {
+          position: relative;
+          padding-left: 55px; /* 留位置放時間與小火車 */
+          margin: 10px 0;
+        }
+
+        .timeline-line {
+          position: absolute;
+          left: 18px;
+          top: 15px;
+          bottom: 15px;
+          width: 3px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 2px;
+        }
+
+        .timeline-line-progress {
+          position: absolute;
+          left: 18px;
+          top: 15px;
+          width: 3px;
+          background: linear-gradient(180deg, #2ECC71, #00F2FE);
+          border-radius: 2px;
+          transition: height 0.3s ease;
+        }
+
+        /* 📍 車站點節點 */
+        .station-node {
+          position: relative;
+          height: 65px; /* 剛好與 stopHeight 相符 */
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+        }
+
+        .station-dot {
+          position: absolute;
+          left: -41px; /* 18px - 41px = -23px, 圓點直徑 10px 居中置於 3px 軌道 */
+          top: 11px;
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          background: #777;
+          border: 2px solid #1a1a24;
+          z-index: 2;
+          transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .station-node.passed .station-dot {
+          background: #2ECC71;
+          box-shadow: 0 0 6px rgba(46, 204, 113, 0.4);
+        }
+
+        .station-node.current .station-dot {
+          background: #00F2FE;
+          box-shadow: 0 0 10px #00F2FE;
+        }
+
+        .station-node.passed .station-name {
+          color: rgba(255,255,255,0.4);
+        }
+
+        .station-name-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          height: 30px;
+        }
+
+        .station-name {
+          font-weight: 600;
+          font-size: 15px;
+          color: #fff;
+          transition: color 0.3s;
+        }
+
+        /* 🛫 🛬 起迄站特別標記 */
+        .station-badge {
+          font-size: 10px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 700;
+        }
+
+        .station-badge.origin {
+          background: rgba(46, 204, 113, 0.2);
+          color: #2ECC71;
+          border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .station-badge.dest {
+          background: rgba(0, 242, 254, 0.2);
+          color: #00F2FE;
+          border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        .station-time {
+          font-size: 12px;
+          color: rgba(255,255,255,0.5);
+          position: absolute;
+          left: -105px; /* 推到最左側 */
+          width: 50px;
+          text-align: right;
+          top: 8px;
+          font-family: monospace;
+        }
+
+        .station-node.passed .station-time {
+          color: rgba(255,255,255,0.3);
+        }
+
+        .station-time del {
+          display: block;
+          font-size: 10px;
+          opacity: 0.5;
+        }
+
+        .station-time .actual-time {
+          color: #FF4B30;
+          font-weight: bold;
+        }
+
+        /* 🚂 實時動態小火車圖標 */
+        .live-train-indicator {
+          position: absolute;
+          left: 10px; /* 對準軌道中線 */
+          width: 19px;
+          height: 19px;
+          background: #2ECC71;
+          border-radius: 50%;
+          border: 3px solid #1a1a24;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 12px #2ECC71;
+          transform: translate(-50%, -50%);
+          transition: top 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .live-train-indicator::after {
+          content: '';
+          position: absolute;
+          width: 27px;
+          height: 27px;
+          border-radius: 50%;
+          border: 2px solid #2ECC71;
+          animation: pulseRing 1.5s infinite ease-out;
+        }
+
+        @keyframes pulseRing {
+          0% { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        .live-train-svg {
+          width: 10px;
+          height: 10px;
+          fill: #fff;
+        }
+
+        /* 🎟️ 不同主題下的 Modal 特殊調整 */
+        .theme2-modal .modal-sheet {
+          background: #ebeff7;
+          color: #2c3e50;
+          border-top: 1px solid rgba(0,0,0,0.05);
+          box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme2-modal .close-btn {
+          background: rgba(0,0,0,0.05);
+          color: #2c3e50;
+        }
+
+        .theme2-modal .close-btn:hover {
+          background: rgba(0,0,0,0.1);
+        }
+
+        .theme2-modal .modal-header p {
+          color: rgba(44, 62, 80, 0.6);
+        }
+
+        .theme2-modal .station-name {
+          color: #2c3e50;
+        }
+
+        .theme2-modal .station-time {
+          color: rgba(44, 62, 80, 0.6);
+        }
+
+        .theme2-modal .station-node.passed .station-name {
+          color: rgba(44, 62, 80, 0.4);
+        }
+
+        .theme2-modal .station-dot {
+          border-color: #ebeff7;
+          background: #bdc3c7;
+        }
+
+        .theme3-modal .modal-sheet {
+          background: #110826;
+          border-top: 2px solid #00F0FF;
+          box-shadow: 0 -10px 45px rgba(0, 240, 255, 0.15);
+        }
+
+        .theme3-modal .station-dot {
+          border-color: #110826;
+        }
+
+        .theme3-modal .timeline-line-progress {
+          background: linear-gradient(180deg, #00FF87, #00F0FF);
+        }
+
+        .theme3-modal .live-train-indicator {
+          background: #00F0FF;
+          box-shadow: 0 0 15px #00F0FF;
+        }
+
+        .theme3-modal .live-train-indicator::after {
+          border-color: #00F0FF;
+        }
+      `}</style>
+
+      <div className={`modal-overlay ${animationClass} ${getThemeClass()}`} onClick={handleClose}>
+        <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div>
+              <h2>
+                <span style={{ fontSize: '13px', background: 'rgba(0,242,254,0.15)', color: '#00F2FE', padding: '3px 6px', borderRadius: '4px', border: '1px solid rgba(0,242,254,0.2)' }}>
+                  {train.type}
+                </span>
+                <span>{train.number} 次</span>
+              </h2>
+              <p>開往：{train.route}</p>
+            </div>
+            <button className="close-btn" onClick={handleClose}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <div className={`status-badge ${delay > 0 ? 'delayed' : 'completed'}`}>
+            <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }}></span>
+            <span>{isTomorrow ? "明日發車" : delay > 0 ? `誤點 ${delay} 分鐘` : "準點行駛"}</span>
+            <span style={{ margin: '0 4px', opacity: 0.5 }}>|</span>
+            <span style={{ fontWeight: 'normal' }}>{statusText}</span>
+          </div>
+
+          <div className="modal-body">
+            <div className="timeline-container">
+              {/* 鐵軌底線 */}
+              <div className="timeline-line"></div>
+              
+              {/* 鐵軌進度亮線 */}
+              <div 
+                className="timeline-line-progress" 
+                style={{ 
+                  height: `${isTomorrow ? 0 : (trainPositionIndex * stopHeight) + (segmentProgress * stopHeight)}px` 
+                }}
+              ></div>
+
+              {/* 小火車實時位置圖標 */}
+              <div 
+                className="live-train-indicator"
+                style={{ 
+                  top: `${trainTopOffset}px`,
+                  display: (isTomorrow || currentMins < firstStationMins || currentMins > lastStationMins) ? 'none' : 'flex'
+                }}
+              >
+                <svg className="live-train-svg" viewBox="0 0 24 24">
+                  <path d="M4 18h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2zm4-12h8v2H8V6zm-2 8c0-.55.45-1 1-1h10c.55 0 1 .45 1 1s-.45 1-1 1H7c-.55 0-1-.45-1-1z" />
+                </svg>
+              </div>
+
+              {stops.map((stop, index) => {
+                const passed = isStopPassed(index);
+                const current = !isTomorrow && isTrainActive && trainPositionIndex === index;
+                
+                return (
+                  <div 
+                    key={stop.name} 
+                    className={`station-node ${passed ? 'passed' : ''} ${current ? 'current' : ''}`}
+                  >
+                    {/* 車站圓點 */}
+                    <div className="station-dot"></div>
+
+                    {/* 時間顯示 (左側) */}
+                    <div className="station-time">
+                      {delay > 0 && !isTomorrow ? (
+                        <>
+                          <del>{stop.time}</del>
+                          <span className="actual-time">{formatStopActualTime(stop.time, index)}</span>
+                        </>
+                      ) : (
+                        <span>{stop.time}</span>
+                      )}
+                    </div>
+
+                    {/* 車站名稱與起迄站 Badge */}
+                    <div className="station-name-row">
+                      <span className="station-name">{stop.name}</span>
+                      {isOrigin(stop.name) && <span className="station-badge origin">出發站 🛫</span>}
+                      {isDest(stop.name) && <span className="station-badge dest">目的地 🛬</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/components/Theme1.js ===
+import React, { useState, useEffect, useRef } from "react";
+
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow }) {
+  const [isOriginOpen, setIsOriginOpen] = useState(false);
+  const [isDestOpen, setIsDestOpen] = useState(false);
+  const originRef = useRef(null);
+  const destRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (originRef.current && !originRef.current.contains(event.target)) {
+        setIsOriginOpen(false);
+      }
+      if (destRef.current && !destRef.current.contains(event.target)) {
+        setIsDestOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+
+  const nextTrain = validTrains[0];
+  let diffMins = 0;
+  if (nextTrain) {
+    diffMins = nextTrain.actualDepMins - currentMins;
+  }
+
+  const getTrainDotClass = (type) => {
+    if(type.includes('區間')) return '';
+    if(type.includes('自強') || type.includes('普悠瑪') || type.includes('太魯閣')) return 'fast';
+    return 'express';
+  };
+
+  const formatTime = (mins) => {
+    let h = Math.floor(mins / 60) % 24;
+    let m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  return (
+    <>
+      <style>{`
+        .theme1-root {
+          --bg: #0B132B;
+          --surface: rgba(255, 255, 255, 0.15);
+          --primary: #FFFFFF;
+          --accent: #FFD700;
+          --text-main: #FFFFFF;
+          --text-muted: rgba(255, 255, 255, 0.85);
+          --train-local: #4FACFE;
+          --train-fast: #FFD700;
+          --train-express: #FF6B6B;
+          background: transparent; 
+          color: var(--text-main); 
+          min-height: 100vh; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          padding: 20px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: relative;
+          z-index: 10;
+        }
+        .theme1-root * { box-sizing: border-box; }
+        .theme1-root .container { width: 100%; max-width: 500px; margin: 0 auto; }
+        .theme1-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+        
+        .theme1-root .selector { display: flex; align-items: flex-end; gap: 10px; background: rgba(255,255,255,0.15); border-radius: 16px; padding: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); position: relative; z-index: 1000; }
+        .theme1-root .select-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .theme1-root .select-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .theme1-root .custom-select { width: 100%; position: relative; }
+        .theme1-root .select-trigger { 
+            background: var(--surface); color: var(--text-main); border: 1px solid var(--primary); 
+            padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
+        .theme1-root .select-options { 
+            position: absolute; top: calc(100% + 5px); left: 0; right: 0; 
+            background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; 
+            max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 10px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme1-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.05); color: #fff; }
+        .theme1-root .option-item:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
+        
+        .theme1-root .swap-btn { 
+            background: #FFFFFF; color: #4FACFE; border: none; border-radius: 50%; 
+            width: 42px; height: 42px; cursor: pointer; 
+            display: flex; justify-content: center; align-items: center; 
+            flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            transition: transform 0.2s;
+            align-self: center;
+            transform: translateY(10px);
+        }
+        .theme1-root .swap-btn:hover { transform: translateY(10px) scale(1.1) rotate(180deg); }
+        
+        .theme1-root .next-train-card { text-align: center; margin-bottom: 45px; margin-top: 10px; }
+        .theme1-root .countdown { font-size: 80px; font-weight: 800; line-height: 0.95; margin: 15px 0; color: #FFFFFF; text-shadow: 0 0 25px rgba(255, 255, 255, 0.25); font-variant-numeric: tabular-nums; }
+        .theme1-root .countdown span { font-size: 24px; color: var(--accent); font-weight: 600; margin-left: 4px; text-shadow: none; text-transform: uppercase; }
+        .theme1-root .subtitle { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 3px; font-weight: 500; }
+        .theme1-root .dest-highlight { color: #FFFFFF; font-weight: 700; background: rgba(255, 215, 0, 0.25); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.4); margin-left: 4px; }
+        
+        .theme1-root .schedule-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        .theme1-root .train-card {
+            position: relative; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05)); 
+            padding: 22px 28px; border-radius: 40px 10px 40px 10px; display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.5); 
+            border: 1px solid rgba(255,255,255,0.3); border-left: 0;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+        .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--train-local); border-radius: 6px 0 0 6px; box-shadow: 0 0 15px var(--train-local); }
+        .theme1-root .train-card.fast::before { background: var(--train-fast); box-shadow: 0 0 15px var(--train-fast); }
+        .theme1-root .train-card.express::before { background: var(--train-express); box-shadow: 0 0 15px var(--train-express); }
+        .theme1-root .train-card.express { border-left-color: var(--train-express); }
+        
+        .theme1-root .train-details h3 { margin: 0; font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .theme1-root .train-details p { margin: 8px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; }
+        .theme1-root .duration-badge { background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 6px; font-size: 11px; margin-left: 8px; color: #fff; font-weight: bold; }
+        
+        .theme1-root .train-time { font-size: 22px; font-weight: 800; color: #fff; text-align: right; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .theme1-root .train-time span { display: block; font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .theme1-root .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; }
+        
+        .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
+
+        @media (min-width: 768px) {
+            .theme1-root .container { max-width: 650px; padding: 40px; }
+            .theme1-root .schedule-list { max-width: 650px; display: flex; flex-direction: column; gap: 20px; }
+            .theme1-root .train-card { padding: 30px 45px; justify-content: space-between; }
+            .theme1-root .train-details h3 { font-size: 40px; margin-bottom: 5px; text-align: left; }
+            .theme1-root .train-time { font-size: 40px; text-align: right; }
+            .theme1-root h1 { font-size: 26px; letter-spacing: 3px; }
+            .theme1-root .selector { max-width: 650px; gap: 20px; }
+            .theme1-root .select-trigger { font-size: 18px; padding: 15px 20px; }
+            .theme1-root .train-details p { font-size: 16px; margin-top: 8px; justify-content: flex-start; }
+            .theme1-root .train-time span { font-size: 14px; margin-top: 8px; justify-content: flex-end; }
+            .theme1-root .countdown { font-size: 110px; }
+            .theme1-root .countdown span { font-size: 32px; }
+            .theme1-root .subtitle { font-size: 15px; }
+            
+            /* 📅 Date Toggle Buttons for Theme 1 */
+            .theme1-root .date-toggle-container {
+              display: flex;
+              justify-content: center;
+              margin-bottom: 25px;
+              margin-top: 10px;
+            }
+
+            .theme1-root .date-toggle {
+              background: rgba(255, 255, 255, 0.2);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              border-radius: 20px;
+              padding: 2px;
+              display: flex;
+              width: 200px;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+              backdrop-filter: blur(10px);
+            }
+
+            .theme1-root .toggle-btn {
+              flex: 1;
+              border: none;
+              background: transparent;
+              color: rgba(255, 255, 255, 0.7);
+              padding: 6px 12px;
+              border-radius: 17px;
+              font-size: 12px;
+              font-weight: bold;
+              cursor: pointer;
+              transition: all 0.3s;
+            }
+
+            .theme1-root .toggle-btn.active {
+              background: #FFFFFF;
+              color: #0072FF;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+          }
+      `}</style>
+      
+      <div className="theme1-root">
+        <div className="container">
+            <h1>個人時刻表 Minimalist</h1>
+            
+            <div className="selector">
+                <div className="select-group" ref={originRef}>
+                    <label>出發地 Origin</label>
+                    <div className="custom-select" onClick={() => { setIsOriginOpen(!isOriginOpen); setIsDestOpen(false); }}>
+                        <div className="select-trigger">{origin}</div>
+                        <div className={`select-options ${isOriginOpen ? 'open' : ''}`}>
+                            {allStations.map(s => (
+                                <div key={s} className={`option-item ${s === origin ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setOrigin(s); setIsOriginOpen(false); }}>
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <button className="swap-btn" onClick={handleSwap}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}>
+                        <path d="M16 17H4M4 17l4 4M4 17l4-4M8 7h12M20 7l-4-4M20 7l-4 4"/>
+                    </svg>
+                </button>
+                <div className="select-group" ref={destRef}>
+                    <label>目的地 Destination</label>
+                    <div className="custom-select" onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
+                        <div className="select-trigger">{dest}</div>
+                        <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
+                            {allStations.map(s => (
+                                <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
+                                    {s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 📅 Date Toggle Buttons */}
+            <div className="date-toggle-container">
+              <div className="date-toggle">
+                <button className={`toggle-btn ${!isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(false)}>今日班次</button>
+                <button className={`toggle-btn ${isTomorrow ? 'active' : ''}`} onClick={() => setIsTomorrow(true)}>明日班次</button>
+              </div>
+            </div>
+
+            {nextTrain ? (
+              <div className="next-train-card">
+                  <div className="subtitle">距離下一班車</div>
+                  <div className="countdown">
+                    {diffMins > 60 ? Math.floor(diffMins/60) : diffMins}
+                    <span>{diffMins > 60 ? 'hr' : 'mins'}</span>
+                    {diffMins > 60 && ` ${diffMins%60}`}
+                    {diffMins > 60 && <span>m</span>}
+                  </div>
+                  <div className="subtitle">開往 <span className="dest-highlight">{dest}</span></div>
+              </div>
+            ) : null}
+
+            <div className="schedule-list">
+              {validTrains.length === 0 && (
+                <div className="empty-state" style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '16px',
+                  padding: '30px 20px',
+                  textAlign: 'center',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                  backdropFilter: 'blur(10px)',
+                  margin: '10px 0 20px 0'
+                }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'rgba(255, 215, 0, 0.15)',
+                    border: '1px solid #FFD700',
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    color: '#FFD700',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    marginBottom: '15px'
+                  }}>
+                    <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FFD700', boxShadow: '0 0 6px #FFD700' }}></span>
+                    {isTomorrow ? '明日班次查詢中' : '今日已無班次'}
+                  </div>
+                  <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.6' }}>
+                    本日列車已收班，後台正連線同步明日車表。<br/>您可點擊下方按鈕提早規劃行程。
+                  </p>
+                  <button 
+                    onClick={() => setIsTomorrow(!isTomorrow)}
+                    style={{
+                      background: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '20px',
+                      color: '#0072FF',
+                      padding: '8px 24px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'transform 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <path d="M16 2v4M8 2v4M2 10h20" />
+                    </svg>
+                    {isTomorrow ? '🔍 返回今日時刻表' : '🔍 查看明日車次'}
+                  </button>
+                </div>
+              )}
+              {validTrains.map((t) => {
+                let [dh, dm] = t.depTime.split(':').map(Number);
+                let [ah, am] = t.arrTime.split(':').map(Number);
+                let diff = (ah * 60 + am) - (dh * 60 + dm);
+                if (diff < 0) diff += 24 * 60;
+                let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                let waitDiff = t.actualDepMins - currentMins;
+                let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
+                let actualArrMins = (ah * 60 + am) + t.delay;
+                
+                return (
+                  <div key={t.number} className={`train-card ${getTrainDotClass(t.type)}`}>
+                      <div className="train-details">
+                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
+                      </div>
+                      <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
+                  </div>
+                )
+              })}
+            </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
+=== 檔案：app/api/trains/route.js ===
+import { NextResponse } from 'next/server';
+
+// 取得 TDX Access Token
+async function getTdxToken() {
+  const clientId = process.env.TDX_CLIENT_ID;
+  const clientSecret = process.env.TDX_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.warn("TDX credentials missing, using fallback.");
+    return null;
+  }
+
+  const authUrl = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
+  const params = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret
+  });
+
+  try {
+    const res = await fetch(authUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      // Token 可以快取很久 (通常是 24 小時)，這裡設定 12 小時 (43200 秒)
+      next: { revalidate: 43200 } 
+    });
+    
+    if (!res.ok) throw new Error('Failed to fetch TDX token');
+    const data = await res.json();
+    return data.access_token;
+  } catch (error) {
+    console.error('Error fetching TDX token:', error);
+    return null;
+  }
+}
+
+// 記憶體快取，防止使用者狂按 F5 把額度刷爆
+let apiCache = {}; 
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const origin = searchParams.get('origin');
+  const bypass = searchParams.get('bypass') === 'true';
+
+  if (!origin) {
+    return NextResponse.json({ error: 'Origin station is required' }, { status: 400 });
+  }
+
+  try {
+    // 檢查記憶體快取：如果沒有強制繞過，且距離上次抓取同一站的資料不到 3 分鐘 (180,000 ms)，直接回傳快取資料
+    const nowMs = Date.now();
+    if (!bypass && apiCache[origin] && (nowMs - apiCache[origin].timestamp < 180000)) {
+      console.log(`[Protective Cache Hit] Returning cached TDX data for ${origin}`);
+      return NextResponse.json({ data: apiCache[origin].data });
+    }
+
+    const token = await getTdxToken();
+    
+    // 如果沒有 Token (沒設定金鑰)，回傳空物件讓前端自動降級
+    if (!token) {
+      return NextResponse.json({ data: {} });
+    }
+
+    // 呼叫 TDX 即時看板 API，過濾出該出發站的資料
+    const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$filter=StationName/Zh_tw eq '${encodeURIComponent(origin)}'&$format=JSON`;
+
+    const res = await fetch(tdxUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch TDX live board');
+    }
+
+    const data = await res.json();
+    
+    // 將資料簡化為我們需要的格式 (車次號碼 -> 延誤分鐘數)
+    const delayMap = {};
+    if (Array.isArray(data)) {
+      data.forEach(train => {
+        delayMap[train.TrainNo] = train.DelayTime || 0;
+      });
+    }
+
+    // 更新記憶體快取
+    apiCache[origin] = {
+      data: delayMap,
+      timestamp: nowMs
+    };
+
+    console.log(`[TDX Fetch] Successfully fetched live data for ${origin}`);
+    return NextResponse.json({ data: delayMap });
+
+  } catch (error) {
+    console.error('TDX API Error:', error);
+    // 發生錯誤時回傳空資料，讓前端降級使用本地 json
+    return NextResponse.json({ data: {} }, { status: 500 });
+  }
+}
+
+

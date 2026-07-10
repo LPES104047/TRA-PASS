@@ -71,26 +71,100 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme2-root h1 { margin-top: 0; font-size: 20px; text-align: center; font-weight: 600; color: #1B3B6F; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
         
-        .theme2-root .selector-box { background: #FFFFFF; border-radius: 20px; box-shadow: 0 10px 30px rgba(27, 59, 111, 0.08); display: flex; align-items: center; width: 100%; max-width: 500px; position: relative; z-index: 200; padding: 0; height: 70px; margin-bottom: 30px; border: 1px solid rgba(27, 59, 111, 0.05); }
-        .theme2-root .selector-box::after { content: ""; position: absolute; left: 50%; top: 20%; bottom: 20%; width: 1px; background: #E2E8F0; z-index: 1; }
+        .theme2-root .selector-box { 
+          background: #FFFFFF; 
+          border-radius: 20px; 
+          box-shadow: 0 10px 30px rgba(27, 59, 111, 0.08); 
+          display: flex; 
+          align-items: center; 
+          width: 100%; 
+          max-width: 500px; 
+          position: relative; 
+          z-index: 200; 
+          padding: 0; 
+          height: 75px; 
+          margin-bottom: 30px; 
+          border: 1px solid rgba(27, 59, 111, 0.12); 
+        }
+        .theme2-root .selector-box::after { 
+          content: ""; 
+          position: absolute; 
+          left: 50%; 
+          top: 15%; 
+          bottom: 15%; 
+          width: 1px; 
+          background: #E2E8F0; 
+          z-index: 1; 
+        }
         
-        .theme2-root .custom-select { flex: 1; background: transparent; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; position: relative; transition: background 0.2s; cursor: pointer; }
+        .theme2-root .custom-select { 
+          flex: 1; 
+          background: transparent; 
+          height: 100%; 
+          display: flex; 
+          flex-direction: column; 
+          justify-content: center; 
+          position: relative; 
+          transition: background 0.2s; 
+          cursor: pointer; 
+        }
         .theme2-root #originContainer { 
             border-top-left-radius: 20px; border-bottom-left-radius: 20px; 
             border-top-right-radius: 0; border-bottom-right-radius: 0; 
-            padding: 0 25px; 
+            padding-left: 30px; 
+            padding-right: 20px;
+            align-items: flex-start;
         }
         .theme2-root #destContainer { 
             border-top-right-radius: 20px; border-bottom-right-radius: 20px; 
             border-top-left-radius: 0; border-bottom-left-radius: 0; 
-            padding: 0 25px; 
+            padding-right: 30px; 
+            padding-left: 20px;
+            align-items: flex-end;
         }
         .theme2-root .custom-select:hover { background: #F8FAFC; }
         .theme2-root #originContainer::before { content: "出發 Origin"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
         .theme2-root #destContainer::before { content: "抵達 Destination"; font-size: 10px; color: #64748B; font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
-        .theme2-root .select-trigger { font-size: 18px; font-weight: 800; color: #1B3B6F; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; }
         
-        .theme2-root .select-options { position: absolute; top: 100%; background: #FFFFFF; border: 1px solid #E0E5EC; border-radius: 12px; margin-top: 5px; max-height: 250px; overflow-y: auto; display: none; z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 10px; min-width: 300px; }
+        .theme2-root #originContainer .select-trigger { 
+          font-size: 18px; 
+          font-weight: 800; 
+          color: #1B3B6F; 
+          width: 100%; 
+          text-align: left; 
+          display: flex; 
+          justify-content: flex-start; 
+          align-items: center; 
+          gap: 6px;
+        }
+        .theme2-root #destContainer .select-trigger { 
+          font-size: 18px; 
+          font-weight: 800; 
+          color: #1B3B6F; 
+          width: 100%; 
+          text-align: right; 
+          display: flex; 
+          justify-content: flex-start; 
+          align-items: center; 
+          gap: 6px;
+          flex-direction: row-reverse;
+        }
+        
+        .theme2-root .select-options { 
+          position: absolute; 
+          top: 100%; 
+          background: #FFFFFF; 
+          border: 1px solid #E0E5EC; 
+          border-radius: 12px; 
+          margin-top: 5px; 
+          max-height: 250px; 
+          overflow-y: auto; 
+          display: none; 
+          z-index: 300; 
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1); 
+          padding: 10px; 
+          min-width: 300px; 
+        }
         .theme2-root #originContainer .select-options { left: 0; }
         .theme2-root #destContainer .select-options { right: 0; left: auto; }
         .theme2-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -98,8 +172,30 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme2-root .option-item:hover { background: #E0E5EC; }
         .theme2-root .option-item.selected { background: #1B3B6F; color: #FFFFFF; font-weight: bold; }
         
-        .theme2-root .swap-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #1B3B6F; color: #FFFFFF; border: 3px solid #FFFFFF; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 15px rgba(27, 59, 111, 0.15); z-index: 10; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .theme2-root .swap-btn:hover { transform: translate(-50%, -50%) rotate(180deg) scale(1.05); background: #2A5298; }
+        .theme2-root .swap-btn { 
+          position: absolute; 
+          left: 50%; 
+          top: 50%; 
+          transform: translate(-50%, -50%); 
+          background: #1B3B6F; 
+          color: #FFFFFF; 
+          border: 3px solid #FFFFFF; 
+          border-radius: 50%; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          font-size: 18px; 
+          box-shadow: 0 4px 15px rgba(27, 59, 111, 0.15); 
+          z-index: 10; 
+          cursor: pointer; 
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .theme2-root .swap-btn:hover { 
+          transform: translate(-50%, -50%) rotate(180deg) scale(1.05); 
+          background: #2A5298; 
+        }
 
         .theme2-root .ticket {
             width: 100%; max-width: 500px; margin: 0 auto;
@@ -237,13 +333,13 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         }
 
         .theme2-root .date-toggle {
-          background: rgba(255, 255, 255, 0.8);
-          border: 1.5px solid #1B3B6F;
+          background: #FFFFFF;
+          border: 1.5px solid rgba(27, 59, 111, 0.12);
           border-radius: 20px;
-          padding: 2px;
+          padding: 3px;
           display: flex;
           width: 200px;
-          box-shadow: 0 4px 12px rgba(27, 59, 111, 0.15);
+          box-shadow: 0 4px 15px rgba(27, 59, 111, 0.06);
         }
 
         .theme2-root .toggle-btn {
@@ -258,11 +354,15 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
           cursor: pointer;
           transition: all 0.3s;
         }
+        
+        .theme2-root .toggle-btn:hover {
+          color: #1B3B6F;
+        }
 
         .theme2-root .toggle-btn.active {
           background: #1B3B6F;
           color: #FFFFFF;
-          box-shadow: 0 2px 6px rgba(27, 59, 111, 0.3);
+          box-shadow: 0 2px 8px rgba(27, 59, 111, 0.2);
         }
 
         /* 🎫 撕票根動畫 */
@@ -305,10 +405,11 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
         @media (min-width: 768px) {
             .theme2-root .ticket { max-width: 650px; width: 100%; }
             .theme2-root .selector-box { max-width: 650px; height: 90px; margin: 0 auto 40px auto; }
-            .theme2-root .custom-select { padding: 0 40px; }
+            .theme2-root #originContainer { padding-left: 45px; padding-right: 25px; }
+            .theme2-root #destContainer { padding-right: 45px; padding-left: 25px; }
             .theme2-root #originContainer::before, .theme2-root #destContainer::before { font-size: 12px; margin-bottom: 4px; }
-            .theme2-root .select-trigger { font-size: 24px; }
-            .theme2-root .swap-btn { width: 48px; height: 48px; border: 4px solid #FFFFFF; font-size: 20px; }
+            .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { font-size: 24px; }
+            .theme2-root .swap-btn { width: 44px; height: 44px; border: 3px solid #FFFFFF; font-size: 20px; }
             
             .theme2-root .dashboard { max-width: 650px; margin-top: 40px; }
             .theme2-root .train-item { padding-left: 100px; }
@@ -328,13 +429,11 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
 
         /* Mobile Overrides */
         @media (max-width: 480px) {
-            .theme2-root .selector-box { flex-direction: column; height: auto; padding: 10px 0; border-radius: 16px; }
-            .theme2-root .selector-box::after { display: none; }
-            .theme2-root #originContainer, .theme2-root #destContainer { border-radius: 16px; padding: 15px 30px; }
-            .theme2-root .custom-select { width: 100%; align-items: center; }
+            .theme2-root .selector-box { flex-direction: column; gap: 10px; padding: 15px 0; }
+            .theme2-root #originContainer, .theme2-root #destContainer { width: 100%; border-radius: 16px; padding: 12px 20px; height: 75px; align-items: center; }
             .theme2-root #originContainer::before, .theme2-root #destContainer::before { text-align: center; }
-            .theme2-root .select-trigger { justify-content: center; text-align: center; gap: 8px; }
-            .theme2-root .swap-btn { position: relative; left: auto; top: auto; transform: none; margin: -10px auto; border: 4px solid #FFFFFF; }
+            .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { justify-content: center; text-align: center; font-size: 20px; flex-direction: row; }
+            .theme2-root .swap-btn { position: relative; margin: -10px auto; border: 3.5px solid #FFFFFF; }
             
             .theme2-root .dashboard { margin-top: 10px; }
             

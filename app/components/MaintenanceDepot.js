@@ -1,5 +1,435 @@
 import React from 'react';
 
+// ============================================================================
+// HIGH-DETAIL RAILWAY VECTOR ASSET SUBCOMPONENTS (STATION TRAIN SPECIFICATIONS)
+// ============================================================================
+
+const TrainBogie = ({ x }) => (
+  <g>
+    {/* Bogie frame */}
+    <rect x={x - 25} y={188} width={50} height={8} fill="#333" rx={2} />
+    {/* Left wheel */}
+    <circle cx={x - 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+    <circle cx={x - 15} cy={198} r={3} fill="#7F8C8D" />
+    {/* Right wheel */}
+    <circle cx={x + 15} cy={198} r={7} fill="#111" stroke="#555" strokeWidth={1.5} />
+    <circle cx={x + 15} cy={198} r={3} fill="#7F8C8D" />
+  </g>
+);
+
+const TrainPantograph = ({ x }) => (
+  <g stroke="#7F8C8D" strokeWidth={2} fill="none">
+    <rect x={x - 20} y="46" width="40" height="4" fill="#555" stroke="none" />
+    <line x1={x - 15} y1="46" x2={x} y2="30" />
+    <line x1={x} y1="30" x2={x + 15} y2="46" />
+    <line x1={x} y1="30" x2={x - 10} y2="22" />
+    <line x1={x - 10} y1="22" x2={x + 10} y2="22" />
+    <line x1={x - 15} y1="22" x2={x + 15} y2="22" strokeWidth={3} />
+  </g>
+);
+
+const GangwayConnector = () => (
+  <g>
+    {/* Dark inner connector */}
+    <rect x="0" y="54" width="10" height="132" fill="#222" />
+    {/* Outer bellows line */}
+    <rect x="2" y="52" width="6" height="136" fill="#111" rx="1" />
+    {/* Horizontal bellows rib lines */}
+    <line x1="0" y1="65" x2="10" y2="65" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="85" x2="10" y2="85" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="105" x2="10" y2="105" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="125" x2="10" y2="125" stroke="#333" strokeWidth="1.5" />
+    <line x1="0" y1="145" x2="10" y2="145" stroke="#333" strokeWidth="1.5" />
+  </g>
+);
+
+const PassengerCar = ({ model }) => {
+  const isEMU3000 = model === 'emu3000';
+  const isTaroko = model === 'emu900'; // We map emu900 to Taroko Express
+  const isEMU800 = model === 'emu800';
+
+  const bodyFill = isEMU3000 ? 'url(#emu3000Body)' : isTaroko ? 'url(#hayabusaWhite)' : 'url(#emu800Body)';
+  const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
+  const isDarkWindows = isEMU800; // EMU800 windows glow but cabs are dark
+
+  return (
+    <g>
+      {/* Passenger Car Body */}
+      {isTaroko ? (
+        <>
+          {/* Lower body (Hiun White) */}
+          <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+          {/* Upper body (Tokiwa Green) */}
+          <path d="M 0,50 L 440,50 L 440,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          {/* Azalea Pink Stripe */}
+          <rect x="0" y="136" width="440" height="4.5" fill="#E93B8E" />
+          {/* Shinkansen grey/silver metal roof panel */}
+          <path d="M 0,50 L 440,50 L 440,65 L 0,65 Z" fill="#2C3E50" opacity="0.3" />
+        </>
+      ) : (
+        <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+      )}
+      
+      {/* EMU3000 Black Window Band */}
+      {isEMU3000 && <rect x="0" y="78" width="440" height="62" fill="#111" />}
+      
+      {/* Stripes */}
+      {isEMU800 && (
+        <>
+          <rect x="0" y="58" width="440" height="4" fill="#2980B9" />
+          <rect x="0" y="144" width="440" height="8" fill="#2980B9" />
+          <rect x="0" y="152" width="440" height="2" fill="#F1C40F" />
+        </>
+      )}
+      {isEMU3000 && (
+        <rect x="0" y="144" width="440" height="3" fill="#e60012" />
+      )}
+
+      {/* Under-chassis equipment details */}
+      <g fill="#212529">
+        <rect x="95" y="190" width="70" height="12" rx="1" />
+        <rect x="180" y="190" width="80" height="10" rx="1" />
+        <rect x="275" y="190" width="60" height="14" rx="2" />
+      </g>
+      <circle cx="130" cy="196" r="4" fill="#495057" />
+      <circle cx="220" cy="195" r="3" fill="#495057" />
+
+      {/* Pantographs */}
+      {isEMU3000 && (
+        <>
+          <TrainPantograph x={80} />
+          <TrainPantograph x={360} />
+        </>
+      )}
+      {isTaroko && <TrainPantograph x={220} />}
+      {isEMU800 && <TrainPantograph x={220} />}
+
+      {/* Doors - Model Specific */}
+      {isEMU3000 && (
+        // EMU3000: 2 premium single glass doors at the ends
+        [20, 370].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={50} height={112} fill="#111" rx={2} />
+            {/* Single sliding door glass window */}
+            <rect x={pos + 8} y={83} width={34} height={52} fill="#222" rx={2} stroke="#333" strokeWidth={1} />
+            <path d={`M ${pos + 8},85 L ${pos + 25},85 L ${pos + 8},110 Z`} fill="rgba(255,255,255,0.12)" />
+            {/* Chrome door handle */}
+            <rect x={pos + 42} y={125} width={3} height={15} fill="#7F8C8D" rx={0.5} />
+          </g>
+        ))
+      )}
+
+      {isTaroko && (
+        // Shinkansen E5: 2 single narrow end doors with split color
+        [15, 395].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={30} height={112} fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
+            <path d={`M ${pos},75 L ${pos+30},75 L ${pos+30},136 L ${pos},136 Z`} fill="url(#hayabusaGreen)" />
+            <rect x={pos} y={136} width={30} height={5} fill="#E93B8E" />
+            <rect x={pos + 6} y={83} width={18} height={40} fill="#1A1A1A" rx={1} />
+            <line x1={pos + 15} y1={75} x2={pos + 15} y2={187} stroke="#4A5668" strokeWidth={0.8} opacity="0.5" />
+          </g>
+        ))
+      )}
+
+      {isEMU800 && (
+        // EMU800: 3 commuter doors per car
+        [30, 195, 360].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={75} width={50} height={112} fill="#BDC3C7" rx={2} stroke="#7F8C8D" strokeWidth={0.5} />
+            <rect x={pos + 4} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 4},85 L ${pos + 15},85 L ${pos + 4},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <rect x={pos + 27} y={83} width={19} height={52} fill="#1A1A1A" rx={2} />
+            <path d={`M ${pos + 27},85 L ${pos + 38},85 L ${pos + 27},110 Z`} fill="rgba(255,255,255,0.12)" />
+            <line x1={pos + 25} y1={75} x2={pos + 25} y2={187} stroke="#333" strokeWidth={1} />
+            <circle cx={pos + 25} cy={70} r={2} fill="#FFD700" />
+          </g>
+        ))
+      )}
+
+      {/* Windows - Model Specific */}
+      {isEMU3000 && (
+        // EMU3000: 3 very large panoramic windows
+        [85, 180, 275].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={83} width={80} height={52} fill={windowFill} rx={4} stroke="#222" strokeWidth={1.5} />
+            {/* Seat silhouettes */}
+            <rect x={pos + 8} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <rect x={pos + 32} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <rect x={pos + 56} y={105} width={12} height="24" fill="#455A64" opacity="0.45" rx="1.5" />
+            <path d={`M ${pos + 4},85 L ${pos + 40},85 L ${pos + 4},120 Z`} fill="rgba(255,255,255,0.12)" />
+          </g>
+        ))
+      )}
+
+      {isTaroko && (
+        // Shinkansen E5: 7 small windows inside the green section
+        [65, 115, 165, 215, 265, 315, 365].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={80} width={22} height={24} fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+            {/* Passenger seat silhouette */}
+            <rect x={pos + 4} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
+            <rect x={pos + 13} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
+          </g>
+        ))
+      )}
+
+      {isEMU800 && (
+        // EMU800: 4 double-pane windows
+        [95, 142, 258, 305].map((pos, idx) => (
+          <g key={idx}>
+            <rect x={pos} y={83} width={42} height={52} fill={isDarkWindows ? "url(#cabinGlowWarm)" : windowFill} rx={4} stroke="#BDC3C7" strokeWidth={1.5} />
+            {/* Center glass divider for double-pane look */}
+            <line x1={pos + 21} y1={83} x2={pos + 21} y2={135} stroke="#BDC3C7" strokeWidth={1.5} />
+            <rect x={pos + 4} y={105} width={7} height="24" fill="#5D4037" opacity="0.45" rx="1.5" />
+            <rect x={pos + 29} y={105} width={7} height="24" fill="#5D4037" opacity="0.45" rx="1.5" />
+            <path d={`M ${pos + 2},85 L ${pos + 18},85 L ${pos + 2},110 Z`} fill="rgba(255,255,255,0.12)" />
+          </g>
+        ))
+      )}
+
+      {/* Bogies and Wheels */}
+      <TrainBogie x={80} />
+      <TrainBogie x={360} />
+    </g>
+  );
+};
+
+const TrainCab = ({ model, side }) => {
+  const isEMU3000 = model === 'emu3000';
+  const isTaroko = model === 'emu900'; // emu900 maps to Taroko
+  const isEMU800 = model === 'emu800';
+
+  const bodyFill = isEMU3000 ? 'url(#emu3000Body)' : isTaroko ? 'url(#hayabusaWhite)' : 'url(#emu800Body)';
+  const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
+  
+  // Driving cabs are dark when off-duty/parked/repaired
+  const isDarkCabs = isEMU800 || isEMU3000;
+
+  // Headlights & Tail lights mapping
+  const showHeadlights = (isTaroko && side === 'right') || (isEMU3000 && side === 'left');
+  const showTaillights = (isTaroko && side === 'left') || (isEMU3000 && side === 'right');
+
+  return (
+    <g>
+      {/* Cab Body Shape (EMU3000 slanted, EMU800 round front, Taroko sleek white bullet front) */}
+      {isEMU3000 ? (
+        <path d="M 0,50 L 220,50 L 335,115 L 335,175 L 285,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+      ) : isEMU800 ? (
+        <path d="M 0,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+      ) : (
+        <>
+          {/* Shinkansen E5 Series smooth duckbill nose body base (Hiun White) */}
+          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 330,165 315,178 285,183 L 0,183 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          {/* Upper body Tokiwa Green paint overlay */}
+          <path d="M 0,50 L 120,50 C 160,50 185,72 215,95 C 245,100 285,135 335,160 C 320,154 300,150 280,147 C 235,147 205,136 175,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          {/* Azalea Pink Stripe running along the boundary */}
+          <path d="M 0,136 L 175,136 C 205,136 235,147 280,147 C 300,147 320,154 335,160" fill="none" stroke="#E93B8E" strokeWidth="5.5" strokeLinecap="round" />
+          {/* Aerodynamic wing/fender line below cockpit */}
+          <path d="M 215,114 Q 250,118 280,134" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
+        </>
+      )}
+      
+      {/* EMU3000 Black Window Band */}
+      {isEMU3000 && (
+        <>
+          <rect x="0" y="78" width="220" height="62" fill="#111" />
+          <rect x="0" y="144" width="220" height="3" fill="#e60012" />
+        </>
+      )}
+
+      {/* Stripes */}
+      {isTaroko && (
+        <>
+          {/* Driver's side window */}
+          <rect x="145" y="85" width="18" height="24" fill="#1A1A1A" rx={1} stroke="#111" strokeWidth={1} />
+          {/* Hayabusa Falcon emblem on the green side panel */}
+          <g transform="translate(60, 95)" opacity="0.95">
+            <path d="M 0,10 L 15,2 L 30,12 L 12,20 Z" fill="#FFFFFF" />
+            <path d="M 5,12 L 12,9 L 20,15 Z" fill="#E93B8E" />
+          </g>
+        </>
+      )}
+      {isEMU800 && (
+        <>
+          <rect x="0" y="58" width="170" height="4" fill="#2980B9" />
+          {/* Yellow face paint */}
+          <path d="M 160,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 160,190 Z" fill="#F1C40F" />
+          <path d="M 0,144 L 160,144 Q 210,144 240,153 Q 275,162 298,150" fill="none" stroke="#2980B9" strokeWidth="8" strokeLinecap="round" />
+          <path d="M 0,152 L 160,152 Q 210,152 240,161 Q 275,170 298,158" fill="none" stroke="#F1C40F" strokeWidth="2" strokeLinecap="round" />
+        </>
+      )}
+
+      {/* Under-chassis equipment details */}
+      <g fill="#212529">
+        <rect x="95" y="190" width="70" height="12" rx="1" />
+      </g>
+      <circle cx="130" cy="196" r="4" fill="#495057" />
+
+      {/* Cab Passenger Door */}
+      {isEMU3000 ? (
+        <g transform="translate(125, 0)">
+          <rect x="0" y="75" width="50" height="112" fill="#111" rx={2} />
+          <rect x="8" y="83" width="34" height="52" fill="#222" rx={2} stroke="#333" />
+          <path d="M 8,85 L 25,85 L 8,110 Z" fill="rgba(255,255,255,0.12)" />
+        </g>
+      ) : isTaroko ? (
+        <g transform="translate(110, 0)">
+          <rect x="0" y="75" width="30" height="112" fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
+          <path d="M 0,75 L 30,75 L 30,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
+          <rect x="0" y="136" width="30" height="5" fill="#E93B8E" />
+          <rect x="6" y="83" width="18" height="40" fill="#1A1A1A" rx={1} />
+        </g>
+      ) : (
+        <g transform="translate(110, 0)">
+          <rect x="0" y="75" width="50" height="112" fill="#BDC3C7" rx={2} stroke="#7F8C8D" />
+          <rect x="4" y="83" width="19" height="52" fill="#1A1A1A" rx={2} />
+          <path d="M 4,85 L 15,85 L 4,110 Z" fill="rgba(255,255,255,0.12)" />
+          <rect x="27" y="83" width="19" height="52" fill="#1A1A1A" rx={2} />
+          <path d="M 27,85 L 38,85 L 27,110 Z" fill="rgba(255,255,255,0.12)" />
+          <line x1="25" y1="75" x2="25" y2="187" stroke="#333" strokeWidth={1} />
+        </g>
+      )}
+
+      {/* Cab Passenger Windows */}
+      {isEMU3000 ? (
+        <g transform="translate(30, 0)">
+          <rect x="0" y="83" width="80" height="52" fill="#151d24" rx={4} stroke="#222" strokeWidth={1.5} />
+        </g>
+      ) : isTaroko ? (
+        <g transform="translate(0, 0)">
+          <rect x="35" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+          <rect x="70" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+        </g>
+      ) : (
+        <g transform="translate(30, 0)">
+          <rect x="0" y="83" width="42" height="52" fill="#151d24" rx={4} stroke="#BDC3C7" strokeWidth={1.5} />
+          <line x1="21" y1="83" x2="21" y2="135" stroke="#BDC3C7" strokeWidth={1.5} />
+        </g>
+      )}
+
+      {/* Driver Windshield & Front Mask */}
+      <g>
+        {isEMU3000 ? (
+          <>
+            <path d="M 200,58 L 222,58 L 333,115 L 333,173 L 283,173 L 200,173 Z" fill="#111" />
+            <path d="M 215,70 L 275,70 L 315,110 L 255,110 Z" fill="rgba(255,255,255,0.15)" />
+          </>
+        ) : isEMU800 ? (
+          <>
+            <path d="M 180,62 L 240,62 C 265,62 288,75 298,102 L 245,102 C 230,85 210,80 180,80 Z" fill="#111" />
+            <path d="M 185,67 L 235,67 L 240,75 L 185,75 Z" fill="rgba(255,255,255,0.15)" />
+            {/* Circular headlights under windshield */}
+            <circle cx="272" cy="122" r="3.5" fill="#444" />
+            <circle cx="282" cy="128" r="3.5" fill="#555" />
+          </>
+        ) : (
+          <>
+            {/* Shinkansen E5 style pilot cockpit canopy */}
+            <path d="M 190,95 Q 215,70 240,95 Q 215,108 190,95 Z" fill="#111" />
+            <path d="M 195,92 Q 215,75 235,92 Z" fill="rgba(255,255,255,0.2)" />
+            {/* Aerodynamic LED headlights on the side of the duckbill nose */}
+            <ellipse cx="242" cy="116" rx="8" ry="1.8" fill="#FFF" transform="rotate(-28, 242, 116)" filter="drop-shadow(0 0 4.5px #FFF)" />
+            <ellipse cx="242" cy="116" rx="5" ry="0.8" fill="#FFFAED" transform="rotate(-28, 242, 116)" />
+            {/* Streamlined nose panel joint lines */}
+            <path d="M 280,115 Q 310,135 335,155" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+            {/* Small black bottom cover for the coupler pocket */}
+            <rect x="315" y="162" width="10" height="8" fill="#222" rx="1" />
+          </>
+        )}
+      </g>
+
+      {/* Headlights and beams */}
+      {showHeadlights && (
+        isEMU3000 ? (
+          <g transform="translate(325, 145)">
+            <rect x="0" y="-2" width="10" height="4" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+            <rect x="0" y="-2" width="5" height="2" fill="#FFF" />
+            <path d="M 10,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
+          </g>
+        ) : isTaroko ? (
+          <g transform="translate(242, 116)">
+            <ellipse cx="0" cy="0" rx="8" ry="1.8" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
+            <ellipse cx="0" cy="0" rx="4" ry="0.8" fill="#FFF" />
+            <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
+          </g>
+        ) : null
+      )}
+
+      {/* Taillights */}
+      {showTaillights && (
+        isEMU3000 ? (
+          <rect x="320" y="145" width="6" height="3" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+        ) : isTaroko ? (
+          <circle cx="242" cy="116" r="3.5" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+        ) : null
+      )}
+
+      {/* Front Coupler */}
+      {!isTaroko && (
+        <>
+          <rect x={isEMU3000 ? "315" : "310"} y="178" width="25" height="10" fill="#333" rx={2} />
+          <circle cx={isEMU3000 ? "330" : "325"} cy="183" r="4" fill="#555" />
+        </>
+      )}
+
+      {/* Bogies & Wheels */}
+      <TrainBogie x={80} />
+      <TrainBogie x={250} />
+    </g>
+  );
+};
+
+const DetailedTrain = ({ model, layout = ['cabLeft', 'passenger', 'cabRight'] }) => {
+  let currentX = 0;
+  return (
+    <g>
+      {layout.map((type, idx) => {
+        let element = null;
+        let width = 0;
+        
+        if (type === 'cabLeft') {
+          width = 335;
+          element = (
+            <g transform={`translate(${currentX + 335}, 0) scale(-1, 1)`}>
+              <TrainCab model={model} side="left" />
+            </g>
+          );
+        } else if (type === 'cabRight') {
+          width = 335;
+          element = (
+            <g transform={`translate(${currentX}, 0)`}>
+              <TrainCab model={model} side="right" />
+            </g>
+          );
+        } else if (type === 'passenger') {
+          width = 440;
+          element = (
+            <g transform={`translate(${currentX}, 0)`}>
+              <PassengerCar model={model} />
+            </g>
+          );
+        }
+        
+        const renderConnector = idx < layout.length - 1;
+        const connectorX = currentX + width;
+        currentX += width + (renderConnector ? 10 : 0);
+        
+        return (
+          <g key={idx}>
+            {element}
+            {renderConnector && (
+              <g transform={`translate(${connectorX}, 0)`}>
+                <GangwayConnector />
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
 export default function MaintenanceDepot({ show }) {
   if (!show) return null;
 
@@ -94,8 +524,8 @@ export default function MaintenanceDepot({ show }) {
         }
 
         @keyframes washPass {
-          0% { transform: translateY(330px) translateX(-450px); }
-          100% { transform: translateY(330px) translateX(850px); }
+          0% { transform: translateY(261.4px) translateX(-820px); }
+          100% { transform: translateY(261.4px) translateX(850px); }
         }
 
         /* 🏗️ 懸吊天車平移動畫 */
@@ -106,115 +536,98 @@ export default function MaintenanceDepot({ show }) {
         /* 天車多段關節物理擺盪效果 */
         .crane-joint-1 {
           transform-origin: 0px 64px;
-          animation: swayJoint1 25s linear infinite;
+          animation: swayJoint1 25s ease-in-out infinite;
         }
 
         .crane-joint-2 {
           transform-origin: 0px 0px;
-          animation: swayJoint2 25s linear infinite;
+          animation: swayJoint2 25s ease-in-out infinite;
         }
 
         .crane-joint-3 {
           transform-origin: 0px 0px;
-          animation: swayJoint3 25s linear infinite;
+          animation: swayJoint3 25s ease-in-out infinite;
         }
 
         @keyframes craneMove {
-          0%, 10% { transform: translateX(160px); }
-          45%, 60% { transform: translateX(700px); }
-          95%, 100% { transform: translateX(160px); }
+          0%, 5% { transform: translateX(240px); }
+          40%, 55% { transform: translateX(740px); }
+          90%, 100% { transform: translateX(240px); }
         }
 
         @keyframes swayJoint1 {
-          /* Damped oscillation at left (static, 0% to 10%) */
-          0% { transform: rotate(-2.5deg); }
-          3% { transform: rotate(1.2deg); }
-          6% { transform: rotate(-0.6deg); }
-          8% { transform: rotate(0.2deg); }
-          10% { transform: rotate(0deg); }
+          /* Damped oscillation at left (crane static 90% to 5%) */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
           
-          /* Move right (10% to 45%) */
-          18% { transform: rotate(-7deg); }   /* Lag left during acceleration */
-          27.5% { transform: rotate(0deg); }   /* Pass center at max speed */
-          37% { transform: rotate(8deg); }    /* Swing right during deceleration */
-          45% { transform: rotate(9deg); }    /* Stop at right (max displacement) */
+          /* Move right (5% to 40%) */
+          19% { transform: rotate(8deg); } /* Max lag left */
           
-          /* Damped oscillation at right (static, 45% to 60%) */
-          48% { transform: rotate(-5deg); }   /* Swing back left */
-          51% { transform: rotate(2.5deg); }  /* Swing right */
-          54% { transform: rotate(-1.2deg); } /* Swing left */
-          57% { transform: rotate(0.6deg); }  /* Swing right */
-          60% { transform: rotate(0deg); }
+          /* Damped right (crane static 40% to 55%) */
+          41.5% { transform: rotate(-9deg); } /* Max overshoot right (0.375s after stop) */
+          45.5% { transform: rotate(4.5deg); }
+          49.5% { transform: rotate(-1.5deg); }
+          52.5% { transform: rotate(0.3deg); }
+          55% { transform: rotate(0deg); }
           
-          /* Move left (60% to 95%) */
-          68% { transform: rotate(7deg); }     /* Lag right during acceleration */
-          77.5% { transform: rotate(0deg); }   /* Pass center at max speed */
-          87% { transform: rotate(-8deg); }   /* Swing left during deceleration */
-          95% { transform: rotate(-9deg); }   /* Stop at left (max displacement) */
+          /* Move left (55% to 90%) */
+          69% { transform: rotate(-8deg); } /* Max lag right */
           
-          /* Damped oscillation at left starts (95% to 100%) */
-          98% { transform: rotate(5deg); }    /* Swing back right */
+          /* Damped left (crane static 90% to 100%) */
+          91.5% { transform: rotate(9deg); } /* Max overshoot left (0.375s after stop) */
+          95.5% { transform: rotate(-4.5deg); }
+          98.5% { transform: rotate(1.5deg); }
+          100% { transform: rotate(0deg); }
         }
 
         @keyframes swayJoint2 {
-          /* Damped oscillation at left (static, 0% to 10%) */
-          0% { transform: rotate(-2.2deg); }
-          4.5% { transform: rotate(1.0deg); }
-          7.5% { transform: rotate(-0.5deg); }
-          9.5% { transform: rotate(0.1deg); }
-          11.5% { transform: rotate(0deg); }
+          /* Damped oscillation at left */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
           
           /* Move right */
-          19.5% { transform: rotate(-6deg); }
-          29% { transform: rotate(0deg); }
-          38.5% { transform: rotate(7deg); }
-          46.5% { transform: rotate(8deg); }
+          20% { transform: rotate(7deg); }
           
-          /* Damped oscillation at right */
-          49.5% { transform: rotate(-4.5deg); }
-          52.5% { transform: rotate(2.2deg); }
-          55.5% { transform: rotate(-1.0deg); }
-          58.5% { transform: rotate(0.5deg); }
-          61.5% { transform: rotate(0deg); }
+          /* Damped right */
+          42.5% { transform: rotate(-8deg); } /* Overshoot right */
+          46.5% { transform: rotate(4deg); }
+          49.8% { transform: rotate(-1deg); }
+          51.5% { transform: rotate(0deg); }
+          55% { transform: rotate(0deg); }
           
           /* Move left */
-          69.5% { transform: rotate(6deg); }
-          79% { transform: rotate(0deg); }
-          88.5% { transform: rotate(-7deg); }
-          96.5% { transform: rotate(-8deg); }
+          70% { transform: rotate(-7deg); }
           
-          /* Damped oscillation at left starts */
-          99.5% { transform: rotate(4.5deg); }
+          /* Damped left */
+          92.5% { transform: rotate(8deg); } /* Overshoot left */
+          96.5% { transform: rotate(-4deg); }
+          99.8% { transform: rotate(1deg); }
+          100% { transform: rotate(0deg); }
         }
 
         @keyframes swayJoint3 {
-          /* Damped oscillation at left (static, 0% to 10%) */
-          0% { transform: rotate(-1.8deg); }
-          6% { transform: rotate(0.8deg); }
-          9% { transform: rotate(-0.4deg); }
-          11% { transform: rotate(0.1deg); }
-          13% { transform: rotate(0deg); }
+          /* Damped oscillation at left */
+          0% { transform: rotate(0deg); }
+          5% { transform: rotate(0deg); }
           
           /* Move right */
-          21% { transform: rotate(-5deg); }
-          30.5% { transform: rotate(0deg); }
-          40% { transform: rotate(6deg); }
-          48% { transform: rotate(7deg); }
+          21% { transform: rotate(6deg); }
           
-          /* Damped oscillation at right */
-          51% { transform: rotate(-4deg); }
-          54% { transform: rotate(1.8deg); }
-          57% { transform: rotate(-0.8deg); }
-          60% { transform: rotate(0.4deg); }
-          63% { transform: rotate(0deg); }
+          /* Damped right */
+          43.5% { transform: rotate(-7deg); } /* Overshoot right */
+          47.5% { transform: rotate(3deg); }
+          50% { transform: rotate(-0.5deg); }
+          51.5% { transform: rotate(0deg); }
+          55% { transform: rotate(0deg); }
           
           /* Move left */
-          71% { transform: rotate(5deg); }
-          80.5% { transform: rotate(0deg); }
-          90% { transform: rotate(-6deg); }
-          98% { transform: rotate(-7deg); }
+          71% { transform: rotate(-6deg); }
           
-          /* Damped oscillation at left starts */
+          /* Damped left */
+          93.5% { transform: rotate(7deg); } /* Overshoot left */
+          97.5% { transform: rotate(-3deg); }
+          99.9% { transform: rotate(0.5deg); }
+          100% { transform: rotate(0deg); }
         }
 
         /* 天花板燈光呼吸效果 */
@@ -240,6 +653,17 @@ export default function MaintenanceDepot({ show }) {
           stroke: rgba(255, 255, 255, 0.02);
           stroke-width: 1;
         }
+
+        /* 🪚 電焊強光閃爍反射 */
+        .welding-glow-reflect {
+          animation: weldingFlicker 1.2s infinite;
+        }
+
+        @keyframes weldingFlicker {
+          0%, 100% { opacity: 0; }
+          4%, 12%, 20%, 28%, 36%, 44%, 52%, 60%, 68%, 76%, 84%, 92% { opacity: 0.45; }
+          8%, 16%, 24%, 32%, 40%, 48%, 56%, 64%, 72%, 80%, 88%, 96% { opacity: 0.05; }
+        }
       `}</style>
 
       <div className="bg-depot-root">
@@ -259,11 +683,18 @@ export default function MaintenanceDepot({ show }) {
                 <stop offset="100%" stopColor="#888888" />
               </linearGradient>
 
-              <linearGradient id="emu900Body" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#ECEFF1" />
-                <stop offset="50%" stopColor="#B0BEC5" />
-                <stop offset="100%" stopColor="#546E7A" />
+              <linearGradient id="hayabusaGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#00A08A" />
+                <stop offset="50%" stopColor="#00806C" />
+                <stop offset="100%" stopColor="#005B4D" />
               </linearGradient>
+
+              <linearGradient id="hayabusaWhite" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="40%" stopColor="#ECEFF1" />
+                <stop offset="100%" stopColor="#D5DBDB" />
+              </linearGradient>
+
 
               <linearGradient id="emu800Body" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#ECEFF1" />
@@ -277,6 +708,37 @@ export default function MaintenanceDepot({ show }) {
                 <stop offset="50%" stopColor="#34495e" />
                 <stop offset="100%" stopColor="#1a252f" />
               </linearGradient>
+
+              <linearGradient id="cabinGlowWarm" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFE082" />
+                <stop offset="50%" stopColor="#FFF9C4" />
+                <stop offset="100%" stopColor="#FFE082" />
+              </linearGradient>
+
+              <linearGradient id="cabinGlowCool" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#B2EBF2" />
+                <stop offset="50%" stopColor="#E0F7FA" />
+                <stop offset="100%" stopColor="#B2EBF2" />
+              </linearGradient>
+
+              <linearGradient id="headlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFF9C4" stopOpacity="0.45" />
+                <stop offset="30%" stopColor="#FFF9C4" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#FFF9C4" stopOpacity="0" />
+              </linearGradient>
+
+              <linearGradient id="headlightBeamLeft" x1="100%" y1="0%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#FFF9C4" stopOpacity="0.45" />
+                <stop offset="30%" stopColor="#FFF9C4" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#FFF9C4" stopOpacity="0" />
+              </linearGradient>
+
+              <radialGradient id="weldingFlashGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FFF" stopOpacity="1" />
+                <stop offset="20%" stopColor="#00E5FF" stopOpacity="0.85" />
+                <stop offset="55%" stopColor="#00B0FF" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#00B0FF" stopOpacity="0" />
+              </radialGradient>
 
               {/* Warning stripes pattern */}
               <pattern id="warningStripes" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -370,306 +832,25 @@ export default function MaintenanceDepot({ show }) {
             <line x1="0" y1="230" x2="800" y2="230" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
             <line x1="0" y1="226" x2="800" y2="226" stroke="#484d56" strokeWidth="1.5" />
-            <line x1="0" y1="227" x2="800" y2="227" stroke="#777c85" strokeWidth="1" />
-            
-            {/* Highly Detailed 3-Car EMU3000 Train */}
-            <g transform="translate(180, 182)">
-              {/* Car 1: Left Cab */}
-              <g>
-                {/* Coupler */}
-                <rect x="-8" y="38" width="8" height="3" fill="#222" />
-                {/* Aerodynamic Body */}
-                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 2,38 -2,32 -2,25 C -2,10 5,4 15,4 Z" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Black window band */}
-                <path d="M 5,8 L 140,8 L 140,20 L 8,20 C 5,20 4,18 4,15 C 4,11 4,8 5,8 Z" fill="#111" />
-                {/* Red stripe */}
-                <path d="M 2,28 L 140,28 L 140,31 L 2,31 Z" fill="#E74C3C" />
-                {/* Detailed Windows with reflections */}
-                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
-                  <rect x="40" y="10" width="22" height="8" rx="1" />
-                  <rect x="70" y="10" width="22" height="8" rx="1" />
-                  <rect x="100" y="10" width="22" height="8" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 42,10 L 52,10 L 48,18 L 40,18 Z" />
-                  <path d="M 72,10 L 82,10 L 78,18 L 70,18 Z" />
-                  <path d="M 102,10 L 112,10 L 108,18 L 100,18 Z" />
-                </g>
-                {/* Hidden Doors */}
-                <line x1="32" y1="4" x2="32" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                <line x1="65" y1="4" x2="65" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                {/* Cab window & Headlight */}
-                <path d="M -1,10 L 15,10 L 15,18 L 2,18 Z" fill="#1a1a1a" />
-                <path d="M -1,10 L 5,10 L 4,18 L -1,18 Z" fill="rgba(255,255,255,0.15)" />
-                <circle cx="-1" cy="26" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
-                {/* Bogies & Wheels */}
-                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
-                {/* Pantograph */}
-                <path d="M 90,4 L 85,-2 L 95,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="80" y1="-2" x2="100" y2="-2" stroke="#333" strokeWidth="1.5" />
-              </g>
-
-              {/* Gangway Connector 1-2 */}
-              <rect x="140" y="6" width="6" height="32" fill="#222" />
-              <rect x="141" y="6" width="4" height="32" fill="#111" />
-
-              {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(146, 0)">
-                {/* Body */}
-                <rect x="0" y="4" width="120" height="34" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" rx="1" />
-                {/* Black window band */}
-                <rect x="0" y="8" width="120" height="12" fill="#111" />
-                {/* Red stripe */}
-                <rect x="0" y="28" width="120" height="3" fill="#E74C3C" />
-                {/* Windows */}
-                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
-                  <rect x="12" y="10" width="22" height="8" rx="1" />
-                  <rect x="42" y="10" width="22" height="8" rx="1" />
-                  <rect x="72" y="10" width="22" height="8" rx="1" />
-                  <rect x="102" y="10" width="22" height="8" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 14,10 L 24,10 L 20,18 L 12,18 Z" />
-                  <path d="M 44,10 L 54,10 L 50,18 L 42,18 Z" />
-                  <path d="M 74,10 L 84,10 L 80,18 L 72,18 Z" />
-                  <path d="M 104,10 L 114,10 L 110,18 L 102,18 Z" />
-                </g>
-                {/* Hidden Doors */}
-                <line x1="38" y1="4" x2="38" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                <line x1="98" y1="4" x2="98" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                {/* Bogies & Wheels */}
-                <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="39" cy="42" r="4.5" fill="#000" /> <circle cx="39" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="90" cy="42" r="4.5" fill="#000" /> <circle cx="90" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="108" cy="42" r="4.5" fill="#000" /> <circle cx="108" cy="42" r="1.5" fill="#7f8c8d" />
-              </g>
-
-              {/* Gangway Connector 2-3 */}
-              <rect x="266" y="6" width="6" height="32" fill="#222" />
-              <rect x="267" y="6" width="4" height="32" fill="#111" />
-
-              {/* Car 3: Right Cab */}
-              <g transform="translate(272, 0)">
-                {/* Body */}
-                <path d="M 0,4 L 125,4 C 135,4 142,10 142,25 C 142,32 138,38 125,38 L 0,38 Z" fill="url(#emu3000Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Black window band */}
-                <path d="M 0,8 L 132,8 C 133,8 135,11 135,15 C 135,18 134,20 132,20 L 0,20 Z" fill="#111" />
-                {/* Red stripe */}
-                <path d="M 0,28 L 138,28 L 138,31 L 0,31 Z" fill="#E74C3C" />
-                {/* Windows */}
-                <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
-                  <rect x="15" y="10" width="22" height="8" rx="1" />
-                  <rect x="45" y="10" width="22" height="8" rx="1" />
-                  <rect x="75" y="10" width="22" height="8" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 17,10 L 27,10 L 23,18 L 15,18 Z" />
-                  <path d="M 47,10 L 57,10 L 53,18 L 45,18 Z" />
-                  <path d="M 77,10 L 87,10 L 83,18 L 75,18 Z" />
-                </g>
-                {/* Hidden Doors */}
-                <line x1="70" y1="4" x2="70" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                <line x1="105" y1="4" x2="105" y2="38" stroke="#ccc" strokeWidth="0.5" />
-                {/* Cab window & Headlight */}
-                <path d="M 125,10 L 134,10 C 135,10 136,13 136,14 L 125,18 Z" fill="#1a1a1a" />
-                <path d="M 128,10 L 133,10 L 129,18 L 125,18 Z" fill="rgba(255,255,255,0.15)" />
-                <circle cx="141" cy="26" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
-                {/* Bogies & Wheels */}
-                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
-                {/* Pantograph */}
-                <path d="M 45,4 L 50,-2 L 40,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="35" y1="-2" x2="55" y2="-2" stroke="#333" strokeWidth="1.5" />
-                {/* Coupler */}
-                <rect x="142" y="38" width="8" height="3" fill="#222" />
-              </g>
+                        {/* Highly Detailed EMU3000 Train (Extended off-screen to left) */}
+            <g transform="translate(-150, 161.4) scale(0.32)">
+              <DetailedTrain model="emu3000" layout={['passenger', 'passenger', 'passenger', 'cabRight']} />
             </g>
 
 
-            {/* ==================== TRACK 2 (MIDDLE, y=330) - Wash & EMU900 ==================== */}
+            {/* ==================== TRACK 2 (MIDDLE, y=330) - Wash & Taroko Express ==================== */}
             {/* Sleepers */}
             <line x1="0" y1="330" x2="800" y2="330" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
             <line x1="0" y1="326" x2="800" y2="326" stroke="#484d56" strokeWidth="1.5" />
             <line x1="0" y1="327" x2="800" y2="327" stroke="#777c85" strokeWidth="1" />
+            {/* OCS contact wire */}
+            <line x1="0" y1="279" x2="800" y2="279" stroke="#cd853f" strokeWidth="0.8" opacity="0.35" />
 
-            {/* Highly Detailed 3-Car EMU900 Train passing through washing system */}
+            {/* Highly Detailed 6-Car Shinkansen E5 Series "Hayabusa" Train passing through washing system (beautiful green/white bullet train) */}
             <g className="train-washing">
-              {/* Car 1: Left Cab */}
-              <g transform="translate(0, 0)">
-                {/* Coupler */}
-                <rect x="-8" y="-14" width="8" height="3" fill="#222" />
-                {/* Aerodynamic Body */}
-                <path d="M 15,-45 L 140,-45 L 140,-11 L 15,-11 C 5,-11 -2,-17 -2,-28 C -2,-39 5,-45 15,-45 Z" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Green stripe top */}
-                <rect x="15" y="-42" width="125" height="3" fill="#00A859" />
-                {/* Green stripe bottom */}
-                <path d="M 2,-22 Q 10,-22 30,-25 L 140,-25" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="35" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="68" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="101" y="-38" width="18" height="10" rx="1.5" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 37,-38 L 45,-38 L 41,-28 L 35,-28 Z" />
-                  <path d="M 70,-38 L 78,-38 L 74,-28 L 68,-28 Z" />
-                  <path d="M 103,-38 L 111,-38 L 107,-28 L 101,-28 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="25" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="29" y1="-40" x2="29" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="55" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="59" y1="-40" x2="59" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="88" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="92" y1="-40" x2="92" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="122" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="126" y1="-40" x2="126" y2="-13" stroke="#333" strokeWidth="0.5" />
-                
-                {/* Driver Cab details */}
-                {/* Black Mask */}
-                <path d="M 0,-34 C 4,-26 6,-13 18,-11 L 28,-11 C 24,-13 21,-18 20,-26 C 19,-32 22,-38 26,-38 L 12,-38 Z" fill="#111" />
-                {/* Smile neon */}
-                <path d="M -1,-38 C 5,-38 10,-32 10,-28 C 10,-24 5,-18 -1,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="-1.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" filter="drop-shadow(0 0 2px #FFF)" />
-                <circle cx="-1.5" cy="-28" r="1.2" fill="#FFF" />
-                {/* Cab window highlight */}
-                <path d="M 0,-38 L 8,-38 L 8,-26 L 3,-26 Z" fill="#151d24" />
-                <path d="M 2,-38 L 6,-38 L 5,-26 L 3,-26 Z" fill="rgba(255,255,255,0.15)" />
-
-                {/* Bogies & Wheels */}
-                <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="-7" r="4.5" fill="#000" /> <circle cx="44" cy="-7" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="95" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="101" cy="-7" r="4.5" fill="#000" /> <circle cx="101" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="119" cy="-7" r="4.5" fill="#000" /> <circle cx="119" cy="-7" r="1.5" fill="#7f8c8d" />
-                
-                {/* Pantograph */}
-                <path d="M 90,-45 L 85,-51 L 95,-51 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="80" y1="-51" x2="100" y2="-51" stroke="#333" strokeWidth="1.5" />
-              </g>
-
-              {/* Gangway Connector 1-2 */}
-              <rect x="140" y="-38" width="6" height="27" fill="#222" />
-              <rect x="141" y="-38" width="4" height="27" fill="#111" />
-
-              {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(146, 0)">
-                {/* Body */}
-                <rect x="0" y="-45" width="120" height="34" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" rx="1" />
-                {/* Green stripe */}
-                <rect x="0" y="-42" width="120" height="3" fill="#00A859" />
-                {/* Green bottom curve */}
-                <line x1="0" y1="-25" x2="120" y2="-25" stroke="#00A859" strokeWidth="4" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="25" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="58" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="91" y="-38" width="18" height="10" rx="1.5" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 27,-38 L 35,-38 L 31,-28 L 25,-28 Z" />
-                  <path d="M 60,-38 L 68,-38 L 64,-28 L 58,-28 Z" />
-                  <path d="M 93,-38 L 101,-38 L 97,-28 L 91,-28 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="12" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="16" y1="-40" x2="16" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="45" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="49" y1="-40" x2="49" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="78" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="82" y1="-40" x2="82" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="110" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="114" y1="-40" x2="114" y2="-13" stroke="#333" strokeWidth="0.5" />
-
-                {/* Bogies & Wheels */}
-                <rect x="15" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="21" cy="-7" r="4.5" fill="#000" /> <circle cx="21" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="39" cy="-7" r="4.5" fill="#000" /> <circle cx="39" cy="-7" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="80" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="85" cy="-7" r="4.5" fill="#000" /> <circle cx="85" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="103" cy="-7" r="4.5" fill="#000" /> <circle cx="103" cy="-7" r="1.5" fill="#7f8c8d" />
-              </g>
-
-              {/* Gangway Connector 2-3 */}
-              <rect x="266" y="-38" width="6" height="27" fill="#222" />
-              <rect x="267" y="-38" width="4" height="27" fill="#111" />
-
-              {/* Car 3: Right Cab */}
-              <g transform="translate(272, 0)">
-                {/* Body */}
-                <path d="M 0,-45 L 125,-45 C 135,-45 142,-39 142,-28 C 142,-17 135,-11 125,-11 L 0,-11 Z" fill="url(#emu900Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Green stripe */}
-                <rect x="0" y="-42" width="115" height="3" fill="#00A859" />
-                {/* Green bottom curve */}
-                <path d="M 0,-25 L 110,-25 Q 125,-22 135,-22" fill="none" stroke="#00A859" strokeWidth="4" strokeLinecap="round" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="25" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="58" y="-38" width="18" height="10" rx="1.5" />
-                  <rect x="91" y="-38" width="18" height="10" rx="1.5" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 27,-38 L 35,-38 L 31,-28 L 25,-28 Z" />
-                  <path d="M 60,-38 L 68,-38 L 64,-28 L 58,-28 Z" />
-                  <path d="M 93,-38 L 101,-38 L 97,-28 L 91,-28 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="10" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="14" y1="-40" x2="14" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="45" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="49" y1="-40" x2="49" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="78" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="82" y1="-40" x2="82" y2="-13" stroke="#333" strokeWidth="0.5" />
-                <rect x="110" y="-40" width="8" height="27" fill="#7F8C8D" rx="1" />
-                <line x1="114" y1="-40" x2="114" y2="-13" stroke="#333" strokeWidth="0.5" />
-
-                {/* Driver Cab details */}
-                {/* Black Mask */}
-                <path d="M 125,-11 L 115,-11 C 122,-11 127,-16 130,-22 C 131,-28 128,-36 122,-38 L 140,-38 C 142,-26 142,-13 130,-11 Z" fill="#111" />
-                {/* Smile neon */}
-                <path d="M 141,-38 C 135,-38 130,-32 130,-28 C 130,-24 135,-18 141,-18" fill="none" stroke="#00FF66" strokeWidth="2.5" strokeLinecap="round" />
-                <circle cx="141.5" cy="-28" r="2.5" fill="rgba(255,255,255,0.4)" filter="drop-shadow(0 0 2px #FFF)" />
-                <circle cx="141.5" cy="-28" r="1.2" fill="#FFF" />
-                {/* Cab window highlight */}
-                <path d="M 128,-38 L 138,-38 L 134,-26 L 128,-26 Z" fill="#151d24" />
-                <path d="M 132,-38 L 137,-38 L 134,-26 L 130,-26 Z" fill="rgba(255,255,255,0.15)" />
-
-                {/* Bogies & Wheels */}
-                <rect x="20" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="-7" r="4.5" fill="#000" /> <circle cx="26" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="-7" r="4.5" fill="#000" /> <circle cx="44" cy="-7" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="85" y="-11" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="91" cy="-7" r="4.5" fill="#000" /> <circle cx="91" cy="-7" r="1.5" fill="#7f8c8d" />
-                <circle cx="109" cy="-7" r="4.5" fill="#000" /> <circle cx="109" cy="-7" r="1.5" fill="#7f8c8d" />
-                
-                {/* Pantograph */}
-                <path d="M 45,-45 L 50,-51 L 40,-51 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="35" y1="-51" x2="55" y2="-51" stroke="#333" strokeWidth="1.5" />
-
-                {/* Coupler */}
-                <rect x="142" y="-14" width="8" height="3" fill="#222" />
+              <g transform="scale(0.32)">
+                <DetailedTrain model="emu900" layout={['cabLeft', 'passenger', 'passenger', 'passenger', 'passenger', 'cabRight']} />
               </g>
             </g>
 
@@ -699,176 +880,21 @@ export default function MaintenanceDepot({ show }) {
 
 
             {/* ==================== TRACK 3 (BOTTOM, y=430) - EMU800 Maintenance ==================== */}
+            {/* OCS contact wire */}
+            <line x1="0" y1="380" x2="800" y2="380" stroke="#cd853f" strokeWidth="0.8" opacity="0.35" />
             {/* Sleepers */}
-            <line x1="0" y1="420" x2="800" y2="420" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
+            <line x1="0" y1="430" x2="800" y2="430" stroke="#1c1f24" strokeWidth="4" strokeDasharray="2, 6" />
             {/* Rails */}
-            <line x1="0" y1="416" x2="800" y2="416" stroke="#484d56" strokeWidth="1.5" />
-            <line x1="0" y1="417" x2="800" y2="417" stroke="#777c85" strokeWidth="1" />
+            <line x1="0" y1="426" x2="800" y2="426" stroke="#484d56" strokeWidth="1.5" />
+            <line x1="0" y1="427" x2="800" y2="427" stroke="#777c85" strokeWidth="1" />
 
-            {/* Highly Detailed 3-Car EMU800 Train */}
-            <g transform="translate(100, 382)">
-              {/* Car 1: Left Cab */}
-              <g>
-                {/* Coupler */}
-                <rect x="-8" y="38" width="8" height="3" fill="#222" />
-                {/* Body */}
-                <path d="M 15,4 L 140,4 L 140,38 L 15,38 C 5,38 -2,32 -2,22 C -2,12 5,4 15,4 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Yellow front face - Smile shape */}
-                <path d="M -2,22 L 20,22 L 20,38 L 12,38 C 5,38 -2,32 -2,22 Z" fill="#F1C40F" />
-                <path d="M 8,24 Q -1,24 -1,22 Q -1,18 8,18" fill="none" stroke="#F1C40F" strokeWidth="4" />
-                {/* Blue stripe */}
-                <rect x="20" y="19" width="120" height="5" fill="#2980B9" />
-                {/* Yellow stripe below blue */}
-                <rect x="20" y="24" width="120" height="2" fill="#F1C40F" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="35" y="8" width="18" height="10" rx="1" />
-                  <rect x="68" y="8" width="18" height="10" rx="1" />
-                  <rect x="101" y="8" width="18" height="10" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 37,8 L 45,8 L 41,18 L 35,18 Z" />
-                  <path d="M 70,8 L 78,8 L 74,18 L 68,18 Z" />
-                  <path d="M 103,8 L 111,8 L 107,18 L 101,18 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="25" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="29" y1="6" x2="29" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="55" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="59" y1="6" x2="59" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="88" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="92" y1="6" x2="92" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="122" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="126" y1="6" x2="126" y2="33" stroke="#555" strokeWidth="0.5" />
-
-                {/* Windshield & Headlight */}
-                <path d="M 0,8 L 15,8 L 15,16 L 3,16 Z" fill="#111" />
-                <path d="M 2,8 L 6,8 L 5,16 L 3,16 Z" fill="rgba(255,255,255,0.15)" />
-                <circle cx="2" cy="28" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
-                <circle cx="-1" cy="34" r="1.5" fill="#F00" />
-                
-                {/* Bogies & Wheels */}
-                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="95" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="101" cy="42" r="4.5" fill="#000" /> <circle cx="101" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="119" cy="42" r="4.5" fill="#000" /> <circle cx="119" cy="42" r="1.5" fill="#7f8c8d" />
-
-                {/* Pantograph */}
-                <path d="M 90,4 L 85,-2 L 95,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="80" y1="-2" x2="100" y2="-2" stroke="#333" strokeWidth="1.5" />
-              </g>
-
-              {/* Gangway Connector 1-2 */}
-              <rect x="140" y="8" width="6" height="27" fill="#222" />
-              <rect x="141" y="8" width="4" height="27" fill="#111" />
-
-              {/* Car 2: Middle Passenger Car */}
-              <g transform="translate(146, 0)">
-                {/* Body */}
-                <rect x="0" y="4" width="120" height="34" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" rx="1" />
-                {/* Blue stripe */}
-                <rect x="0" y="19" width="120" height="5" fill="#2980B9" />
-                {/* Yellow stripe */}
-                <rect x="0" y="24" width="120" height="2" fill="#F1C40F" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="25" y="8" width="18" height="10" rx="1" />
-                  <rect x="58" y="8" width="18" height="10" rx="1" />
-                  <rect x="91" y="8" width="18" height="10" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 27,8 L 35,8 L 31,18 L 25,18 Z" />
-                  <path d="M 60,8 L 68,8 L 64,18 L 58,18 Z" />
-                  <path d="M 93,8 L 101,8 L 97,18 L 91,18 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="12" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="16" y1="6" x2="16" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="45" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="49" y1="6" x2="49" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="78" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="82" y1="6" x2="82" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="110" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="114" y1="6" x2="114" y2="33" stroke="#555" strokeWidth="0.5" />
-
-                {/* Bogies & Wheels */}
-                <rect x="15" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="21" cy="42" r="4.5" fill="#000" /> <circle cx="21" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="39" cy="42" r="4.5" fill="#000" /> <circle cx="39" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="90" cy="42" r="4.5" fill="#000" /> <circle cx="90" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="108" cy="42" r="4.5" fill="#000" /> <circle cx="108" cy="42" r="1.5" fill="#7f8c8d" />
-              </g>
-
-              {/* Gangway Connector 2-3 */}
-              <rect x="266" y="8" width="6" height="27" fill="#222" />
-              <rect x="267" y="8" width="4" height="27" fill="#111" />
-
-              {/* Car 3: Right Cab */}
-              <g transform="translate(272, 0)">
-                {/* Body */}
-                <path d="M 0,4 L 125,4 C 135,4 142,10 142,22 C 142,32 135,38 125,38 L 0,38 Z" fill="url(#emu800Body)" stroke="#999" strokeWidth="0.5" />
-                {/* Yellow front face */}
-                <path d="M 142,22 L 120,22 L 120,38 L 128,38 C 135,38 142,32 142,22 Z" fill="#F1C40F" />
-                <path d="M 132,24 Q 141,24 141,22 Q 141,18 132,18" fill="none" stroke="#F1C40F" strokeWidth="4" />
-                {/* Blue stripe */}
-                <rect x="0" y="19" width="120" height="5" fill="#2980B9" />
-                {/* Yellow stripe below blue */}
-                <rect x="0" y="24" width="120" height="2" fill="#F1C40F" />
-                
-                {/* Windows and Doors */}
-                <g fill="#151d24" stroke="#333" strokeWidth="0.5">
-                  <rect x="25" y="8" width="18" height="10" rx="1" />
-                  <rect x="58" y="8" width="18" height="10" rx="1" />
-                  <rect x="91" y="8" width="18" height="10" rx="1" />
-                </g>
-                <g fill="rgba(255,255,255,0.1)">
-                  <path d="M 27,8 L 35,8 L 31,18 L 25,18 Z" />
-                  <path d="M 60,8 L 68,8 L 64,18 L 58,18 Z" />
-                  <path d="M 93,8 L 101,8 L 97,18 L 91,18 Z" />
-                </g>
-                {/* Doors */}
-                <rect x="10" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="14" y1="6" x2="14" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="45" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="49" y1="6" x2="49" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="78" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="82" y1="6" x2="82" y2="33" stroke="#555" strokeWidth="0.5" />
-                <rect x="110" y="6" width="8" height="27" fill="#BDC3C7" stroke="#7F8C8D" strokeWidth="0.5" rx="1" />
-                <line x1="114" y1="6" x2="114" y2="33" stroke="#555" strokeWidth="0.5" />
-
-                {/* Windshield & Headlight */}
-                <path d="M 140,8 L 125,8 L 125,16 L 137,16 Z" fill="#111" />
-                <path d="M 138,8 L 134,8 L 135,16 L 137,16 Z" fill="rgba(255,255,255,0.15)" />
-                <circle cx="138" cy="28" r="1.5" fill="#FFF" filter="drop-shadow(0 0 2px #FFF)" />
-                <circle cx="141" cy="34" r="1.5" fill="#F00" />
-                
-                {/* Bogies & Wheels */}
-                <rect x="20" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="26" cy="42" r="4.5" fill="#000" /> <circle cx="26" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="44" cy="42" r="4.5" fill="#000" /> <circle cx="44" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                <rect x="85" y="38" width="30" height="4" fill="#2c2c2c" rx="1" />
-                <circle cx="91" cy="42" r="4.5" fill="#000" /> <circle cx="91" cy="42" r="1.5" fill="#7f8c8d" />
-                <circle cx="109" cy="42" r="4.5" fill="#000" /> <circle cx="109" cy="42" r="1.5" fill="#7f8c8d" />
-                
-                {/* Pantograph */}
-                <path d="M 45,4 L 50,-2 L 40,-2 Z" fill="none" stroke="#555" strokeWidth="1" />
-                <line x1="35" y1="-2" x2="55" y2="-2" stroke="#333" strokeWidth="1.5" />
-
-                {/* Coupler */}
-                <rect x="142" y="38" width="8" height="3" fill="#222" />
-              </g>
+            {/* Highly Detailed EMU800 Train (Staggered further to the right by shifting to x=180) */}
+            <g transform="translate(180, 361.4) scale(0.32)">
+              <DetailedTrain model="emu800" layout={['passenger', 'passenger', 'passenger', 'cabRight']} />
             </g>
 
-            {/* Spark generator (Welding Effect under EMU800 at x=219, y=424) */}
-            <g transform="translate(219, 424)">
+            {/* Spark generator (Welding Effect under EMU800 at x=499, y=424) */}
+            <g transform="translate(499, 424)">
               <circle cx="0" cy="0" r="15" fill="rgba(0, 240, 255, 0.2)" />
               <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#00F0FF" style={{ '--dx': '-18px', '--dy': '-12px' }} />
               <circle className="spark-particle" cx="0" cy="0" r="1.0" fill="#FFF" style={{ '--dx': '12px', '--dy': '-16px' }} />
@@ -878,8 +904,8 @@ export default function MaintenanceDepot({ show }) {
               <circle className="spark-particle" cx="0" cy="0" r="1.5" fill="#FFF" style={{ '--dx': '6px', '--dy': '-18px' }} />
             </g>
 
-            {/* Detailed Welder Operator kneeling next to Track 3 (跪姿雙腿) at x=235, y=424 */}
-            <g transform="translate(235, 424)">
+            {/* Detailed Welder Operator kneeling next to Track 3 (跪姿雙腿) at x=515, y=424 */}
+            <g transform="translate(515, 424)">
               {/* Back leg kneeling (膝蓋著地) */}
               <path d="M 4,-3 L 8,4 L 11,4" fill="none" stroke="#1f2c3d" strokeWidth="2.5" strokeLinecap="round" />
               {/* Front leg planted (另一隻腿支撐) */}
@@ -897,6 +923,31 @@ export default function MaintenanceDepot({ show }) {
               {/* Blue reflection light on welder mask */}
               <rect x="-4" y="-16" width="2" height="3" fill="#00F0FF" opacity="0.65" />
             </g>
+
+            {/* Detailed Leaning Ladder on Track 3 (staggered & detailed) */}
+            <g stroke="#BDC3C7" strokeWidth="1.5" opacity="0.9" pointerEvents="none">
+              {/* Left Rail */}
+              <line x1="435" y1="435" x2="440" y2="395" stroke="#7F8C8D" strokeWidth="2" />
+              {/* Right Rail */}
+              <line x1="445" y1="435" x2="450" y2="395" stroke="#7F8C8D" strokeWidth="2" />
+              {/* Steps/Rungs */}
+              <line x1="436.25" y1="427" x2="446.25" y2="427" />
+              <line x1="437.5" y1="419" x2="447.5" y2="419" />
+              <line x1="438.75" y1="411" x2="448.75" y2="411" />
+              <line x1="440" y1="403" x2="450" y2="403" />
+              {/* Safety rubber pads at the bottom */}
+              <rect x="433" y="433" width="4" height="3" fill="#333" rx="0.5" />
+              <rect x="443" y="433" width="4" height="3" fill="#333" rx="0.5" />
+            </g>
+
+            {/* Red toolbox */}
+            <g fill="#c0392b" stroke="#7f0c0d" strokeWidth="0.5" pointerEvents="none">
+              <rect x="530" y="423" width="12" height="7" rx="1" />
+              <rect x="533" y="421" width="6" height="2" rx="0.5" fill="#95a5a6" />
+            </g>
+
+            {/* Welding flash overlay */}
+            <circle cx="499" cy="424" r="55" fill="url(#weldingFlashGradient)" className="welding-glow-reflect" pointerEvents="none" />
 
             {/* Floor border warning stripes */}
             <rect x="0" y="475" width="800" height="25" fill="url(#warningStripes)" />

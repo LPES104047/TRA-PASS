@@ -34,36 +34,33 @@ export default function Home() {
     const savedDest = localStorage.getItem("train_dest");
     const savedTheme = localStorage.getItem("train_theme");
 
-    // 使用 setTimeout 延遲更新以防 React 19+ 同步引發階梯式重繪規則警告
-    setTimeout(() => {
-      if (savedOrigin) setOrigin(savedOrigin);
-      if (savedDest) setDest(savedDest);
-      if (savedTheme) setTheme(Number(savedTheme));
-      
-      const nowMs = Date.now();
-      const savedExpire = localStorage.getItem("live_connection_expire_time");
-      if (savedExpire) {
-        const expireTime = Number(savedExpire);
-        if (expireTime > nowMs) {
-          setIsLiveConnected(true);
-          setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
-        } else {
-          localStorage.removeItem("live_connection_expire_time");
-        }
+    if (savedOrigin) setOrigin(savedOrigin);
+    if (savedDest) setDest(savedDest);
+    if (savedTheme) setTheme(Number(savedTheme));
+    
+    const nowMs = Date.now();
+    const savedExpire = localStorage.getItem("live_connection_expire_time");
+    if (savedExpire) {
+      const expireTime = Number(savedExpire);
+      if (expireTime > nowMs) {
+        setIsLiveConnected(true);
+        setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
+      } else {
+        localStorage.removeItem("live_connection_expire_time");
       }
-      
-      const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
-      if (savedCooldown) {
-        const cooldownTime = Number(savedCooldown);
-        if (cooldownTime > nowMs) {
-          setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000));
-        } else {
-          localStorage.removeItem("manual_refresh_cooldown_expire_time");
-        }
+    }
+    
+    const savedCooldown = localStorage.getItem("manual_refresh_cooldown_expire_time");
+    if (savedCooldown) {
+      const cooldownTime = Number(savedCooldown);
+      if (cooldownTime > nowMs) {
+        setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000));
+      } else {
+        localStorage.removeItem("manual_refresh_cooldown_expire_time");
       }
+    }
 
-      setIsLoaded(true);
-    }, 0);
+    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -83,30 +80,60 @@ export default function Home() {
     }
   }, [theme, isLoaded]);
 
-  // 1. 處理 5 分鐘自動斷線倒數與 20 秒手動更新冷卻倒數
+  const isLiveRef = useRef(isLiveConnected);
   useEffect(() => {
-    let interval;
-    if (isLiveConnected || cooldownTimeLeft > 0) {
-      interval = setInterval(() => {
-        if (isLiveConnected) {
-          setConnectionTimeLeft(prev => {
-            if (prev <= 1) {
-              setIsLiveConnected(false); // 5 分鐘到，自動斷線關閉
-              localStorage.removeItem("live_connection_expire_time");
-              return 300;
-            }
-            return prev - 1;
-          });
+    isLiveRef.current = isLiveConnected;
+  }, [isLiveConnected]);
+
+  // 中央時鐘 (處理 5 分鐘防呆、手動冷卻、與自動刷新倒數)
+  useEffect(() => {
+    if (!isLoaded) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      
+      if (isLiveRef.current) {
+        const connExpire = Number(localStorage.getItem("live_connection_expire_time") || 0);
+        if (connExpire > now) {
+          setConnectionTimeLeft(Math.ceil((connExpire - now) / 1000));
+        } else if (connExpire !== 0) {
+          setIsLiveConnected(false);
+          localStorage.removeItem("live_connection_expire_time");
         }
-        if (cooldownTimeLeft > 0) {
-          setCooldownTimeLeft(prev => prev - 1);
+      }
+
+      const cooldownExpire = Number(localStorage.getItem("manual_refresh_cooldown_expire_time") || 0);
+      if (cooldownExpire > now) {
+        setCooldownTimeLeft(Math.ceil((cooldownExpire - now) / 1000));
+      } else {
+        setCooldownTimeLeft(0);
+      }
+
+      if (isLiveRef.current && origin) {
+        const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+        const refreshInterval = 180;
+        
+        if (lastFetch > 0) {
+          const nextFetchTime = lastFetch + refreshInterval * 1000;
+          if (nextFetchTime > now) {
+            setRefreshCountdown(Math.ceil((nextFetchTime - now) / 1000));
+          } else {
+            setRefreshCountdown(prev => {
+              if (prev !== null) {
+                setRefreshTrigger(t => t + 1);
+                return null; // 標記為同步中
+              }
+              return prev;
+            });
+          }
+        } else {
+          setRefreshCountdown(null);
         }
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isLiveConnected, cooldownTimeLeft]);
+      } else {
+        setRefreshCountdown(null);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isLoaded, origin]);
 
   useEffect(() => {
     fetch(`/data.json?v=${Date.now()}`)
@@ -115,12 +142,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !origin) return;
+    if (!isLoaded || !origin || !isLiveConnected) return;
     
     let isCurrent = true;
-    let countdownInterval;
 
-    const fetchLive = async (bypass = false, isManual = false) => {
+    const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
       setRefreshCountdown(null); // 同步中
       try {
@@ -132,96 +158,37 @@ export default function Home() {
         
         if (result.data) {
           setLiveData(result.data);
-          lastFetchTimeRef.current = Date.now();
+          sessionStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
+          localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
         }
       } catch (e) {
         console.error("Live fetch error", e);
       }
-
-      if (!isCurrent) return;
-
-      // 動態計算下一次的抓取時間（與現實時鐘同步）
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMins = now.getMinutes();
-      const currentSecs = now.getSeconds();
-      
-      let delaySeconds;
-      if (isManual) {
-        // 手動更新直接重置為完整 3 分鐘 (白天) 或 5 分鐘 (半夜)
-        delaySeconds = (currentHour >= 23 || currentHour < 5) ? 300 : 180;
-      } else if (currentHour >= 23 || currentHour < 5) {
-        // 半夜：每 5 分鐘的整點觸發 (例如 00, 05, 10...)
-        const totalSecs = currentMins * 60 + currentSecs;
-        const nextMarkSecs = Math.ceil((totalSecs + 1) / 300) * 300;
-        delaySeconds = nextMarkSecs - totalSecs;
-      } else {
-        // 白天：每 3 分鐘的整點觸發 (例如 00, 03, 06, 09...)以節省點數
-        const totalSecs = currentMins * 60 + currentSecs;
-        const nextMarkSecs = Math.ceil((totalSecs + 1) / 180) * 180;
-        delaySeconds = nextMarkSecs - totalSecs;
-      }
-      
-      setRefreshCountdown(delaySeconds);
-
-      if (countdownInterval) clearInterval(countdownInterval);
-      countdownInterval = setInterval(() => {
-        if (!isCurrent) {
-          clearInterval(countdownInterval);
-          return;
-        }
-        setRefreshCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            fetchLive();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
     };
 
-    // 只有在即時連線開啟時，才發送請求或進行倒數
-    if (isLiveConnected) {
-      const shouldBypass = bypassCacheRef.current;
-      if (shouldBypass) {
-        bypassCacheRef.current = false; // 立即重置
-        fetchLive(true, true); // 強制更新 (繞過快取) 並標記為手動更新
+    const shouldBypass = bypassCacheRef.current;
+    if (shouldBypass) {
+      bypassCacheRef.current = false;
+      fetchLive(true);
+    } else {
+      const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+      const refreshInterval = 180;
+      
+      const now = Date.now();
+      if (now - lastFetch >= refreshInterval * 1000 || lastFetch === 0) {
+        fetchLive(false);
       } else {
-        const timeSinceLastFetch = Date.now() - lastFetchTimeRef.current;
-        if (timeSinceLastFetch >= 180000 || lastFetchTimeRef.current === 0) {
-          // 已過期或第一次載入，立刻向後端取資料
-          fetchLive(false);
+        const cached = sessionStorage.getItem(`live_data_cache_${origin}`);
+        if (cached) {
+          setLiveData(JSON.parse(cached));
         } else {
-          // 未過期，計算剩餘時間並重啟倒數計時器
-          const remainingSecs = Math.max(1, Math.ceil((180000 - timeSinceLastFetch) / 1000));
-          setRefreshCountdown(remainingSecs);
-          
-          if (countdownInterval) clearInterval(countdownInterval);
-          countdownInterval = setInterval(() => {
-            if (!isCurrent) {
-              clearInterval(countdownInterval);
-              return;
-            }
-            setRefreshCountdown(prev => {
-              if (prev <= 1) {
-                clearInterval(countdownInterval);
-                fetchLive();
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
+          fetchLive(false);
         }
       }
-    } else {
-      // 離線模式，清空倒數顯示
-      setRefreshCountdown(null);
     }
 
     return () => {
       isCurrent = false;
-      if (countdownInterval) clearInterval(countdownInterval);
     };
   }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
 
@@ -384,52 +351,56 @@ export default function Home() {
   return (
     <>
       {/* 📡 膠囊一：即時連線開關 */}
-      <button 
-        onClick={toggleLiveConnection}
-        style={{
-          position: 'fixed', top: 10, left: 10, zIndex: 9999, 
-          display: 'flex', alignItems: 'center', gap: 8, 
-          background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)', 
-          padding: '6px 14px', borderRadius: '20px', 
-          color: isLiveConnected ? '#2ECC71' : '#BDC3C7', 
-          fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
-          border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
-          cursor: 'pointer', transition: 'all 0.3s ease',
-          boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
-        }}
-      >
-        <span style={{
-          display: 'inline-block', width: 8, height: 8, borderRadius: '50%', 
-          background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D', 
-          boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
-        }}></span>
-        {isLiveConnected ? (
-          <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕</span>
-        ) : (
-          <span>● 離線模式 (點擊連線)</span>
-        )}
-      </button>
+      {isLoaded && (
+        <button 
+          onClick={toggleLiveConnection}
+          style={{
+            position: 'fixed', top: 10, left: 10, zIndex: 9999, 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)', 
+            padding: '6px 14px', borderRadius: '20px', 
+            color: isLiveConnected ? '#2ECC71' : '#BDC3C7', 
+            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+            border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
+            cursor: 'pointer', transition: 'all 0.3s ease',
+            boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
+          }}
+        >
+          <span style={{
+            display: 'inline-block', width: 8, height: 8, borderRadius: '50%', 
+            background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D', 
+            boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
+          }}></span>
+          {isLiveConnected ? (
+            <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕</span>
+          ) : (
+            <span>● 離線模式 (點擊連線)</span>
+          )}
+        </button>
+      )}
 
       {/* 🔄 膠囊二：手動立即更新 */}
-      <button 
-        onClick={handleManualRefresh}
-        disabled={!isLiveConnected || cooldownTimeLeft > 0}
-        style={{
-          position: 'fixed', top: 46, left: 10, zIndex: 9999, 
-          display: 'flex', alignItems: 'center', gap: 6, 
-          background: !isLiveConnected ? 'rgba(127, 140, 141, 0.05)' : (cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : 'rgba(52, 152, 219, 0.15)'), 
-          padding: '5px 12px', borderRadius: '20px', 
-          color: !isLiveConnected ? 'rgba(189, 195, 199, 0.4)' : (cooldownTimeLeft > 0 ? '#E67E22' : '#3498DB'), 
-          fontSize: '11px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
-          border: !isLiveConnected ? '1px solid rgba(127, 140, 141, 0.1)' : (cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : '1px solid rgba(52, 152, 219, 0.4)'),
-          cursor: isLiveConnected && cooldownTimeLeft === 0 ? 'pointer' : 'not-allowed', 
-          transition: 'all 0.3s ease',
-          opacity: isLiveConnected ? 1 : 0.5,
-          pointerEvents: isLiveConnected ? 'auto' : 'none'
-        }}
-      >
-        <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '🔄 立即手動更新'}</span>
-      </button>
+      {isLoaded && (
+        <button 
+          onClick={handleManualRefresh}
+          disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
+          style={{
+            position: 'fixed', top: 50, left: 10, zIndex: 9999, 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'), 
+            padding: '6px 14px', borderRadius: '20px', 
+            color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'), 
+            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)', 
+            border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
+            cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer', 
+            transition: 'all 0.3s ease',
+            opacity: isLiveConnected ? 1 : 0.5,
+            pointerEvents: isLiveConnected ? 'auto' : 'none'
+          }}
+        >
+          <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '🔄 立即手動更新'}</span>
+        </button>
+      )}
       <div style={{position: 'fixed', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: 5}}>
         <button onClick={() => setTheme(1)} style={{padding: '5px 10px', background: theme===1?'#00F2FE':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>極簡風</button>
         <button onClick={() => setTheme(2)} style={{padding: '5px 10px', background: theme===2?'#1B3B6F':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>車票風</button>
