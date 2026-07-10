@@ -99,6 +99,12 @@ export async function GET(request) {
       });
     }
 
+    // 在 route.js 的 apiCache 賦值前加上快取水位限制：
+    if (Object.keys(apiCache).length > 300) {
+      console.warn("[Memory Protection] Clearing apiCache to prevent OOM.");
+      apiCache = {}; // 容量超過 300 筆，直接清空重置
+    }
+
     // 更新記憶體快取
     apiCache[origin] = {
       data: delayMap,

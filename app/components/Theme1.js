@@ -316,6 +316,9 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 if (diff < 0) diff += 24 * 60;
                 let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
                 let waitDiff = t.actualDepMins - currentMins;
+                if (isTomorrow) {
+                  waitDiff += 1440; // 跨夜需補上 24 小時的 1440 分鐘
+                }
                 let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
                 let actualArrMins = (ah * 60 + am) + t.delay;
                 

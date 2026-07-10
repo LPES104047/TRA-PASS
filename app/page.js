@@ -215,10 +215,13 @@ export default function Home() {
   const sD = data.Southbound.stations.indexOf(dest);
   if(sO !== -1 && sD !== -1 && sO < sD) dirInfo = { dir: "Southbound", oIdx: sO, dIdx: sD };
 
-  // const now = new Date();
-  // 記住這位置！記住記住記住！
-  const currentMins = 23 * 60 + 59; // 為了開發，固定在半夜 23:59 (收班無車狀態)
-  // const currentMins = now.getHours() * 60 + now.getMinutes();
+  // 取得當下時間
+  const now = new Date();
+  // 強制轉換為台灣時間字串，再重新解析出小時與分鐘
+  const twTimeStr = now.toLocaleString("en-US", { timeZone: "Asia/Taipei" });
+  const twTime = new Date(twTimeStr);
+
+  const currentMins = twTime.getHours() * 60 + twTime.getMinutes();
   
   let validTrains = [];
   if (dirInfo) {
