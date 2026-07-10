@@ -351,8 +351,13 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
             </div>
           ) : (
             validTrains.map((t) => {
-              const diffMins = t.actualDepMins - currentMins;
+              // 【修正】：加入跨夜補償，並計算友善的文字格式
+              let diffMins = t.actualDepMins - currentMins;
+              if (isTomorrow) diffMins += 1440;
+              else if (diffMins < 0) diffMins += 1440;
+              
               const percent = Math.max(0, Math.min(100, 100 - (diffMins / 120 * 100)));
+              let waitText = diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`;
               
               let [dh, dm] = t.depTime.split(':').map(Number);
               let [ah, am] = t.arrTime.split(':').map(Number);
@@ -366,7 +371,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
                 <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
                     <div className="time-label">{t.depTime}</div>
                     <div 
-                      className={`card ${clickedTrainNo === t.number ? 'clicked' : ''}`}
+                      className={`card ${clickedTrainNo === t.number ? 'clicked' : ''}`} 
                       style={{ borderLeft: `4px solid ${dotColor}`, cursor: 'pointer' }}
                       onClick={() => handleCardClick(t)}
                     >
@@ -387,8 +392,9 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
                         <div className="progress-track">
                             <div className="progress-fill" style={{width: `${percent}%`, background: `linear-gradient(90deg, transparent, ${dotColor})`}}></div>
                         </div>
+                        {/* 【修正】：顯示真實倒數，拔除明天車次字眼 */}
                         <div className="countdown-text" style={{color: dotColor}}>
-                          {isTomorrow ? "明天車次" : `Departs in ${diffMins} min`}
+                          Departs in {waitText}
                         </div>
                     </div>
                 </div>

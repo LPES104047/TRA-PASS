@@ -37,6 +37,9 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
   let diffMins = 0;
   if (nextTrain) {
     diffMins = nextTrain.actualDepMins - currentMins;
+    // 【修正】：如果是明天車次，或者已經跨夜，強制補上 24 小時 (1440 分鐘)
+    if (isTomorrow) diffMins += 1440;
+    else if (diffMins < 0) diffMins += 1440;
   }
 
   const getTrainDotClass = (type) => {
@@ -333,20 +336,21 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 </div>
               )}
               {validTrains.map((t) => {
-                // 計算跨夜與真實時間
-                let diffMins = t.actualDepMins - currentMins;
-                if (diffMins < 0 && (t.actualDepMins + 1440 - currentMins) <= 120) diffMins += 1440;
-                let waitText = diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`;
-                
                 let [dh, dm] = t.depTime.split(':').map(Number);
                 let [ah, am] = t.arrTime.split(':').map(Number);
-                let actualDepMins = dh * 60 + dm + (isTomorrow ? 0 : t.delay);
-                let actualArrMins = ah * 60 + am + (isTomorrow ? 0 : t.delay);
-                if (actualArrMins < actualDepMins && actualArrMins < 240) actualArrMins += 1440;
-
                 let diff = (ah * 60 + am) - (dh * 60 + dm);
                 if (diff < 0) diff += 24 * 60;
                 let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
+                
+                // 【修正：跨夜時間與文字】
+                let diffMins = t.actualDepMins - currentMins;
+                if (isTomorrow) diffMins += 1440;
+                else if (diffMins < 0) diffMins += 1440;
+                let waitText = diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`;
+                
+                let actualDepMins = dh * 60 + dm + (isTomorrow ? 0 : t.delay);
+                let actualArrMins = ah * 60 + am + (isTomorrow ? 0 : t.delay);
+                if (actualArrMins < actualDepMins && actualArrMins < 240) actualArrMins += 1440;
                 
                 return (
                   <div 
@@ -355,10 +359,26 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                     onClick={() => handleCardClick(t)}
                   >
                       <div className="train-details">
-                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
-                          <p>{t.type} {t.number} <span className="duration-badge">{isTomorrow ? "明天車次" : `${waitText} 後發車`}</span></p>
+                          <h3>
+                            {t.delay > 0 ? (
+                              <>
+                                <del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del>
+                                <span style={{color: '#FF6B6B'}}>{formatTime(actualDepMins)}</span>
+                              </>
+                            ) : t.depTime} 
+                            {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}
+                          </h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
                       </div>
-                      <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
+                      <div className="train-time">
+                        {t.delay > 0 ? (
+                          <>
+                            <del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del>
+                            <span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span>
+                          </>
+                        ) : t.arrTime}
+                        <span>抵達 {dest} / 車程 {dur}</span>
+                      </div>
                   </div>
                 )
               })}
