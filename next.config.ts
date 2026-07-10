@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: 'bottom-right',
   },
+  turbopack: {
+    root: __dirname,
+  },
   // 🛡️ 資訊安全防禦：配置嚴格的 HTTP Security Headers
   async headers() {
     return [
