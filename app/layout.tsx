@@ -23,6 +23,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "TRA PASS | 台鐵即時時刻表",
   description: "個人化台鐵即時動態與時刻表查詢系統",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
