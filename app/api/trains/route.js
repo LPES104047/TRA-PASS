@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-// ⚡️ 直接使用 import 引入 JSON，讓 Webpack/Vercel 自動追蹤並打包，避免 Serverless 環境找不到檔案
 import staticData from '../../../public/data.json'; 
 
 // ==========================================
-// 🛡️ 記憶體安全防護區
+// 🛡️ 記憶體安全與全域快取防護區
 // ==========================================
 const apiCache = new Map();
 const fetchPromises = new Map();
+const GLOBAL_CACHE_KEY = 'ALL_STATIONS_LIVE_BOARD'; // 全域快取鍵值
 
-// 1. 動態讀取有效車站名單 (透過靜態引入)
+// 1. 動態讀取有效車站名單
 let VALID_STATIONS = new Set();
 try {
   const allStations = [...(staticData.Northbound?.stations || []), ...(staticData.Southbound?.stations || [])];
@@ -23,7 +23,6 @@ let tokenCache = { token: null, expiresAt: 0 };
 
 async function getTdxToken(forceRefresh = false) {
   const now = Date.now();
-  // 若未過期且不強制刷新，回傳記憶體中的 Token
   if (!forceRefresh && tokenCache.token && tokenCache.expiresAt > now) {
     return tokenCache.token;
   }
@@ -31,10 +30,7 @@ async function getTdxToken(forceRefresh = false) {
   const clientId = process.env.TDX_CLIENT_ID;
   const clientSecret = process.env.TDX_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) {
-    console.warn("TDX credentials missing, using fallback.");
-    return null;
-  }
+  if (!clientId || !clientSecret) return null;
 
   const authUrl = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
   const params = new URLSearchParams({
@@ -48,8 +44,8 @@ async function getTdxToken(forceRefresh = false) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
-      cache: 'no-store', // 捨棄原生快取，由上方邏輯接管
-      signal: AbortSignal.timeout(5000) // 🛡️ 資訊安全防禦：5秒強制超時
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000) // 🛡️ 5秒強制超時防掛起
     });
     
     if (!res.ok) throw new Error('Failed to fetch TDX token');
@@ -57,7 +53,7 @@ async function getTdxToken(forceRefresh = false) {
     
     tokenCache = {
       token: data.access_token,
-      expiresAt: now + (data.expires_in - 60) * 1000 // 提早 60 秒判定過期
+      expiresAt: now + (data.expires_in - 60) * 1000
     };
     return data.access_token;
   } catch (error) {
@@ -67,20 +63,24 @@ async function getTdxToken(forceRefresh = false) {
 }
 
 export async function GET(request) {
-  // 🛡️ 資訊安全防禦：API 盜用防護 (防止外部 Bot 惡意爬蟲或直接以 script 刷流量)
+  // 🛡️ 邊界防禦：嚴格檢查 Referer，防止 API 盜刷 (修補 includes 繞過漏洞)
   const referer = request.headers.get('referer');
   const secFetchSite = request.headers.get('sec-fetch-site');
   const host = request.headers.get('host');
- 
-  // 檢查是否來自同源 (在生產環境中，若沒有 referer 或來自其他網域則拒絕服務)
+  
   if (process.env.NODE_ENV === 'production') {
-    const isSameOrigin = secFetchSite === 'same-origin' || (referer && referer.includes(host));
+    let isSameOrigin = secFetchSite === 'same-origin';
+    if (!isSameOrigin && referer) {
+      try {
+        const refererUrl = new URL(referer);
+        isSameOrigin = refererUrl.host === host;
+      } catch (e) {
+        isSameOrigin = false;
+      }
+    }
     if (!isSameOrigin) {
-      return NextResponse.json({ 
-        error: 'Forbidden: Access Denied' 
-      }, { 
-        status: 403 
-      });
+      console.warn(`[Security Block] Access Denied for referer: ${referer}`);
+      return NextResponse.json({ error: 'Forbidden: Access Denied' }, { status: 403 });
     }
   }
 
@@ -88,7 +88,6 @@ export async function GET(request) {
   const origin = searchParams.get('origin');
   const bypass = searchParams.get('bypass') === 'true';
 
-  // 🛡️ 資訊安全防禦：全站防快取控制 (防護 CDN/瀏覽器意外快取即時班表)
   const noCacheHeaders = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
@@ -100,75 +99,87 @@ export async function GET(request) {
   }
 
   const nowMs = Date.now();
-  const cachedData = apiCache.get(origin);
+  const cachedData = apiCache.get(GLOBAL_CACHE_KEY);
 
   if (cachedData) {
     const timeDiff = nowMs - cachedData.timestamp;
-    if (timeDiff < 15000) {
-      return NextResponse.json({ data: cachedData.data }, { headers: noCacheHeaders });
+    
+    // 🛡️【20 秒絕對極限防護】：對齊前端按鈕冷卻時間。
+    // 無論駭客怎麼帶 bypass 參數，距離上次更新小於 20 秒絕對不准碰 TDX！
+    // 這確保了 Vercel 每分鐘最高只會呼叫 TDX 3 次 (低於每分鐘 5 次的極限限制)
+    if (timeDiff < 20000) {
+      return NextResponse.json({ data: cachedData.data[origin] || {} }, { headers: noCacheHeaders });
     }
+    
+    // 🛡️【180 秒常規快取】：如果使用者沒有要求強制更新 (bypass=false)，3 分鐘內都給舊資料
     if (!bypass && timeDiff < 180000) {
-      return NextResponse.json({ data: cachedData.data }, { headers: noCacheHeaders });
+      return NextResponse.json({ data: cachedData.data[origin] || {} }, { headers: noCacheHeaders });
     }
   }
 
-  if (fetchPromises.has(origin)) {
+  // 🛡️ 防止快取擊穿的全域鎖 (多請求同時湧入時，只讓第一個去打 TDX)
+  if (fetchPromises.has(GLOBAL_CACHE_KEY)) {
     try {
-      const data = await fetchPromises.get(origin);
-      return NextResponse.json({ data }, { headers: noCacheHeaders });
-    } catch (e) {
-      // 繼續往下執行
-    }
+      const globalData = await fetchPromises.get(GLOBAL_CACHE_KEY);
+      return NextResponse.json({ data: globalData[origin] || {} }, { headers: noCacheHeaders });
+    } catch (e) {}
   }
 
   const fetchTask = (async () => {
     let token = await getTdxToken();
     if (!token) return {};
 
-    const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$filter=StationName/Zh_tw eq '${encodeURIComponent(origin)}'&$format=JSON`;
+    // 🌟 核心進化：移除單站 filter，一次呼叫取得全台即時動態
+    const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$format=JSON`;
     
     let res = await fetch(tdxUrl, {
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store',
-      signal: AbortSignal.timeout(8000) // 🛡️ 資訊安全防禦：8秒強制超時
+      signal: AbortSignal.timeout(8000) // 🛡️ 8秒強制超時
     });
 
-    // 🛡️ 【401 自癒機制】如果 TDX 提前撤銷 Token，強制重啟並重試一次
     if (res.status === 401) {
-      console.log(`[Token Expired] Force refreshing token for ${origin}...`);
       token = await getTdxToken(true);
       res = await fetch(tdxUrl, {
         headers: { 'Authorization': `Bearer ${token}` },
         cache: 'no-store',
-        signal: AbortSignal.timeout(8000) // 🛡️ 資訊安全防禦：8秒強制超時
+        signal: AbortSignal.timeout(8000)
       });
     }
 
-    if (!res.ok) throw new Error(`Failed to fetch TDX live board: ${res.status}`);
+    if (!res.ok) throw new Error(`TDX fetch failed: ${res.status}`);
     const data = await res.json();
     
-    const delayMap = {};
+    // 🌟 在記憶體中進行分組轉換 (O(N) 效能極高)
+    const globalDelayMap = {};
     if (Array.isArray(data)) {
       data.forEach(train => {
-        delayMap[train.TrainNo] = train.DelayTime || 0;
+        const station = train.StationName?.Zh_tw;
+        if (station) {
+          if (!globalDelayMap[station]) globalDelayMap[station] = {};
+          globalDelayMap[station][train.TrainNo] = train.DelayTime || 0;
+        }
       });
     }
 
-    if (apiCache.size > 300) apiCache.clear();
-    apiCache.set(origin, { data: delayMap, timestamp: Date.now() });
-
-    return delayMap;
+    apiCache.set(GLOBAL_CACHE_KEY, { data: globalDelayMap, timestamp: Date.now() });
+    return globalDelayMap;
   })();
 
-  fetchPromises.set(origin, fetchTask);
+  fetchPromises.set(GLOBAL_CACHE_KEY, fetchTask);
 
   try {
-    const delayMap = await fetchTask;
-    return NextResponse.json({ data: delayMap }, { headers: noCacheHeaders });
+    const globalDelayMap = await fetchTask;
+    return NextResponse.json({ data: globalDelayMap[origin] || {} }, { headers: noCacheHeaders });
   } catch (error) {
     console.error('TDX API Error:', error);
+    // 發生錯誤時，若有舊的全台資料快取，優先使用舊資料墊檔，確保畫面不白屏
+    const fallback = apiCache.get(GLOBAL_CACHE_KEY);
+    if (fallback) {
+      return NextResponse.json({ data: fallback.data[origin] || {} }, { headers: noCacheHeaders });
+    }
     return NextResponse.json({ data: {} }, { status: 500, headers: noCacheHeaders });
   } finally {
-    fetchPromises.delete(origin);
+    fetchPromises.delete(GLOBAL_CACHE_KEY);
   }
 }
