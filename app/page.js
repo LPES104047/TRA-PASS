@@ -138,7 +138,10 @@ export default function Home() {
   useEffect(() => {
     fetch(`/data.json`)
       .then((res) => res.json())
-      .then((d) => setData(d));
+      .then((d) => setData(d))
+      .catch((err) => {
+        console.error("靜態班表載入失敗", err);
+      });
   }, []);
 
   useEffect(() => {
@@ -180,7 +183,13 @@ export default function Home() {
       } else {
         const cached = sessionStorage.getItem(`live_data_cache_${origin}`);
         if (cached) {
-          setLiveData(JSON.parse(cached));
+          try {
+            setLiveData(JSON.parse(cached));
+          } catch (e) {
+            console.error("Cache parsing error", e);
+            sessionStorage.removeItem(`live_data_cache_${origin}`);
+            fetchLive(false);
+          }
         } else {
           fetchLive(false);
         }
@@ -236,7 +245,13 @@ export default function Home() {
     validTrains.sort((a, b) => a.actualDepMins - b.actualDepMins);
     validTrains = validTrains.filter(t => {
       // 若為明天，則不過濾「目前時間點之前發車」的列車
-      if (!isTomorrow && t.actualDepMins < currentMins) return false;
+      if (!isTomorrow) {
+        if (t.actualDepMins < currentMins) {
+          // 【跨夜邏輯修正】：如果列車是明天的凌晨時間，且距離現在的「真實等待時間」在 2 小時 (120 分鐘) 內，則保留！
+          const isNightOwlTrain = (t.actualDepMins + 1440) - currentMins <= 120;
+          if (!isNightOwlTrain) return false;
+        }
+      }
       let [dh, dm] = t.depTime.split(':').map(Number);
       let [ah, am] = t.arrTime.split(':').map(Number);
       let diff = (ah * 60 + am) - (dh * 60 + dm);

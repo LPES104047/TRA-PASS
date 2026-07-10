@@ -47,7 +47,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
 
   // 3. 取得當前時間（分鐘數）
   const now = new Date();
-  const currentMins = now.getHours() * 60 + now.getMinutes();
+  let currentMins = now.getHours() * 60 + now.getMinutes();
 
   // 4. 計算列車當前運行狀態與位置
   let statusText = "";
@@ -58,6 +58,13 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
   const delay = train.delay || 0;
   const firstStationMins = stopMinutesList[0] + delay;
   const lastStationMins = stopMinutesList[stopMinutesList.length - 1] + delay;
+
+  // 【跨夜邏輯修正】：如果目前是凌晨 (例如 00:00 ~ 04:00，小於 240 分鐘)
+  // 且列車終點站的表定時間已經跨夜 (大於等於 1440)
+  // 我們就必須把目前時間也加上 1440，讓它們處於同一個時空維度
+  if (currentMins < 240 && lastStationMins >= 1440) {
+    currentMins += 1440;
+  }
 
   if (isTomorrow) {
     statusText = "明日發車 | 表定準點";
