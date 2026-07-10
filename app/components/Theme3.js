@@ -6,6 +6,17 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
   const originRef = useRef(null);
   const destRef = useRef(null);
 
+  // 【新增】卡片點擊狀態與動畫時間
+  const [clickedTrainNo, setClickedTrainNo] = useState(null);
+  const handleCardClick = (t) => {
+    if (clickedTrainNo) return;
+    setClickedTrainNo(t.number);
+    setTimeout(() => {
+      if (typeof onTrainSelect === 'function') onTrainSelect(t);
+      setClickedTrainNo(null);
+    }, 200);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (originRef.current && !originRef.current.contains(event.target)) {
@@ -57,7 +68,19 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
             border-radius: 20px; border: 1px solid rgba(0, 240, 255, 0.2);
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            transition: all 0.5s ease;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+        }
+        .theme3-root .card:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 15px 45px rgba(0,240,255,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: rgba(0, 240, 255, 0.4);
+        }
+        .theme3-root .card.clicked {
+            transform: scale(0.96);
+            box-shadow: 0 0 20px rgba(0,240,255,0.4);
+            border-color: #00F0FF;
+            opacity: 0.8;
         }
         .theme3-root .card.empty {
             background: rgba(10, 10, 10, 0.2);
@@ -343,9 +366,9 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
                 <div key={t.number} className="train-item" style={{"--dot-color": dotColor}}>
                     <div className="time-label">{t.depTime}</div>
                     <div 
-                      className="card" 
+                      className={`card ${clickedTrainNo === t.number ? 'clicked' : ''}`}
                       style={{ borderLeft: `4px solid ${dotColor}`, cursor: 'pointer' }}
-                      onClick={() => onTrainSelect && onTrainSelect(t)}
+                      onClick={() => handleCardClick(t)}
                     >
                         <div className="card-header">
                             <h3>

@@ -1,10 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow }) {
+export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
   const [isOriginOpen, setIsOriginOpen] = useState(false);
   const [isDestOpen, setIsDestOpen] = useState(false);
   const originRef = useRef(null);
   const destRef = useRef(null);
+
+  // 【新增】卡片點擊狀態與動畫時間
+  const [clickedTrainNo, setClickedTrainNo] = useState(null);
+  const handleCardClick = (t) => {
+    if (clickedTrainNo) return;
+    setClickedTrainNo(t.number);
+    setTimeout(() => {
+      if (typeof onTrainSelect === 'function') onTrainSelect(t);
+      setClickedTrainNo(null);
+    }, 200);
+  };
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -117,8 +129,19 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
             margin-bottom: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.5); 
             border: 1px solid rgba(255,255,255,0.3); border-left: 0;
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
             overflow: hidden;
+            cursor: pointer;
+        }
+        .theme1-root .train-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .theme1-root .train-card.clicked {
+            transform: scale(0.96);
+            opacity: 0.7;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--train-local); border-radius: 6px 0 0 6px; box-shadow: 0 0 15px var(--train-local); }
         .theme1-root .train-card.fast::before { background: var(--train-fast); box-shadow: 0 0 15px var(--train-fast); }
@@ -310,23 +333,30 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
                 </div>
               )}
               {validTrains.map((t) => {
+                // 計算跨夜與真實時間
+                let diffMins = t.actualDepMins - currentMins;
+                if (diffMins < 0 && (t.actualDepMins + 1440 - currentMins) <= 120) diffMins += 1440;
+                let waitText = diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`;
+                
                 let [dh, dm] = t.depTime.split(':').map(Number);
                 let [ah, am] = t.arrTime.split(':').map(Number);
+                let actualDepMins = dh * 60 + dm + (isTomorrow ? 0 : t.delay);
+                let actualArrMins = ah * 60 + am + (isTomorrow ? 0 : t.delay);
+                if (actualArrMins < actualDepMins && actualArrMins < 240) actualArrMins += 1440;
+
                 let diff = (ah * 60 + am) - (dh * 60 + dm);
                 if (diff < 0) diff += 24 * 60;
                 let dur = diff >= 60 ? `${Math.floor(diff/60)}h ${diff%60}m` : `${diff}m`;
-                let waitDiff = t.actualDepMins - currentMins;
-                if (isTomorrow) {
-                  waitDiff += 1440; // 跨夜需補上 24 小時的 1440 分鐘
-                }
-                let waitText = waitDiff > 60 ? `${Math.floor(waitDiff/60)}h ${waitDiff%60}m` : `${waitDiff}m`;
-                let actualArrMins = (ah * 60 + am) + t.delay;
                 
                 return (
-                  <div key={t.number} className={`train-card ${getTrainDotClass(t.type)}`}>
+                  <div 
+                    key={t.number} 
+                    className={`train-card ${getTrainDotClass(t.type)} ${clickedTrainNo === t.number ? 'clicked' : ''}`}
+                    onClick={() => handleCardClick(t)}
+                  >
                       <div className="train-details">
-                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(t.actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
-                          <p>{t.type} {t.number} <span className="duration-badge">{waitText} 後發車</span></p>
+                          <h3>{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.depTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualDepMins)}</span></> : t.depTime} {t.delay > 0 && <span className="delay-text">晚 {t.delay} 分</span>}</h3>
+                          <p>{t.type} {t.number} <span className="duration-badge">{isTomorrow ? "明天車次" : `${waitText} 後發車`}</span></p>
                       </div>
                       <div className="train-time">{t.delay > 0 ? <><del style={{opacity: 0.5, fontSize: '0.8em', marginRight: '6px', color: 'rgba(255,255,255,0.6)'}}>{t.arrTime}</del><span style={{color: '#FF6B6B'}}>{formatTime(actualArrMins)}</span></> : t.arrTime}<span>抵達 {dest} / 車程 {dur}</span></div>
                   </div>
