@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
   },
   // 🛡️ 資訊安全防禦：配置嚴格的 HTTP Security Headers
   async headers() {
+    // 🌟 智慧動態 CSP：開發環境允許 eval 進行除錯；正式上線 (Production) 則徹底封殺惡意腳本後門！
+    const isDev = process.env.NODE_ENV !== 'production';
+    const cspValue = isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;"
+      : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;";
+
     return [
       {
         source: '/(.*)', // 應用於全站所有路徑
@@ -27,12 +33,11 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload', // 🛡️ 增強：加上 preload 支援 HSTS 預載名單
+            value: 'max-age=31536000; includeSubDomains; preload', // 🛡️ HSTS 預載防護
           },
           {
             key: 'Content-Security-Policy',
-            // 漏洞修復：徹底拔除 'unsafe-eval'，阻絕惡意腳本執行空間！
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;",
+            value: cspValue, // 套用動態 CSP 變數
           },
         ],
       },

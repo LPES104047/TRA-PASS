@@ -130,7 +130,9 @@ export default function Home() {
       setRefreshCountdown(null);
 
       try {
-        const url = `/api/trains?origin=${origin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
+        // 🛡️ 資安升級：對 origin 進行 encodeURIComponent 防止 URL 參數污染 (Parameter Injection)
+        const safeOrigin = encodeURIComponent(origin);
+        const url = `/api/trains?origin=${safeOrigin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
         const res = await fetch(url, { signal: abortControllerRef.current.signal });
         const result = await res.json();
         if (!isCurrent) return;
@@ -209,7 +211,11 @@ export default function Home() {
       const dTime = t.times[dirInfo.dIdx];
       if (oTime && dTime) {
         const [h, m] = oTime.split(':').map(Number);
-        let delay = isTomorrow ? 0 : (liveData[t.number] || 0);
+
+        // 🛡️ 資安防護：強制型別轉換 (Storage Poisoning 防禦)
+        // 確保駭客若在 sessionStorage 塞入惡意字串，也會被強制轉回數字或 0，防止 NaN 癱瘓前端
+        let rawDelay = liveData[t.number];
+        let delay = isTomorrow ? 0 : (typeof rawDelay === 'number' ? rawDelay : (Number(rawDelay) || 0));
         let actualDepMins = h * 60 + m + delay;
 
         validTrains.push({
