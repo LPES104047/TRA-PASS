@@ -28,13 +28,28 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
     }
   });
 
-  // 終極完美修復：根據使用者的起訖站建立絕對順向行駛時間軸
-  // 列車必然是先抵達「出發站」才抵達「目的站」，因此在垂直布局中出發站必須在上方（索引值較小）。
-  // 這個方法完全免疫所有跨夜時間混亂與複雜的計數誤判，徹底解決南北向上下方向不一致的盲區！
-  const originIdx = stops.findIndex(s => s.name === origin);
-  const destIdx = stops.findIndex(s => s.name === dest);
-  if (originIdx !== -1 && destIdx !== -1 && originIdx > destIdx) {
-    stops.reverse();
+  // 終極完美修復：台/臺 防呆轉換與起訖站相對位置對齊演算法
+  // 透過標準化字串，完美防禦 TDX API 的用字差異，確保陣列精準反轉！
+  const normalize = (name) => name?.replace(/臺/g, '台').trim();
+  const originIdx = stops.findIndex(s => normalize(s.name) === normalize(origin));
+  const destIdx = stops.findIndex(s => normalize(s.name) === normalize(dest));
+
+  if (originIdx !== -1 && destIdx !== -1) {
+    // 若出發站在目的站的下方，直接反轉，確保由上往下開
+    if (originIdx > destIdx) stops.reverse();
+  } else {
+    // 雙重保險：萬一起訖站沒抓到，使用時間差演算法防呆
+    let fw = 0, bw = 0;
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [h1, m1] = stops[i].time.split(':').map(Number);
+      const [h2, m2] = stops[i+1].time.split(':').map(Number);
+      let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+      if (diff < -720) diff += 1440;
+      if (diff > 720) diff -= 1440;
+      if (diff > 0) fw++;
+      else if (diff < 0) bw++;
+    }
+    if (bw > fw) stops.reverse();
   }
 
   // 2. 正常化時間軸，解決跨午夜時間遞減問題
@@ -53,11 +68,9 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
     stopMinutesList.push(mins);
   });
 
-  // 3. 取得當前時間（分鐘數）
   const now = new Date();
   let currentMins = now.getHours() * 60 + now.getMinutes();
 
-  // 4. 計算列車當前運行狀態與位置
   let statusText = "";
   let trainPositionIndex = 0;
   let segmentProgress = 0;
@@ -68,6 +81,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
   const firstStationMins = stopMinutesList[0] + delay;
   const lastStationMins = stopMinutesList[stopMinutesList.length - 1] + delay;
 
+  // 修正跨夜檢測邏輯
   if (currentMins < 240 && lastStationMins >= 1440) {
     currentMins += 1440;
   }
@@ -113,7 +127,9 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
   const formatStopActualTime = (tableTime, index) => {
     const [h, m] = tableTime.split(':').map(Number);
     let totalMins = h * 60 + m + (isTomorrow ? 0 : delay);
-    const rh = Math.floor((totalMins % 1440) / 60);
+    // 防禦 JS 負數取模崩潰：確保倒扣時間時不會跑出負數
+    totalMins = ((totalMins % 1440) + 1440) % 1440;
+    const rh = Math.floor(totalMins / 60);
     const rm = totalMins % 60;
     return `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
   };
@@ -127,8 +143,8 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
     return currentMins > stopMins;
   };
 
-  const isOrigin = (name) => name === origin;
-  const isDest = (name) => name === dest;
+  const isOrigin = (name) => normalize(name) === normalize(origin);
+  const isDest = (name) => normalize(name) === normalize(dest);
 
   const getThemeClass = () => {
     if (theme === 2) return 'theme2-modal';
@@ -168,15 +184,18 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
         .status-badge.delayed { background: rgba(255, 79, 79, 0.1); border: 1px solid rgba(255, 79, 79, 0.2); color: #FF4B30; }
  
         .modal-body { flex: 1; overflow-y: auto; padding-right: 4px; position: relative; }
-        .timeline-container { position: relative; padding-left: 55px; margin: 10px 0; }
-        .timeline-line { position: absolute; left: 18px; top: 15px; bottom: 15px; width: 3px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
      
-        .timeline-line-progress { position: absolute; left: 18px; top: 15px; width: 3px; border-radius: 2px; transition: height 0.3s ease; }
+        /* 核心防歪斜修復：統一 padding 與 28px 絕對中軸線，物理根除跑版可能！ */
+        .timeline-container { position: relative; padding-left: 70px; margin: 10px 0; }
+        .timeline-line { position: absolute; left: 28px; top: 15px; bottom: 15px; width: 3px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; transform: translateX(-50%); }
+     
+        .timeline-line-progress { position: absolute; left: 28px; top: 15px; width: 3px; border-radius: 2px; transition: height 0.3s ease; transform: translateX(-50%); }
         .is-on-time .timeline-line-progress { background: linear-gradient(180deg, #2ECC71, #00F2FE); }
         .is-delayed .timeline-line-progress { background: linear-gradient(180deg, #FF6B6B, #FF4B30); }
  
         .station-node { position: relative; height: 65px; display: flex; flex-direction: column; justify-content: flex-start; }
-        .station-dot { position: absolute; left: -36.5px; top: 15px; width: 11px; height: 11px; border-radius: 50%; background: #444; border: 2px solid #1a1a24; z-index: 2; transform: translate(-50%, -50%); transition: all 0.3s; }
+        /* 節點圓點對齊：父層 padding 70，扣除 42 = 28px (與軌道完美重合) */
+        .station-dot { position: absolute; left: -42px; top: 15px; width: 11px; height: 11px; border-radius: 50%; background: #444; border: 2px solid #1a1a24; z-index: 2; transform: translate(-50%, -50%); transition: all 0.3s; }
      
         .is-on-time .station-node.passed .station-dot { background: #2ECC71; border-color: #1a1a24; box-shadow: 0 0 6px rgba(46, 204, 113, 0.4); }
         .is-on-time .station-node.current .station-dot { background: transparent; border: 3px solid #00F2FE; box-shadow: 0 0 10px #00F2FE; }
@@ -194,13 +213,13 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
         .station-badge.origin { background: rgba(46, 204, 113, 0.15); color: #2ECC71; border: 1px solid rgba(46, 204, 113, 0.3); }
         .station-badge.dest { background: rgba(0, 242, 254, 0.15); color: #00F2FE; border: 1px solid rgba(0, 242, 254, 0.3); }
  
-        .station-time { font-size: 12px; color: rgba(255,255,255,0.5); position: absolute; left: -105px; width: 50px; text-align: right; top: 8px; font-family: monospace; }
+        .station-time { font-size: 12px; color: rgba(255,255,255,0.5); position: absolute; left: -70px; width: 45px; text-align: right; top: 8px; font-family: monospace; }
         .station-node.passed .station-time { color: rgba(255,255,255,0.3); }
         .station-time del { display: block; font-size: 10px; opacity: 0.5; }
         .station-time .actual-time { color: #FF4B30; font-weight: bold; }
  
         .live-train-indicator {
-          position: absolute; left: 19.5px; width: 26px; height: 26px; 
+          position: absolute; left: 28px; width: 26px; height: 26px; 
           border-radius: 50%; border: 2px solid #1a1a24; z-index: 10;
           display: flex; align-items: center; justify-content: center;
           transform: translate(-50%, -50%); transition: top 0.5s cubic-bezier(0.25, 1, 0.5, 1);
@@ -219,7 +238,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
           0% { transform: scale(0.7); opacity: 1; }
           100% { transform: scale(1.5); opacity: 0; }
         }
-        .live-train-svg { width: 14px; height: 14px; fill: #1a1a24; }
+        .live-train-svg { width: 14px; height: 14px; fill: #fff; }
  
         /* Themes */
         .theme2-modal .modal-sheet { background: #ebeff7; color: #2c3e50; border-top: 1px solid rgba(0,0,0,0.05); }
@@ -280,7 +299,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
                 }}
               >
                 <svg className="live-train-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 11V8h12v3H4zm14-3h2c1.1 0 2 .9 2 2v3h-4V8zM2 12h20v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4zm4 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm12 0a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                  <path d="M12 2c-4.42 0-8 .5-8 4v9.5C4 17.43 5.57 19 7.5 19L6 20.5v.5h2.23l2-2H14l2 2h2v-.5L16.5 19c1.93 0 3.5-1.57 3.5-3.5V6c0-3.5-3.58-4-8-4zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm3.5-7H6V6h5v4zm2 0V6h5v4h-5zm3.5 7c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
                 </svg>
               </div>
 
@@ -307,7 +326,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
                       <span className="station-name">{stop.name}</span>
                       {isOrigin(stop.name) && (
                         <span className="station-badge origin">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
                             <circle cx="12" cy="10" r="3" />
                           </svg>
@@ -316,7 +335,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
                       )}
                       {isDest(stop.name) && (
                         <span className="station-badge dest">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
                             <line x1="4" y1="22" x2="4" y2="15" />
                           </svg>
