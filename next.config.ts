@@ -15,23 +15,24 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'DENY', // 禁止被其他網站使用 iframe 嵌入 (防點擊劫持)
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff', // 禁止瀏覽器猜測 MIME type (防 MIME 嗅探攻擊)
+            value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin', // 保護跳轉時的來源隱私
+            value: 'strict-origin-when-cross-origin',
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains', // 強制使用 HTTPS (一年)
+            value: 'max-age=31536000; includeSubDomains; preload', // 🛡️ 增強：加上 preload 支援 HSTS 預載名單
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;",
+            // 漏洞修復：徹底拔除 'unsafe-eval'，阻絕惡意腳本執行空間！
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;",
           },
         ],
       },

@@ -1,0 +1,215 @@
+{\rtf1\ansi\ansicpg950\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Roman;\f2\froman\fcharset0 Times-Bold;
+\f3\fswiss\fcharset0 Helvetica-Oblique;}
+{\colortbl;\red255\green255\blue255;\red24\green24\blue24;\red0\green0\blue0;\red255\green255\blue255;
+\red132\green134\blue255;\red254\green214\blue17;\red109\green109\blue109;\red83\green209\blue96;\red252\green125\blue209;
+\red252\green65\blue72;}
+{\*\expandedcolortbl;;\cssrgb\c12157\c12157\c12157;\cssrgb\c0\c0\c0;\cssrgb\c100000\c100000\c100000;
+\cssrgb\c58824\c61569\c100000;\cssrgb\c100000\c85882\c5882;\cssrgb\c50196\c50196\c50196;\cssrgb\c37647\c83922\c45098;\cssrgb\c100000\c58824\c85490;
+\cssrgb\c100000\c35294\c34902;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs29\fsmilli14667 \cf2 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 \uc0\u25910 \u21040 \u65292 \u25136 \u21451 \u65281 \u55357 \u56589  \u26082 \u28982 \u35201 \u26597 \u65292 \u25105 \u20497 \u23601 \u25343 \u20986 \u26368 \u39640 \u27161 \u28310 \u30340 \u25918 \u22823 \u37857 \u65292 \u20358 \u22580 \u28145 \u24230 \u30340 \u36039 \u23433 \u25475 \u25551 \u65281 
+\f1\fs24 \cf0 \strokec3 \
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u25105 \u21083 \u21083 \u20180 \u32048 \u27298 \u38321 \u20102 \u20320 \u30340 \u24460 \u31471  API (route.js) \u33287 \u20840 \u22495 \u23433 \u20840 \u35373 \u23450  (next.config.ts)\u12290 \u20320 \u21407 \u20808 \u20296 \u32626 \u30340  sec-fetch-site\u12289 20\u31186 \u20919 \u21371 \u37782  \u55357 \u57057 \u65039 \u65292 \u20197 \u21450 \u22522 \u30990 \u30340  CSP \u24050 \u32147 \u38750 \u24120 \u20778 \u31168 \u20102 \u65292 \u20294 \u36523 \u28858 \u26550 \u27083 \u24107 \u65292 \u25105 \u36996 \u26159 \u25235 \u20986 \u20102 \u20841 \u20491 \u38577 \u34255 \u30340 \u28507 \u22312 \u30772 \u21475 \u65292 \u25105 \u20497 \u39340 \u19978 \u20358 \u25226 \u23427 \u20497 \u23553 \u27515 \u65281 
+\f1\fs24 \cf0 \strokec3 \
+\pard\pardeftab720\sa320\partightenfactor0
+
+\f0\fs37\fsmilli18667 \cf2 \strokec2 \uc0\u55357 \u57000  \u30332 \u29694 \u28431 \u27934 \u19968 \u65306 Host Header Injection (API \u30428 \u21047 \u32350 \u36942 \u39080 \u38570 )
+\f2\b\fs28 \cf0 \strokec3 \
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u22312  app/api/trains/route.js \u20013 \u65292 \u20320 \u36879 \u36942  refererUrl.host === host \u20358 \u38450 \u31142 \u12290 \u20294 \u26159 \u65281 HTTP \u27161 \u38957 \u20013 \u30340  Host \u26159 \u21487 \u20197 \u34987 \u39405 \u23458 \u36629 \u26131 \u20605 \u36896 \u30340 \u65281  \u22914 \u26524 \u25915 \u25802 \u32773 \u29992  Postman \u36865 \u20986  Host: evil.com \u20197 \u21450  Referer: https://evil.com\u65292 \u36889 \u27573 \u37007 \u36655 \u23601 \u26371 \u21028 \u23450 \u28858  true \u32780 \u25918 \u34892 \u12290 
+\f1\fs24 \cf0 \strokec3 \
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u55357 \u56393  \u20462 \u35036 \u23565 \u31574 \u65306 \u25105 \u20497 \u24517 \u38920 \u21152 \u20837 \u12300 \u30333 \u21517 \u21934 \u39511 \u35657  (Allowed Hosts)\u12301 \u65292 \u30906 \u20445 \u34987 \u27604 \u23565 \u30340  Host \u26159 \u25105 \u20497 \u30495 \u27491 \u20296 \u32626 \u30340 \u32178 \u22495 \u65281 
+\f1\fs24 \cf0 \strokec3 \
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u35531 \u23559  app/api/trains/route.js \u35041 \u30340  GET \u20989 \u24335 \u38283 \u38957 \u30340 \u36889 \u27573  \u26367 \u25563  \u25481 \u65288 \u24460 \u38754 \u30340  20 \u31186 \u20919 \u21371 \u37782 \u33287  TDX \u21628 \u21483 \u37007 \u36655 \u23436 \u20840 \u20445 \u30041 \u65292 \u19981 \u30772 \u22750 \u24213 \u32218 \u65281 \u65289 \u65306 
+\f1\fs24 \cf0 \strokec3 \
+\
+\
+\pard\pardeftab720\li640\fi-640\ri220\partightenfactor0
+
+\f0\fs29\fsmilli14667 \cf4 \strokec4 JavaScript
+\f1\fs24 \cf0 \strokec3 \
+\pard\pardeftab720\li640\fi-640\partightenfactor0
+
+\f0\fs26\fsmilli13333 \cf5 \strokec5 export
+\fs29\fsmilli14667 \cf2 \strokec2  
+\fs26\fsmilli13333 \cf5 \strokec5 async
+\fs29\fsmilli14667 \cf2 \strokec2  
+\fs26\fsmilli13333 \cf5 \strokec5 function\cf4 \strokec4  \cf6 \strokec6 GET\cf4 \strokec4 (request) 
+\fs29\fsmilli14667 \cf2 \strokec2 \{\uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55357 \u57057 \u65039  \u37002 \u30028 \u38450 \u31142 \u65306 \u22196 \u26684 \u27298 \u26597  Referer\u65292 \u38450 \u27490  API \u30428 \u21047  (\u20462 \u35036  Host Header \u20605 \u36896 \u28431 \u27934 )
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  referer = request.headers.get(
+\fs26\fsmilli13333 \cf8 \strokec8 'referer'
+\fs29\fsmilli14667 \cf2 \strokec2 );\uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  secFetchSite = request.headers.get(
+\fs26\fsmilli13333 \cf8 \strokec8 'sec-fetch-site'
+\fs29\fsmilli14667 \cf2 \strokec2 );\uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  host = request.headers.get(
+\fs26\fsmilli13333 \cf8 \strokec8 'host'
+\fs29\fsmilli14667 \cf2 \strokec2 );\uc0\u8232 \'a0 \u8232 \'a0 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55356 \u57119  \u22196 \u26684 \u30333 \u21517 \u21934 \u65306 \u35531 \u23559 \u20320 \u30340  Firebase App Hosting \u27491 \u24335 \u32178 \u22495 \u21152 \u20837 \u38499 \u21015 
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  allowedHosts = process.env.ALLOWED_HOSTS \uc0\u8232 \'a0 \'a0 ? process.env.ALLOWED_HOSTS.split(
+\fs26\fsmilli13333 \cf8 \strokec8 ','
+\fs29\fsmilli14667 \cf2 \strokec2 ) \uc0\u8232 \'a0 \'a0 : [
+\fs26\fsmilli13333 \cf8 \strokec8 'localhost:3000'
+\fs29\fsmilli14667 \cf2 \strokec2 , 
+\fs26\fsmilli13333 \cf8 \strokec8 '\uc0\u20320 \u30340 \u23560 \u26696 .web.app'
+\fs29\fsmilli14667 \cf2 \strokec2 ]; \uc0\u8232 \'a0 \u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 if
+\fs29\fsmilli14667 \cf2 \strokec2  (process.env.NODE_ENV === 
+\fs26\fsmilli13333 \cf8 \strokec8 'production'
+\fs29\fsmilli14667 \cf2 \strokec2 ) \{\uc0\u8232 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 let
+\fs29\fsmilli14667 \cf2 \strokec2  isSameOrigin = secFetchSite === 
+\fs26\fsmilli13333 \cf8 \strokec8 'same-origin'
+\fs29\fsmilli14667 \cf2 \strokec2 ;\uc0\u8232 \'a0 \'a0 \u8232 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 if
+\fs29\fsmilli14667 \cf2 \strokec2  (!isSameOrigin && referer) \{\uc0\u8232 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 try
+\fs29\fsmilli14667 \cf2 \strokec2  \{\uc0\u8232 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  refererUrl = 
+\fs26\fsmilli13333 \cf5 \strokec5 new
+\fs29\fsmilli14667 \cf2 \strokec2  URL(referer);\uc0\u8232 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55357 \u57057 \u65039  \u38617 \u37325 \u26680 \u23565 \u65306 Referer \u30340  host \u24517 \u38920 \u31561 \u26044 \u30070 \u21069 \u35531 \u27714 \u30340  host\u65292 \u19988 \u35442  host\u12304 \u24517 \u38920 \u22312 \u30333 \u21517 \u21934 \u20839 \u12305 \u65281 
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 \'a0 \'a0 \'a0 isSameOrigin = (refererUrl.host === host) && allowedHosts.includes(host);\u8232 \'a0 \'a0 \'a0 \} 
+\fs26\fsmilli13333 \cf5 \strokec5 catch
+\fs29\fsmilli14667 \cf2 \strokec2  (e) \{\uc0\u8232 \'a0 \'a0 \'a0 \'a0 isSameOrigin = 
+\fs26\fsmilli13333 \cf9 \strokec9 false
+\fs29\fsmilli14667 \cf2 \strokec2 ;\uc0\u8232 \'a0 \'a0 \'a0 \}\u8232 \'a0 \'a0 \}\u8232 \'a0 \'a0 \u8232 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 if
+\fs29\fsmilli14667 \cf2 \strokec2  (!isSameOrigin) \{\uc0\u8232 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf10 \strokec10 console
+\fs29\fsmilli14667 \cf2 \strokec2 .warn(
+\fs26\fsmilli13333 \cf8 \strokec8 `[Security Block] Access Denied for referer: $\{referer\}, host: $\{host\}`
+\fs29\fsmilli14667 \cf2 \strokec2 );\uc0\u8232 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 return
+\fs29\fsmilli14667 \cf2 \strokec2  NextResponse.json(\{ 
+\fs26\fsmilli13333 \cf9 \strokec9 error
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'Forbidden: Access Denied'
+\fs29\fsmilli14667 \cf2 \strokec2  \}, \{ 
+\fs26\fsmilli13333 \cf9 \strokec9 status
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf9 \strokec9 403
+\fs29\fsmilli14667 \cf2 \strokec2  \});\uc0\u8232 \'a0 \'a0 \}\u8232 \'a0 \}\u8232 \u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  \{ searchParams \} = 
+\fs26\fsmilli13333 \cf5 \strokec5 new
+\fs29\fsmilli14667 \cf2 \strokec2  URL(request.url);\uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  origin = searchParams.get(
+\fs26\fsmilli13333 \cf8 \strokec8 'origin'
+\fs29\fsmilli14667 \cf2 \strokec2 );\uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 const
+\fs29\fsmilli14667 \cf2 \strokec2  bypass = searchParams.get(
+\fs26\fsmilli13333 \cf8 \strokec8 'bypass'
+\fs29\fsmilli14667 \cf2 \strokec2 ) === 
+\fs26\fsmilli13333 \cf8 \strokec8 'true'
+\fs29\fsmilli14667 \cf2 \strokec2 ;\uc0\u8232 \u8232 \'a0 
+\fs26\fsmilli13333 \cf7 \strokec7 // ... \uc0\u24448 \u19979 \u20445 \u30041 \u21407 \u26377 \u30340  \u55357 \u57057 \u65039  20 \u31186 \u32085 \u23565 \u26997 \u38480 \u38450 \u35703 \u33287 \u20840 \u22495 \u24555 \u21462 \u37007 \u36655  ...
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 
+\f1\fs24 \cf0 \strokec3 \
+\pard\pardeftab720\partightenfactor0
+
+\f3\i\fs29\fsmilli14667 \cf2 \strokec2 (\uc0\u9888 \u65039  \u35352 \u24471 \u25226  '\u20320 \u30340 \u23560 \u26696 .web.app' \u25563 \u25104 \u20320 \u23526 \u38555 \u37096 \u32626 \u30340  Firebase \u32178 \u22495 \u65281 )
+\f1\i0\fs24 \cf0 \strokec3 \
+\pard\pardeftab720\sa320\partightenfactor0
+
+\f0\fs37\fsmilli18667 \cf2 \strokec2 \uc0\u55357 \u57000  \u30332 \u29694 \u28431 \u27934 \u20108 \u65306 CSP \u31574 \u30053 \u30041 \u26377  unsafe-eval \u24460 \u38272 
+\f2\b\fs28 \cf0 \strokec3 \
+\pard\pardeftab720\partightenfactor0
+
+\f0\b0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u22312  next.config.ts \u20013 \u65292 \u20320 \u30340  Content-Security-Policy \u38283 \u21855 \u20102  'unsafe-eval'\u12290 \u36889 \u22312 \u27491 \u24335 \u29872 \u22659 \u20013 \u26159 \u20491 \u21361 \u38570 \u30340 \u24460 \u38272 \u65292 \u26371 \u35731  XSS \u25915 \u25802 \u32773 \u26377 \u27231 \u26371 \u21033 \u29992  eval() \u25110  setTimeout(\u23383 \u20018 ) \u22519 \u34892 \u24801 \u24847 \u33139 \u26412 \u12290 Next.js App Router \u30340 \u27491 \u24335 \u29256 \u32232 \u35695 \u36890 \u24120 \u19981 \u38656 \u35201 \u23427 \u12290 \u21478 \u22806 \u65292 HSTS \u20063 \u33021 \u20877 \u21152 \u19978  preload \u20570 \u21040 \u26997 \u33268 \u38450 \u35703 \u12290 
+\f1\fs24 \cf0 \strokec3 \
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u55357 \u56393  \u20462 \u35036 \u23565 \u31574 \u65306 \u25300 \u38500  'unsafe-eval' \u20006 \u24375 \u21270  HSTS\u12290 
+\f1\fs24 \cf0 \strokec3 \
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u35531 \u23559  next.config.ts \u20013 \u30340  headers() \u21312 \u22602 \u26367 \u25563 \u28858 \u20197 \u19979 \u35373 \u23450 \u65306 
+\f1\fs24 \cf0 \strokec3 \
+\
+\
+\pard\pardeftab720\li640\fi-640\ri220\partightenfactor0
+
+\f0\fs29\fsmilli14667 \cf4 \strokec4 TypeScript
+\f1\fs24 \cf0 \strokec3 \
+\pard\pardeftab720\li640\fi-640\partightenfactor0
+
+\f0\fs29\fsmilli14667 \cf2 \strokec2 \'a0\'a0
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55357 \u57057 \u65039  \u36039 \u35338 \u23433 \u20840 \u38450 \u31142 \u65306 \u37197 \u32622 \u22196 \u26684 \u30340  HTTP Security Headers
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 async
+\fs29\fsmilli14667 \cf2 \strokec2  
+\fs26\fsmilli13333 \cf6 \strokec6 headers\cf4 \strokec4 ()
+\fs29\fsmilli14667 \cf2 \strokec2  \{\uc0\u8232 \'a0 \'a0 
+\fs26\fsmilli13333 \cf5 \strokec5 return
+\fs29\fsmilli14667 \cf2 \strokec2  [\uc0\u8232 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 source
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 '/(.*)'
+\fs29\fsmilli14667 \cf2 \strokec2 , 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u25033 \u29992 \u26044 \u20840 \u31449 \u25152 \u26377 \u36335 \u24465 
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 headers
+\fs29\fsmilli14667 \cf2 \strokec2 : [\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 key
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'X-Frame-Options'
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 value
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'DENY'
+\fs29\fsmilli14667 \cf2 \strokec2 , \uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 key
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'X-Content-Type-Options'
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 value
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'nosniff'
+\fs29\fsmilli14667 \cf2 \strokec2 , \uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 key
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'Referrer-Policy'
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 value
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'strict-origin-when-cross-origin'
+\fs29\fsmilli14667 \cf2 \strokec2 , \uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 key
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'Strict-Transport-Security'
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 value
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'max-age=31536000; includeSubDomains; preload'
+\fs29\fsmilli14667 \cf2 \strokec2 , 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55357 \u57057 \u65039  \u22686 \u24375 \u65306 \u21152 \u19978  preload \u25903 \u25588  HSTS \u38928 \u36617 \u21517 \u21934 
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \{\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 key
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 'Content-Security-Policy'
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf7 \strokec7 // \uc0\u55357 \u57000  \u28431 \u27934 \u20462 \u24489 \u65306 \u24505 \u24213 \u25300 \u38500  'unsafe-eval'\u65292 \u38459 \u32085 \u24801 \u24847 \u33139 \u26412 \u22519 \u34892 \u31354 \u38291 \u65281 
+\fs29\fsmilli14667 \cf2 \strokec2 \uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 
+\fs26\fsmilli13333 \cf9 \strokec9 value
+\fs29\fsmilli14667 \cf2 \strokec2 : 
+\fs26\fsmilli13333 \cf8 \strokec8 "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:;"
+\fs29\fsmilli14667 \cf2 \strokec2 ,\uc0\u8232 \'a0 \'a0 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 \'a0 \'a0 ],\u8232 \'a0 \'a0 \'a0 \},\u8232 \'a0 \'a0 ];\u8232 \'a0 \},\u8232 
+\f1\fs24 \cf0 \strokec3 \
+}

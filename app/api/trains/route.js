@@ -63,23 +63,37 @@ async function getTdxToken(forceRefresh = false) {
 }
 
 export async function GET(request) {
-  // 🛡️ 邊界防禦：嚴格檢查 Referer，防止 API 盜刷 (修補 includes 繞過漏洞)
+  // 🛡️ 邊界防禦：嚴格檢查 Referer，防止 API 盜刷 (修補 Host Header 偽造漏洞)
   const referer = request.headers.get('referer');
   const secFetchSite = request.headers.get('sec-fetch-site');
   const host = request.headers.get('host');
   
+  // 嚴格白名單：將 Firebase App Hosting 正式網域加入陣列
+  const allowedHosts = process.env.ALLOWED_HOSTS 
+    ? process.env.ALLOWED_HOSTS.split(',') 
+    : ['localhost:3000', 'taiwan-train-live.web.app', 'lpes104047.web.app']; 
+  
   if (process.env.NODE_ENV === 'production') {
     let isSameOrigin = secFetchSite === 'same-origin';
+    
     if (!isSameOrigin && referer) {
       try {
         const refererUrl = new URL(referer);
-        isSameOrigin = refererUrl.host === host;
+        // 🛡️ 雙重核對：Referer 的 host 必須等於當前請求的 host，且該 host【必須在白名單內】！
+        isSameOrigin = (refererUrl.host === host) && allowedHosts.includes(host);
       } catch (e) {
         isSameOrigin = false;
       }
+    } else if (referer === null && secFetchSite === null) {
+      // 🛡️ 防禦無 Referer 且無 Sec-Fetch-Site 的直接 API 呼叫，強體驗主機白名單
+      isSameOrigin = allowedHosts.includes(host);
+    } else {
+      // 🛡️ 安全起見，若是 same-origin 請求也同時核對主機白名單
+      isSameOrigin = isSameOrigin && allowedHosts.includes(host);
     }
+    
     if (!isSameOrigin) {
-      console.warn(`[Security Block] Access Denied for referer: ${referer}`);
+      console.warn(`[Security Block] Access Denied for referer: ${referer}, host: ${host}`);
       return NextResponse.json({ error: 'Forbidden: Access Denied' }, { status: 403 });
     }
   }
