@@ -206,48 +206,111 @@ export default function Home() {
 
   let validTrains = [];
   if (dirInfo) {
+    const getTwDateStr = (date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+    const todayStr = getTwDateStr(twTime);
+    const tomorrowTime = new Date(twTime);
+    tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+    const tomorrowStr = getTwDateStr(tomorrowTime);
+
+    let allTrains = [];
     data[dirInfo.dir].trains.forEach(t => {
       const oTime = t.times[dirInfo.oIdx];
       const dTime = t.times[dirInfo.dIdx];
       if (oTime && dTime) {
         const [h, m] = oTime.split(':').map(Number);
 
+        // 尋找起點發車時間以判斷是否跨夜
+        const firstTimeStr = t.times.find(time => time !== "");
+        const [startH, startM] = firstTimeStr.split(':').map(Number);
+        const isCrossMidnight = (h * 60 + m < startH * 60 + startM);
+
+        // 今日出發的列車在本站的實際表定發車日期
+        let todayTrainDate = todayStr;
+        if (isCrossMidnight) {
+          todayTrainDate = tomorrowStr;
+        }
+
+        // 明日出發的列車在本站的實際表定發車日期
+        let tomorrowTrainDate = tomorrowStr;
+        if (isCrossMidnight) {
+          const dayAfterTomorrow = new Date(twTime);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+          tomorrowTrainDate = getTwDateStr(dayAfterTomorrow);
+        }
+
         // 🛡️ 資安防護：強制型別轉換 (Storage Poisoning 防禦)
-        // 確保駭客若在 sessionStorage 塞入惡意字串，也會被強制轉回數字或 0，防止 NaN 癱瘓前端
         let rawDelay = liveData[t.number];
-        let delay = isTomorrow ? 0 : (typeof rawDelay === 'number' ? rawDelay : (Number(rawDelay) || 0));
+        let delay = (typeof rawDelay === 'number' ? rawDelay : (Number(rawDelay) || 0));
         let actualDepMins = h * 60 + m + delay;
 
-        validTrains.push({
+        // 1. 今日出發的車次
+        allTrains.push({
           ...t,
+          TrainDate: todayTrainDate,
+          DepartureTime: oTime,
           depTime: oTime,
           arrTime: dTime,
           depMins: h * 60 + m,
           actualDepMins,
           delay
         });
+
+        // 2. 明日出發的車次 (明日無 delay)
+        allTrains.push({
+          ...t,
+          TrainDate: tomorrowTrainDate,
+          DepartureTime: oTime,
+          depTime: oTime,
+          arrTime: dTime,
+          depMins: h * 60 + m,
+          actualDepMins: h * 60 + m,
+          delay: 0
+        });
       }
     });
 
     // 終極時光機防呆演算法：精準校正真實等待時間，防禦跨夜造成的破萬分鐘異常
-    validTrains.forEach(t => {
-      let diff = t.actualDepMins - currentMins;
-      if (isTomorrow) {
-        t.waitMins = diff + 1440;
-      } else {
-        // 模數安全鎖：確保跨夜延誤的班次能完美轉回 0-1439 的正常時間帶
-        t.waitMins = ((diff % 1440) + 1440) % 1440;
+    // 使用絕對時間戳計算 waitMins
+    allTrains.forEach(t => {
+      const trainDateTime = new Date(`${t.TrainDate}T${t.depTime}`);
+      if (t.delay > 0) {
+        trainDateTime.setMinutes(trainDateTime.getMinutes() + t.delay);
       }
+      const diffMs = trainDateTime - twTime;
+      t.waitMins = Math.floor(diffMs / 60000);
     });
 
     // 依照真正的等待時間由近到遠排序
-    validTrains.sort((a, b) => a.waitMins - b.waitMins);
+    allTrains.sort((a, b) => a.waitMins - b.waitMins);
 
+    // 補上 TrainDate 嚴格校驗與過濾 (依據 RTF 指示)
+    validTrains = allTrains.filter(train => {
+      // 1. 確認當前 Tab 目標日期 (YYYY-MM-DD)
+      const targetDate = isTomorrow ? tomorrowStr : todayStr;
+
+      // 🛡️ 絕對防禦：強制核對班次表定日期，根除幽靈跨日班次！
+      if (train.TrainDate !== targetDate) return false;
+
+      // 2. 針對「今日班次」，只顯示未來的車次；「明日班次」則全數顯示
+      if (!isTomorrow) {
+        const trainDateTime = new Date(`${train.TrainDate}T${train.DepartureTime}`);
+        if (train.delay > 0) {
+          trainDateTime.setMinutes(trainDateTime.getMinutes() + train.delay);
+        }
+        return trainDateTime >= twTime;
+      }
+
+      // 明日班次一律顯示
+      return true;
+    });
+
+    // 車程合理性防呆 (排除假資料)
     validTrains = validTrains.filter(t => {
-      // 剃除今天已經過期太久的車次 (大於 16 小時代表是稍早開走的車)
-      if (!isTomorrow && t.waitMins > 960) return false;
-
-      // 車程合理性防呆 (排除假資料)
       let [dh, dm] = t.depTime.split(':').map(Number);
       let [ah, am] = t.arrTime.split(':').map(Number);
       let diff = (ah * 60 + am) - (dh * 60 + dm);
