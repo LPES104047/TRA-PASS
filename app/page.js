@@ -85,26 +85,58 @@ export default function Home() {
     isLiveRef.current = isLiveConnected;
   }, [isLiveConnected]);
 
-  // 中央時鐘
+  // 跨分頁快取同步監聽器
+  useEffect(() => {
+    if (!isLoaded || !origin) return;
+    const handleStorage = (e) => {
+      if (e.key === `live_data_cache_${origin}` && e.newValue) {
+        try {
+          const parsedData = JSON.parse(e.newValue);
+          if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+            setLiveData(parsedData);
+            const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+            const now = Date.now();
+            if (lastFetch > 0) {
+              const remain = Math.ceil((lastFetch + 180000 - now) / 1000);
+              setRefreshCountdown(remain > 0 ? remain : 180);
+            }
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [isLoaded, origin]);
+
+  // 中央時鐘 (絕對時間校準，防背景休眠)
   useEffect(() => {
     if (!isLoaded) return;
     const interval = setInterval(() => {
-      setCooldownTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+      const now = Date.now();
+      
+      const savedCooldown = Number(localStorage.getItem("manual_refresh_cooldown_expire_time") || 0);
+      setCooldownTimeLeft(savedCooldown > now ? Math.ceil((savedCooldown - now) / 1000) : 0);
+
       if (isLiveRef.current) {
-        setConnectionTimeLeft(prev => {
-          if (prev > 1) return prev - 1;
+        const savedConn = Number(localStorage.getItem("live_connection_expire_time") || 0);
+        if (savedConn > now) {
+          setConnectionTimeLeft(Math.ceil((savedConn - now) / 1000));
+        } else {
           setIsLiveConnected(false);
           localStorage.removeItem("live_connection_expire_time");
-          return 0;
-        });
-      }
-      if (isLiveRef.current && origin) {
-        setRefreshCountdown(prev => {
-          if (prev === null) return null;
-          if (prev > 1) return prev - 1;
-          setRefreshTrigger(t => t + 1);
-          return null;
-        });
+          setConnectionTimeLeft(0);
+        }
+        
+        if (origin) {
+          setRefreshCountdown(prev => {
+            if (prev === null) return null;
+            const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
+            const remain = Math.ceil((lastFetch + 180000 - now) / 1000);
+            if (remain > 0) return remain;
+            setRefreshTrigger(t => t + 1);
+            return null;
+          });
+        }
       } else {
         setRefreshCountdown(null);
       }
