@@ -125,6 +125,22 @@ export default function Home() {
 
     const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
+
+      // 🛡️ 終極跨分頁/重整防禦：確保全域 20 秒內不重複發送 API，徹底阻擋漏洞！
+      const now = Date.now();
+      const globalLastFetch = Number(localStorage.getItem('traPass_global_last_fetch') || 0);
+      if (!bypass && now - globalLastFetch < 20000) {
+        console.log("🛡️ 跨分頁防禦啟動：20秒內已有請求，強制阻斷伺服器喚醒。");
+        const cached = localStorage.getItem(`live_data_cache_${origin}`);
+        if (cached) {
+          try { setLiveData(JSON.parse(cached)); } catch(e){}
+        }
+        const timePassed = Math.floor((now - globalLastFetch) / 1000);
+        // 如果被擋下，繼續原有的倒數
+        setRefreshCountdown(180 - timePassed > 0 ? 180 - timePassed : 180);
+        return;
+      }
+
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       
@@ -148,8 +164,10 @@ export default function Home() {
         // 🌟 嚴格驗證資料結構：確認是否「真正」刷新成功
         if (result && result.data) {
           setLiveData(result.data);
-          sessionStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
+          // 🌟 升級為 localStorage，新開分頁與重整 F5 依然能秒讀快取，不打 API！
+          localStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
           localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
+          localStorage.setItem('traPass_global_last_fetch', String(Date.now()));
           
           // ✅ 成功獲取：標準 180 秒冷卻
           setRefreshCountdown(180);
@@ -179,7 +197,8 @@ export default function Home() {
       if (now - lastFetch >= refreshInterval * 1000 || lastFetch === 0) {
         fetchLive(false);
       } else {
-        const cached = sessionStorage.getItem(`live_data_cache_${origin}`);
+        // 🌟 改由 localStorage 讀取，完美涵蓋新開分頁的情境
+        const cached = localStorage.getItem(`live_data_cache_${origin}`);
         if (cached) {
           try {
             const parsedData = JSON.parse(cached);
@@ -190,7 +209,7 @@ export default function Home() {
               throw new Error("Invalid cache format");
             }
           } catch (e) {
-            sessionStorage.removeItem(`live_data_cache_${origin}`);
+            localStorage.removeItem(`live_data_cache_${origin}`);
             fetchLive(false);
           }
         } else {
