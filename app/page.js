@@ -207,7 +207,6 @@ export default function Home() {
           setLiveData(result.data);
           // 🌟 升級為 localStorage，新開分頁與重整 F5 依然能秒讀快取，不打 API！
           localStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
-          localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
           localStorage.setItem('traPass_global_last_fetch', String(Date.now()));
           
           // ✅ 成功獲取：標準 180 秒冷卻
@@ -261,8 +260,19 @@ export default function Home() {
   }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
 
   useEffect(() => {
-    if (isLoaded && !isLiveConnected) setLiveData({});
-  }, [isLiveConnected, isLoaded]);
+    if (isLoaded && !isLiveConnected) {
+      const cached = localStorage.getItem(`live_data_cache_${origin}`);
+      if (cached) {
+        try {
+          setLiveData(JSON.parse(cached));
+        } catch (e) {
+          setLiveData({});
+        }
+      } else {
+        setLiveData({});
+      }
+    }
+  }, [isLiveConnected, isLoaded, origin]);
 
   if (!data) return <div style={{color: 'white', textAlign: 'center', marginTop: '20vh'}}>載入中...</div>;
 
@@ -463,6 +473,9 @@ export default function Home() {
         localStorage.setItem("live_connection_expire_time", String(Date.now() + 300000));
       } else {
         localStorage.removeItem("live_connection_expire_time");
+        localStorage.removeItem(`live_next_refresh_time_${origin}`);
+        setRefreshCountdown(null);
+        if (abortControllerRef.current) abortControllerRef.current.abort();
       }
       return next;
     });
