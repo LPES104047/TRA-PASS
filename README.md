@@ -1,38 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TRA PASS | 台鐵即時時刻表 🚄
 
-## Getting Started
+TRA PASS 是一個現代化、即時、且擁有動態美學的台鐵時刻表 Web App。
+專注於提供使用者最精準的火車動態資訊，並透過美觀的 UI 與流暢的微動畫，打造極致的乘車查詢體驗。
 
-First, run the development server:
+## ✨ 核心特色 (Features)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **即時動態 (Live Board)**：直接串接交通部 TDX 運輸資料流通服務，精準顯示火車延誤與預估發車時間。
+- **無縫跨分頁同步 (Cross-Tab Sync)**：獨家實作 `localStorage` 底層同步機制。多開分頁、F5 重新整理皆能達到 **0 秒延遲**秒讀快取。
+- **背景絕對時鐘 (Absolute Clock)**：解決了瀏覽器在背景休眠時會造成計時器凍結的問題，確保倒數計時與全域防護鎖永遠精準。
+- **智慧冷卻防護 (Smart Backoff)**：
+  - `20 秒` 全域跨分頁 API 實體鎖，防止惡意連擊。
+  - `30 秒` 無效資料降級冷卻。
+  - `60 秒` 網路斷線避讓期，防止前端對伺服器發起 DDoS。
+- **多重主題切換 (Theming)**：內建「極簡風」、「車票風 (Ticket Style)」等多套動態主題，一鍵切換視覺風格。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ 技術堆疊 (Tech Stack)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **前端框架**: Next.js 16 (App Router) + React 19
+- **樣式**: Vanilla CSS + 原生動態微動畫
+- **資料來源**: 交通部 TDX 運輸資料流通服務 API
+- **部署平台**: Vercel / Firebase App Hosting
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 執行與開發 (Development)
 
-## Learn More
+1. 安裝依賴套件：
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. 啟動開發伺服器：
+   ```bash
+   npm run dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. 打開 [http://localhost:3000](http://localhost:3000) 即可預覽。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# taiwan-train-live
-# taiwan-train-live
+---
+*© 2024 TRA PASS Team. All rights reserved.*

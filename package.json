@@ -1,5 +1,6 @@
 {
   "name": "tra-pass",
+  "description": "TRA PASS | 台鐵即時時刻表",
   "version": "0.1.0",
   "private": true,
   "scripts": {

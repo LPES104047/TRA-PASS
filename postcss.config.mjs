@@ -1,3 +1,4 @@
+// TRA PASS: PostCSS Configuration
 const config = {
   plugins: {
     "@tailwindcss/postcss": {},
