@@ -127,26 +127,44 @@ export default function Home() {
       if (!isCurrent) return;
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
-      setRefreshCountdown(null);
+      
+      setRefreshCountdown(null); // UI 顯示同步中
 
       try {
-        // 🛡️ 資安升級：對 origin 進行 encodeURIComponent 防止 URL 參數污染 (Parameter Injection)
+        // 🛡️ 資安升級：對 origin 進行 encodeURIComponent 防止 URL 參數污染
         const safeOrigin = encodeURIComponent(origin);
         const url = `/api/trains?origin=${safeOrigin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
+        
         const res = await fetch(url, { signal: abortControllerRef.current.signal });
+        
+        // 🌟 狀態判斷：檢查 HTTP 狀態碼是否正常
+        if (!res.ok) {
+          throw new Error(`HTTP Error: ${res.status}`);
+        }
+
         const result = await res.json();
         if (!isCurrent) return;
-        if (result.data) {
+
+        // 🌟 嚴格驗證資料結構：確認是否「真正」刷新成功
+        if (result && result.data) {
           setLiveData(result.data);
           sessionStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
           localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
+          
+          // ✅ 成功獲取：標準 180 秒冷卻
           setRefreshCountdown(180);
+        } else {
+          // ⚠️ API 雖然通了但沒給資料（可能被你的 20 秒限流鎖擋下）
+          console.warn("⚠️ 刷新未成功 (無有效資料)，啟動短期重試機制");
+          // 降級退避：只等 30 秒就再試一次，讓 UI 計時器從 30 開始跳！
+          setRefreshCountdown(30); 
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         console.error("Live fetch error", e);
-        localStorage.setItem(`live_last_fetch_time_${origin}`, String(Date.now()));
-        setRefreshCountdown(180);
+        
+        // 🚨 網路斷線或伺服器 500 錯誤：啟動 60 秒避讓期，防止前端 DdoS 自家伺服器
+        setRefreshCountdown(60); 
       }
     };
 
