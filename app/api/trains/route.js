@@ -71,25 +71,27 @@ export async function GET(request) {
   // 嚴格白名單：將 Firebase App Hosting 正式網域加入陣列
   const allowedHosts = process.env.ALLOWED_HOSTS 
     ? process.env.ALLOWED_HOSTS.split(',') 
-    : ['localhost:3000', 'taiwan-train-live.web.app', 'lpes104047.web.app']; 
+    : ['localhost:3000', 'taiwan-train-live.web.app', 'lpes104047.web.app', 'tra-pass.vercel.app']; 
   
   if (process.env.NODE_ENV === 'production') {
     let isSameOrigin = secFetchSite === 'same-origin';
+    const isVercel = host && host.endsWith('.vercel.app');
+    const isHostAllowed = allowedHosts.includes(host) || isVercel;
     
     if (!isSameOrigin && referer) {
       try {
         const refererUrl = new URL(referer);
-        // 🛡️ 雙重核對：Referer 的 host 必須等於當前請求的 host，且該 host【必須在白名單內】！
-        isSameOrigin = (refererUrl.host === host) && allowedHosts.includes(host);
+        // 🛡️ 雙重核對：Referer 的 host 必須等於當前請求的 host，且該 host【必須在白名單內或為 Vercel 網域】！
+        isSameOrigin = (refererUrl.host === host) && isHostAllowed;
       } catch (e) {
         isSameOrigin = false;
       }
     } else if (referer === null && secFetchSite === null) {
       // 🛡️ 防禦無 Referer 且無 Sec-Fetch-Site 的直接 API 呼叫，強體驗主機白名單
-      isSameOrigin = allowedHosts.includes(host);
+      isSameOrigin = isHostAllowed;
     } else {
       // 🛡️ 安全起見，若是 same-origin 請求也同時核對主機白名單
-      isSameOrigin = isSameOrigin && allowedHosts.includes(host);
+      isSameOrigin = isSameOrigin && isHostAllowed;
     }
     
     if (!isSameOrigin) {
