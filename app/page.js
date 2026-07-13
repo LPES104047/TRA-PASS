@@ -94,12 +94,6 @@ export default function Home() {
           const parsedData = JSON.parse(e.newValue);
           if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
             setLiveData(parsedData);
-            const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
-            const now = Date.now();
-            if (lastFetch > 0) {
-              const remain = Math.ceil((lastFetch + 180000 - now) / 1000);
-              setRefreshCountdown(remain > 0 ? remain : 180);
-            }
           }
         } catch (err) {}
       }
@@ -128,14 +122,19 @@ export default function Home() {
         }
         
         if (origin) {
-          setRefreshCountdown(prev => {
-            if (prev === null) return null;
-            const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
-            const remain = Math.ceil((lastFetch + 180000 - now) / 1000);
-            if (remain > 0) return remain;
-            setRefreshTrigger(t => t + 1);
-            return null;
-          });
+          const nextRefreshStr = localStorage.getItem(`live_next_refresh_time_${origin}`);
+          if (nextRefreshStr) {
+            const remain = Math.ceil((Number(nextRefreshStr) - now) / 1000);
+            if (remain > 0) {
+              setRefreshCountdown(remain);
+            } else {
+              localStorage.removeItem(`live_next_refresh_time_${origin}`);
+              setRefreshCountdown(null);
+              setRefreshTrigger(t => t + 1);
+            }
+          } else {
+            setRefreshCountdown(null);
+          }
         }
       } else {
         setRefreshCountdown(null);
@@ -155,6 +154,16 @@ export default function Home() {
     if (!isLoaded || !origin || !isLiveConnected) return;
     let isCurrent = true;
 
+    const updateCountdown = (secs) => {
+      if (secs === null) {
+        localStorage.removeItem(`live_next_refresh_time_${origin}`);
+        if (isCurrent) setRefreshCountdown(null);
+      } else {
+        localStorage.setItem(`live_next_refresh_time_${origin}`, String(Date.now() + secs * 1000));
+        if (isCurrent) setRefreshCountdown(secs);
+      }
+    };
+
     const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
 
@@ -169,14 +178,14 @@ export default function Home() {
         }
         const timePassed = Math.floor((now - globalLastFetch) / 1000);
         // 如果被擋下，繼續原有的倒數
-        setRefreshCountdown(180 - timePassed > 0 ? 180 - timePassed : 180);
+        updateCountdown(180 - timePassed > 0 ? 180 - timePassed : 180);
         return;
       }
 
       if (abortControllerRef.current) abortControllerRef.current.abort();
       abortControllerRef.current = new AbortController();
       
-      setRefreshCountdown(null); // UI 顯示同步中
+      updateCountdown(null); // UI 顯示同步中
 
       try {
         // 🛡️ 資安升級：對 origin 進行 encodeURIComponent 防止 URL 參數污染
@@ -202,53 +211,52 @@ export default function Home() {
           localStorage.setItem('traPass_global_last_fetch', String(Date.now()));
           
           // ✅ 成功獲取：標準 180 秒冷卻
-          setRefreshCountdown(180);
+          updateCountdown(180);
         } else {
           // ⚠️ API 雖然通了但沒給資料（可能被你的 20 秒限流鎖擋下）
           console.warn("⚠️ 刷新未成功 (無有效資料)，啟動短期重試機制");
           // 降級退避：只等 30 秒就再試一次，讓 UI 計時器從 30 開始跳！
-          setRefreshCountdown(30); 
+          updateCountdown(30); 
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         console.error("Live fetch error", e);
         
         // 🚨 網路斷線或伺服器 500 錯誤：啟動 60 秒避讓期，防止前端 DdoS 自家伺服器
-        setRefreshCountdown(60); 
+        updateCountdown(60); 
       }
     };
 
     const shouldBypass = bypassCacheRef.current;
+    const now = Date.now();
+    const nextRefreshStr = localStorage.getItem(`live_next_refresh_time_${origin}`);
+    
     if (shouldBypass) {
       bypassCacheRef.current = false;
       fetchLive(true);
+    } else if (!nextRefreshStr || Number(nextRefreshStr) <= now) {
+      fetchLive(false);
     } else {
-      const lastFetch = Number(localStorage.getItem(`live_last_fetch_time_${origin}`) || 0);
-      const refreshInterval = 180;
-      const now = Date.now();
-      if (now - lastFetch >= refreshInterval * 1000 || lastFetch === 0) {
-        fetchLive(false);
-      } else {
-        // 🌟 改由 localStorage 讀取，完美涵蓋新開分頁的情境
-        const cached = localStorage.getItem(`live_data_cache_${origin}`);
-        if (cached) {
-          try {
-            const parsedData = JSON.parse(cached);
-            if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
-              setLiveData(parsedData);
-              setRefreshCountdown(Math.ceil((lastFetch + refreshInterval * 1000 - now) / 1000));
-            } else {
-              throw new Error("Invalid cache format");
-            }
-          } catch (e) {
-            localStorage.removeItem(`live_data_cache_${origin}`);
-            fetchLive(false);
+      // 🌟 改由 localStorage 讀取，完美涵蓋新開分頁的情境
+      const cached = localStorage.getItem(`live_data_cache_${origin}`);
+      if (cached) {
+        try {
+          const parsedData = JSON.parse(cached);
+          if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+            setLiveData(parsedData);
+            setRefreshCountdown(Math.ceil((Number(nextRefreshStr) - now) / 1000));
+          } else {
+            throw new Error("Invalid cache format");
           }
-        } else {
+        } catch (e) {
+          localStorage.removeItem(`live_data_cache_${origin}`);
           fetchLive(false);
         }
+      } else {
+        fetchLive(false);
       }
     }
+
     return () => { isCurrent = false; };
   }, [origin, isLoaded, isLiveConnected, refreshTrigger]);
 
