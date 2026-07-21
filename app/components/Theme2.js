@@ -178,7 +178,8 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
       z-index: 300;
       box-shadow: 0 8px 24px rgba(0,0,0,0.1);
       padding: 10px;
-      min-width: 300px;
+      width: 300px;
+      max-width: calc(100vw - 30px);
      }
      .theme2-root #originContainer .select-options { left: 0; }
      .theme2-root #destContainer .select-options { right: 0; left: auto; }

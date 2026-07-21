@@ -106,15 +106,23 @@ const PassengerCar = ({ model }) => {
 
       {/* Doors - Model Specific */}
       {isEMU3000 && (
-        // EMU3000: 2 premium single glass doors at the ends
+        // EMU3000: Premium stainless/metallic titanium doors with subtle red stripe integration
         [20, 370].map((pos, idx) => (
           <g key={idx}>
-            <rect x={pos} y={75} width={50} height={112} fill="#111" rx={2} />
-            {/* Single sliding door glass window */}
-            <rect x={pos + 8} y={83} width={34} height={52} fill="#222" rx={2} stroke="#333" strokeWidth={1} />
-            <path d={`M ${pos + 8},85 L ${pos + 25},85 L ${pos + 8},110 Z`} fill="rgba(255,255,255,0.12)" />
-            {/* Chrome door handle */}
-            <rect x={pos + 42} y={125} width={3} height={15} fill="#7F8C8D" rx={0.5} />
+            {/* Main door panel (sleek metallic titanium finish) */}
+            <rect x={pos} y={75} width={50} height={112} fill="url(#emuDoorMetal)" rx={2} stroke="#5A626C" strokeWidth={0.8} />
+            {/* Inner door leaf seam */}
+            <line x1={pos + 25} y1={75} x2={pos + 25} y2={187} stroke="#22262C" strokeWidth={0.8} />
+            {/* Premium door glass window */}
+            <rect x={pos + 8} y={83} width={34} height={52} fill="url(#emuDoorGlass)" rx={3} stroke="#4A525D" strokeWidth={1} />
+            {/* Glass reflection highlight */}
+            <path d={`M ${pos + 8},85 L ${pos + 26},85 L ${pos + 8},112 Z`} fill="rgba(255,255,255,0.16)" />
+            {/* EMU3000 Red accent line continuing across door */}
+            <rect x={pos} y={144} width={50} height={3} fill="#e60012" />
+            {/* Metallic door handle */}
+            <rect x={pos + 42} y={120} width={3} height={20} fill="#B0B8C0" rx={0.8} stroke="#555" strokeWidth={0.5} />
+            {/* Door status LED */}
+            <circle cx={pos + 25} cy={71} r={1.5} fill="#2ECC71" />
           </g>
         ))
       )}
@@ -218,14 +226,16 @@ const TrainCab = ({ model, side }) => {
         <path d="M 0,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
       ) : (
         <>
-          {/* Shinkansen E5 Series smooth duckbill nose body base (Hiun White) */}
-          <path d="M 0,50 L 65,50 C 85,50 95,78 115,78 C 135,78 175,100 335,172 C 325,178 305,188 280,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
+          {/* Shinkansen E5 Series aerodynamic duckbill bullet nose base (Hiun White) */}
+          <path d="M 0,50 L 70,50 C 110,62 155,90 235,130 C 275,150 310,162 335,166 L 255,188 L 0,188 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
           {/* Upper body Tokiwa Green paint overlay */}
-          <path d="M 0,50 L 65,50 C 85,50 95,78 115,78 C 135,78 175,100 335,172 C 325,168 310,162 285,158 C 240,158 210,138 175,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
-          {/* Azalea Pink Stripe running along the boundary */}
-          <path d="M 0,136 L 175,136 C 210,138 240,158 285,158 C 310,158 325,168 335,172" fill="none" stroke="#E93B8E" strokeWidth="5.5" strokeLinecap="round" />
-          {/* Aerodynamic wing/fender line below cockpit */}
-          <path d="M 130,105 Q 185,120 225,138" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
+          <path d="M 0,50 L 70,50 C 110,62 145,80 180,96 C 220,114 265,135 305,150 Q 322,156 335,166 C 295,150 250,136 200,132 C 150,126 90,126 0,126 Z" fill="url(#hayabusaGreen)" />
+          {/* Azalea Pink Stripe (#E93B8E) flowing along character line directly to the nose tip */}
+          <path d="M 0,126 Q 100,126 195,132 Q 275,144 335,166" fill="none" stroke="#E93B8E" strokeWidth="5" strokeLinecap="round" />
+          {/* Underbody dark skirt trim */}
+          <path d="M 0,188 L 255,188 L 335,166 L 315,188 Z" fill="#212529" opacity="0.9" />
+          {/* Aerodynamic side fender character line */}
+          <path d="M 130,105 Q 190,122 245,138" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
         </>
       )}
       
@@ -268,9 +278,13 @@ const TrainCab = ({ model, side }) => {
       {/* Cab Passenger Door */}
       {isEMU3000 ? (
         <g transform="translate(125, 0)">
-          <rect x="0" y="75" width="50" height="112" fill="#111" rx={2} />
-          <rect x="8" y="83" width="34" height="52" fill="#222" rx={2} stroke="#333" />
-          <path d="M 8,85 L 25,85 L 8,110 Z" fill="rgba(255,255,255,0.12)" />
+          <rect x="0" y="75" width="50" height="112" fill="url(#emuDoorMetal)" rx={2} stroke="#5A626C" strokeWidth={0.8} />
+          <line x1="25" y1="75" x2="25" y2="187" stroke="#22262C" strokeWidth={0.8} />
+          <rect x="8" y="83" width="34" height="52" fill="url(#emuDoorGlass)" rx={3} stroke="#4A525D" strokeWidth={1} />
+          <path d="M 8,85 L 26,85 L 8,112 Z" fill="rgba(255,255,255,0.16)" />
+          <rect x="0" y="144" width="50" height="3" fill="#e60012" />
+          <rect x="42" y="120" width="3" height="20" fill="#B0B8C0" rx={0.8} stroke="#555" strokeWidth={0.5} />
+          <circle cx="25" cy="71" r="1.5" fill="#2ECC71" />
         </g>
       ) : isTaroko ? (
         <g transform="translate(15, 0)">
@@ -323,16 +337,26 @@ const TrainCab = ({ model, side }) => {
           </>
         ) : (
           <>
-            {/* Shinkansen E5 style pilot cockpit canopy */}
-            <path d="M 100,90 Q 110,75 120,90 Q 110,96 100,90 Z" fill="#111" />
-            <path d="M 104,87 Q 110,78 116,87 Z" fill="rgba(255,255,255,0.2)" />
-            {/* Aerodynamic LED headlights on the side of the duckbill nose */}
-            <ellipse cx="230" cy="162" rx="8" ry="1.8" fill="#FFF" transform="rotate(-15, 230, 162)" filter="drop-shadow(0 0 4.5px #FFF)" />
-            <ellipse cx="230" cy="162" rx="5" ry="0.8" fill="#FFFAED" transform="rotate(-15, 230, 162)" />
-            {/* Streamlined nose panel joint lines */}
-            <path d="M 285,138 Q 310,152 335,168" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
-            {/* Small black bottom cover for the coupler pocket */}
-            <rect x="315" y="174" width="10" height="6" fill="#222" rx="1" />
+            {/* Shinkansen E5 fighter-jet style cockpit canopy */}
+            <g transform="translate(0, 0)">
+              {/* Outer dark frame */}
+              <path d="M 102,94 C 118,72 150,72 176,96 C 156,104 128,104 102,94 Z" fill="#0D131A" stroke="#004D40" strokeWidth="1.2" />
+              {/* Glass window with cool blue glow */}
+              <path d="M 106,93 C 120,76 146,76 170,95 C 152,101 128,101 106,93 Z" fill="url(#cabinGlowCool)" opacity="0.85" />
+              {/* Glass sheen highlight */}
+              <path d="M 112,88 Q 128,78 145,84 Z" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              {/* Center divider pillar */}
+              <path d="M 138,76 L 138,102" stroke="#0D131A" strokeWidth="1.5" />
+            </g>
+            {/* Slanted dual-LED eagle headlights along side nose */}
+            <g transform="translate(0, 0)">
+              <polygon points="230,150 258,157 256,161 228,154" fill="#FFF" filter="drop-shadow(0 0 5px #00F0FF)" />
+              <polygon points="232,151 256,157 254,159 230,153" fill="#E0F7FA" />
+            </g>
+            {/* Streamlined nose cone seam line */}
+            <path d="M 280,144 Q 308,154 330,164" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
+            {/* Front coupler hatch cover */}
+            <path d="M 298,168 L 322,166 L 314,180 L 295,180 Z" fill="#1C232A" stroke="#004D40" strokeWidth="0.6" />
           </>
         )}
       </g>
@@ -346,10 +370,10 @@ const TrainCab = ({ model, side }) => {
             <path d="M 10,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
           </g>
         ) : isTaroko ? (
-          <g transform="translate(230, 162)">
-            <ellipse cx="0" cy="0" rx="8" ry="1.8" fill="rgba(255,255,255,0.6)" filter="drop-shadow(0 0 4px #FFF)" />
-            <ellipse cx="0" cy="0" rx="4" ry="0.8" fill="#FFF" />
-            <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
+          <g transform="translate(244, 155)">
+            <ellipse cx="0" cy="0" rx="10" ry="2.2" fill="rgba(255,255,255,0.8)" transform="rotate(14, 0, 0)" filter="drop-shadow(0 0 6px #FFF)" />
+            <ellipse cx="0" cy="0" rx="5" ry="1" fill="#FFF" transform="rotate(14, 0, 0)" />
+            <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.45" pointerEvents="none" />
           </g>
         ) : null
       )}
@@ -359,7 +383,7 @@ const TrainCab = ({ model, side }) => {
         isEMU3000 ? (
           <rect x="320" y="145" width="6" height="3" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
         ) : isTaroko ? (
-          <circle cx="230" cy="162" r="3.5" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
+          <polygon points="230,150 258,157 256,161 228,154" fill="#FF3333" filter="drop-shadow(0 0 4px #FF0000)" />
         ) : null
       )}
 
@@ -683,6 +707,18 @@ export default function MaintenanceDepot({ show }) {
                 <stop offset="40%" stopColor="#E5E5E5" />
                 <stop offset="85%" stopColor="#C0C0C0" />
                 <stop offset="100%" stopColor="#888888" />
+              </linearGradient>
+
+              <linearGradient id="emuDoorMetal" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2D333B" />
+                <stop offset="30%" stopColor="#4A525D" />
+                <stop offset="70%" stopColor="#3A414B" />
+                <stop offset="100%" stopColor="#252A31" />
+              </linearGradient>
+
+              <linearGradient id="emuDoorGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#1B242F" />
+                <stop offset="100%" stopColor="#0D131A" />
               </linearGradient>
 
               <linearGradient id="hayabusaGreen" x1="0%" y1="0%" x2="0%" y2="100%">

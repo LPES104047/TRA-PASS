@@ -84,19 +84,19 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         }
         .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
         .theme1-root .select-options {
-          position: absolute; top: calc(100% + 5px); left: 0; right: auto;
+          position: absolute; top: calc(100% + 5px); left: 0;
           background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
           max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 10px;
           backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-          min-width: 240px;
-          max-width: calc(100vw - 40px);
+          width: 300px;
+          max-width: calc(100vw - 30px);
         }
         .theme1-root .select-options.dest-options {
           left: auto;
           right: 0;
         }
-        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
+        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .theme1-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.05); color: #fff; }
         .theme1-root .option-item:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
         .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
