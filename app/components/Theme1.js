@@ -84,14 +84,19 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         }
         .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
         .theme1-root .select-options {
-          position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+          position: absolute; top: calc(100% + 5px); left: 0; right: auto;
           background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
           max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 10px;
           backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-          min-width: 300px;
+          min-width: 240px;
+          max-width: calc(100vw - 40px);
         }
-        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .theme1-root .select-options.dest-options {
+          left: auto;
+          right: 0;
+        }
+        .theme1-root .select-options.open { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
         .theme1-root .option-item { padding: 10px 5px; text-align: center; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.05); color: #fff; }
         .theme1-root .option-item:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
         .theme1-root .option-item.selected { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--accent); }
@@ -150,6 +155,12 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme1-root .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; }
         
         .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
+        
+        /* Date Toggle Base Styles for Mobile */
+        .theme1-root .date-toggle-container { display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px; }
+        .theme1-root .date-toggle { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 2px; display: flex; width: 220px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .theme1-root .toggle-btn { flex: 1; border: none; background: transparent; color: rgba(255, 255, 255, 0.7); padding: 8px 12px; border-radius: 17px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .theme1-root .toggle-btn.active { background: #FFFFFF; color: #0072FF; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
 
         @media (min-width: 768px) {
           .theme1-root .container { max-width: 650px; padding: 40px; }
@@ -232,7 +243,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
               <label>目的地 Destination</label>
               <div className="custom-select" onClick={() => { setIsDestOpen(!isDestOpen); setIsOriginOpen(false); }}>
                 <div className="select-trigger">{dest}</div>
-                <div className={`select-options ${isDestOpen ? 'open' : ''}`}>
+                <div className={`select-options dest-options ${isDestOpen ? 'open' : ''}`}>
                   {allStations.map(s => (
                     <div key={s} className={`option-item ${s === dest ? 'selected' : ''}`} onClick={(e) => { e.stopPropagation(); setDest(s); setIsDestOpen(false); }}>
                       {s}

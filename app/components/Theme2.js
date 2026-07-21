@@ -437,18 +437,48 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
        .theme2-root .countdown-text { font-size: 16px; margin-top: 15px; }
      }
 
-     @media (max-width: 480px) {
-       .theme2-root .selector-box { flex-direction: column; gap: 10px; padding: 15px 0; }
-       .theme2-root #originContainer, .theme2-root #destContainer { width: 100%; border-radius: 16px; padding: 12px 20px; height: 75px; align-items: center; }
-       .theme2-root #originContainer::before, .theme2-root #destContainer::before { text-align: center; }
-       .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { justify-content: center; text-align: center; font-size: 20px; flex-direction: row; }
-       .theme2-root .swap-btn { position: relative; margin: -10px auto; border: 3.5px solid #FFFFFF; }
-       
-       .theme2-root .dashboard { margin-top: 10px; }
-       
-       .theme2-root .train-item { padding-left: 65px; margin-bottom: 15px; }
-       .theme2-root .time-label { left: 0px; width: 42px; font-size: 13px; }
-       .theme2-root .dashboard::before { left: 52px; width: 2px; }
+      @media (max-width: 768px) {
+        .theme2-root .selector-box { 
+          flex-direction: column; 
+          gap: 10px; 
+          padding: 0; 
+          height: auto; 
+          border: none; 
+          background: transparent; 
+          box-shadow: none; 
+          margin-bottom: 20px;
+        }
+        .theme2-root .selector-box::after { display: none; }
+        .theme2-root #originContainer, .theme2-root #destContainer { 
+          width: 100%; 
+          border-radius: 16px; 
+          padding: 12px 20px; 
+          height: 75px; 
+          align-items: center; 
+          background: #FFFFFF; 
+          border: 1px solid rgba(27, 59, 111, 0.12); 
+          box-shadow: 0 10px 25px rgba(27, 59, 111, 0.06); 
+        }
+        .theme2-root #originContainer::before, .theme2-root #destContainer::before { text-align: center; }
+        .theme2-root #originContainer .select-trigger, .theme2-root #destContainer .select-trigger { justify-content: center; text-align: center; font-size: 20px; flex-direction: row; }
+        .theme2-root .swap-btn { 
+          position: relative; 
+          left: auto; 
+          top: auto; 
+          transform: none; 
+          margin: -15px auto; 
+          border: 3.5px solid #FFFFFF; 
+          z-index: 10; 
+          box-shadow: 0 4px 12px rgba(27, 59, 111, 0.15);
+        }
+        .theme2-root .swap-btn:hover {
+          transform: rotate(180deg) scale(1.05);
+        }
+        
+        .theme2-root .dashboard { margin-top: 10px; }
+        .theme2-root .train-item { padding-left: 65px; margin-bottom: 15px; }
+        .theme2-root .time-label { left: 0px; width: 42px; font-size: 13px; }
+        .theme2-root .dashboard::before { left: 52px; width: 2px; }
        .theme2-root .train-item::before { left: 46px; width: 10px; height: 10px; border-width: 2px; }
        
        .theme2-root .card { padding: 15px 95px 15px 15px; }

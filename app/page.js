@@ -27,6 +27,7 @@ export default function Home() {
   const [refreshTrigger, setRefreshTrigger] = useState(0); // 觸發更新計數器
   const bypassCacheRef = useRef(false); // 強制更新標記 (繞過快取)
   const abortControllerRef = useRef(null); // 用於中斷 API 請求的控制器
+  const bypassOriginRef = useRef(origin); // 紀錄上次查詢的站點，用於切換站點時強制更新
 
   // 初始化時讀取 LocalStorage
   useEffect(() => {
@@ -235,8 +236,10 @@ export default function Home() {
     const shouldBypass = bypassCacheRef.current;
     const now = Date.now();
     const nextRefreshStr = localStorage.getItem(`live_next_refresh_time_${origin}`);
+    const isOriginSwitch = bypassOriginRef.current !== origin;
+    bypassOriginRef.current = origin;
     
-    if (shouldBypass) {
+    if (shouldBypass || isOriginSwitch) {
       bypassCacheRef.current = false;
       fetchLive(true);
     } else if (!nextRefreshStr || Number(nextRefreshStr) <= now) {
@@ -520,64 +523,58 @@ export default function Home() {
   };
 
   return (
-    <>
-      {isLoaded && (
-        <button
-          onClick={toggleLiveConnection}
-          style={{
-            position: 'fixed', top: 10, left: 10, zIndex: 9999,
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)',
-            padding: '6px 14px', borderRadius: '20px',
-            color: isLiveConnected ? '#2ECC71' : '#BDC3C7',
-            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)',
-            border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
-            cursor: 'pointer', transition: 'all 0.3s ease',
-            boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
-          }}
-        >
-          <span style={{
-            display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-            background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D',
-            boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
-          }}></span >
-          {isLiveConnected ? (
-            <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕ </span>
-          ) : (
-            <span>● 離線模式 (點擊連線)</span>
-          )}
-        </button>
-      )}
+    <div className="global-page-container">
+      <div className="global-header-btn-group">
+        {isLoaded && (
+          <button
+            onClick={toggleLiveConnection}
+            className="global-conn-btn"
+            style={{
+              background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)',
+              color: isLiveConnected ? '#2ECC71' : '#BDC3C7',
+              border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
+              boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
+            }}
+          >
+            <span style={{
+              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+              background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D',
+              boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
+            }}></span >
+            {isLiveConnected ? (
+              <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕ </span>
+            ) : (
+              <span>● 離線模式 (點擊連線)</span>
+            )}
+          </button>
+        )}
 
-      {isLoaded && (
-        <button
-          onClick={handleManualRefresh}
-          disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
-          style={{
-            position: 'fixed', top: 50, left: 10, zIndex: 9999,
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'),
-            padding: '6px 14px', borderRadius: '20px',
-            color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'),
-            fontSize: '12px', fontWeight: 'bold', backdropFilter: 'blur(8px)',
-            border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
-            cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer',
-            transition: 'all 0.3s ease',
-            opacity: isLiveConnected ? 1 : 0.5,
-            pointerEvents: isLiveConnected ? 'auto' : 'none'
-          }}
-        >
-          <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '立即手動更新'}</span>
-        </button>
-      )}
-      <div style={{position: 'fixed', top: 10, right: 10, zIndex: 9999, display: 'flex', gap: 5}}>
-        <button onClick={() => setTheme(1)} style={{padding: '5px 10px', background: theme===1?'#00F2FE':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>極簡風</button>
-        <button onClick={() => setTheme(2)} style={{padding: '5px 10px', background: theme===2?'#1B3B6F':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>車票風</button>
-        <button onClick={() => setTheme(3)} style={{padding: '5px 10px', background: theme===3?'#00F0FF':'#333', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '12px'}}>儀表板風</button>
+        {isLoaded && (
+          <button
+            onClick={handleManualRefresh}
+            disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
+            className="global-refresh-btn"
+            style={{
+              background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'),
+              color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'),
+              border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
+              cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer',
+              opacity: isLiveConnected ? 1 : 0.5,
+              pointerEvents: isLiveConnected ? 'auto' : 'none'
+            }}
+          >
+            <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '立即手動更新'}</span>
+          </button>
+        )}
+        <div className="global-theme-selector">
+          <button onClick={() => setTheme(1)} className="theme-select-btn" style={{background: theme===1?'#00F2FE':'#333'}}>極簡風</button>
+          <button onClick={() => setTheme(2)} className="theme-select-btn" style={{background: theme===2?'#1B3B6F':'#333'}}>車票風</button>
+          <button onClick={() => setTheme(3)} className="theme-select-btn" style={{background: theme===3?'#00F0FF':'#333'}}>儀表板風</button>
+        </div>
       </div>
-      {theme === 1 && <Theme1 {...props} />}
-      {theme === 2 && <Theme2 {...props} />}
-      {theme === 3 && <Theme3 {...props} />}
+      {isLoaded && theme === 1 && <Theme1 {...props} />}
+      {isLoaded && theme === 2 && <Theme2 {...props} />}
+      {isLoaded && theme === 3 && <Theme3 {...props} />}
       <TrainAnimation isAnimating={isAnimating} direction={animDirection} />
       <MaintenanceDepot show={validTrains.length === 0} />
 
@@ -593,6 +590,6 @@ export default function Home() {
           theme={theme}
         />
       )}
-    </>
+    </div>
   );
 }
