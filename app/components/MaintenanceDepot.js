@@ -204,7 +204,6 @@ const TrainCab = ({ model, side }) => {
   const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
   
   // Driving cabs are dark when off-duty/parked/repaired
-  const isDarkCabs = isEMU800 || isEMU3000;
 
   // Headlights & Tail lights mapping
   const showHeadlights = (isTaroko && side === 'right') || (isEMU3000 && side === 'left');
@@ -380,39 +379,43 @@ const TrainCab = ({ model, side }) => {
 };
 
 const DetailedTrain = ({ model, layout = ['cabLeft', 'passenger', 'cabRight'] }) => {
-  let currentX = 0;
+  const parsedLayout = [];
+  let tempX = 0;
+  for (let idx = 0; idx < layout.length; idx++) {
+    const type = layout[idx];
+    let width = 0;
+    if (type === 'cabLeft' || type === 'cabRight') width = 335;
+    else if (type === 'passenger') width = 440;
+    const renderConnector = idx < layout.length - 1;
+    const itemX = tempX;
+    tempX += width + (renderConnector ? 10 : 0);
+    parsedLayout.push({ type, idx, itemX, renderConnector, connectorX: itemX + width });
+  }
+
   return (
     <g>
-      {layout.map((type, idx) => {
+      {parsedLayout.map(({ type, idx, itemX, renderConnector, connectorX }) => {
         let element = null;
-        let width = 0;
         
         if (type === 'cabLeft') {
-          width = 335;
           element = (
-            <g transform={`translate(${currentX + 335}, 0) scale(-1, 1)`}>
+            <g transform={`translate(${itemX + 335}, 0) scale(-1, 1)`}>
               <TrainCab model={model} side="left" />
             </g>
           );
         } else if (type === 'cabRight') {
-          width = 335;
           element = (
-            <g transform={`translate(${currentX}, 0)`}>
+            <g transform={`translate(${itemX}, 0)`}>
               <TrainCab model={model} side="right" />
             </g>
           );
         } else if (type === 'passenger') {
-          width = 440;
           element = (
-            <g transform={`translate(${currentX}, 0)`}>
+            <g transform={`translate(${itemX}, 0)`}>
               <PassengerCar model={model} />
             </g>
           );
         }
-        
-        const renderConnector = idx < layout.length - 1;
-        const connectorX = currentX + width;
-        currentX += width + (renderConnector ? 10 : 0);
         
         return (
           <g key={idx}>

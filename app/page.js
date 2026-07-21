@@ -25,7 +25,6 @@ export default function Home() {
   const [connectionTimeLeft, setConnectionTimeLeft] = useState(300); // 5 分鐘安全限制 (300 秒)
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0); // 手動刷新冷卻 (20 秒)
   const [refreshTrigger, setRefreshTrigger] = useState(0); // 觸發更新計數器
-  const lastFetchTimeRef = useRef(0);
   const bypassCacheRef = useRef(false); // 強制更新標記 (繞過快取)
   const abortControllerRef = useRef(null); // 用於中斷 API 請求的控制器
 
@@ -35,17 +34,21 @@ export default function Home() {
     const savedDest = localStorage.getItem("train_dest");
     const savedTheme = localStorage.getItem("train_theme");
 
-    if (savedOrigin) setOrigin(savedOrigin);
-    if (savedDest) setDest(savedDest);
-    if (savedTheme) setTheme(Number(savedTheme));
+    requestAnimationFrame(() => {
+      if (savedOrigin) setOrigin(savedOrigin);
+      if (savedDest) setDest(savedDest);
+      if (savedTheme) setTheme(Number(savedTheme));
+    });
 
     const nowMs = Date.now();
     const savedExpire = localStorage.getItem("live_connection_expire_time");
     if (savedExpire) {
       const expireTime = Number(savedExpire);
       if (expireTime > nowMs) {
-        setIsLiveConnected(true);
-        setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
+        requestAnimationFrame(() => {
+          setIsLiveConnected(true);
+          setConnectionTimeLeft(Math.ceil((expireTime - nowMs) / 1000));
+        });
       } else {
         localStorage.removeItem("live_connection_expire_time");
       }
@@ -55,13 +58,13 @@ export default function Home() {
     if (savedCooldown) {
       const cooldownTime = Number(savedCooldown);
       if (cooldownTime > nowMs) {
-        setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000));
+        requestAnimationFrame(() => setCooldownTimeLeft(Math.ceil((cooldownTime - nowMs) / 1000)));
       } else {
         localStorage.removeItem("manual_refresh_cooldown_expire_time");
       }
     }
 
-    setIsLoaded(true);
+    requestAnimationFrame(() => setIsLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function Home() {
           if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
             setLiveData(parsedData);
           }
-        } catch (err) {}
+        } catch {}
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -174,7 +177,10 @@ export default function Home() {
         console.log("🛡️ 跨分頁防禦啟動：20秒內已有請求，強制阻斷伺服器喚醒。");
         const cached = localStorage.getItem(`live_data_cache_${origin}`);
         if (cached) {
-          try { setLiveData(JSON.parse(cached)); } catch(e){}
+          try {
+            const parsedData = JSON.parse(cached);
+            requestAnimationFrame(() => setLiveData(parsedData));
+          } catch {}
         }
         const timePassed = Math.floor((now - globalLastFetch) / 1000);
         // 如果被擋下，繼續原有的倒數
@@ -242,12 +248,14 @@ export default function Home() {
         try {
           const parsedData = JSON.parse(cached);
           if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
-            setLiveData(parsedData);
-            setRefreshCountdown(Math.ceil((Number(nextRefreshStr) - now) / 1000));
+            requestAnimationFrame(() => {
+              setLiveData(parsedData);
+              setRefreshCountdown(Math.ceil((Number(nextRefreshStr) - now) / 1000));
+            });
           } else {
             throw new Error("Invalid cache format");
           }
-        } catch (e) {
+        } catch {
           localStorage.removeItem(`live_data_cache_${origin}`);
           fetchLive(false);
         }
@@ -264,12 +272,13 @@ export default function Home() {
       const cached = localStorage.getItem(`live_data_cache_${origin}`);
       if (cached) {
         try {
-          setLiveData(JSON.parse(cached));
-        } catch (e) {
-          setLiveData({});
+          const parsedData = JSON.parse(cached);
+          requestAnimationFrame(() => setLiveData(parsedData));
+        } catch {
+          requestAnimationFrame(() => setLiveData({}));
         }
       } else {
-        setLiveData({});
+        requestAnimationFrame(() => setLiveData({}));
       }
     }
   }, [isLiveConnected, isLoaded, origin]);

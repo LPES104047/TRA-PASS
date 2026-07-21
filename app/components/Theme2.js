@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, currentMins, isTomorrow, setIsTomorrow, onTrainSelect }) {
+export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, allStations, validTrains, isTomorrow, setIsTomorrow, onTrainSelect }) {
   const [tearingTrainNo, setTearingTrainNo] = useState(null);
 
   const handleTicketClick = (t) => {

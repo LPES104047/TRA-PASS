@@ -83,7 +83,7 @@ export async function GET(request) {
         const refererUrl = new URL(referer);
         // 🛡️ 雙重核對：Referer 的 host 必須等於當前請求的 host，且該 host【必須在白名單內或為 Vercel 網域】！
         isSameOrigin = (refererUrl.host === host) && isHostAllowed;
-      } catch (e) {
+      } catch {
         isSameOrigin = false;
       }
     } else if (referer === null && secFetchSite === null) {
@@ -138,7 +138,7 @@ export async function GET(request) {
     try {
       const globalData = await fetchPromises.get(GLOBAL_CACHE_KEY);
       return NextResponse.json({ data: globalData[origin] || {} }, { headers: noCacheHeaders });
-    } catch (e) {}
+    } catch {}
   }
 
   const fetchTask = (async () => {

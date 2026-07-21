@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
-export default function TrainJourneyModal({ train, onClose, stations, dirInfo, isTomorrow, origin, dest, theme }) {
+export default function TrainJourneyModal({ train, onClose, stations, isTomorrow, origin, dest, theme }) {
   const [animationClass, setAnimationClass] = useState('');
 
   useEffect(() => {
     // 進入時的動畫類別，產生順暢展開效果
-    setAnimationClass('modal-open');
+    requestAnimationFrame(() => {
+      setAnimationClass('modal-open');
+    });
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
@@ -125,7 +127,7 @@ export default function TrainJourneyModal({ train, onClose, stations, dirInfo, i
     }
   }
 
-  const formatStopActualTime = (tableTime, index) => {
+  const formatStopActualTime = (tableTime) => {
     const [h, m] = tableTime.split(':').map(Number);
     let totalMins = h * 60 + m + (isTomorrow ? 0 : delay);
     // 防禦 JS 負數取模崩潰：確保倒扣時間時不會跑出負數
