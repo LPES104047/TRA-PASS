@@ -278,9 +278,9 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
        box-sizing: content-box;
      }
      @keyframes pulse-dot {
-       0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(27, 59, 111, 0.7); }
-       70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(27, 59, 111, 0); }
-       100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(27, 59, 111, 0); }
+       0% { transform: scale(0.9); box-shadow: 0 0 0 0 var(--dot-color, rgba(27, 59, 111, 0.7)); }
+       70% { transform: scale(1.1); box-shadow: 0 0 0 8px transparent; }
+       100% { transform: scale(0.9); box-shadow: 0 0 0 0 transparent; }
      }
      .theme2-root .time-label {
        position: absolute; top: 50%; transform: translateY(-50%);

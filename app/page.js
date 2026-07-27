@@ -550,7 +550,8 @@ export default function Home() {
                   border: '1px solid rgba(127, 140, 141, 0.3)',
                   dotColor: '#7F8C8D',
                   shadow: 'none',
-                  text: '離線模式 (點擊連線)'
+                  text: '離線模式 (點擊連線)',
+                  pulseAnim: 'none'
                 };
               }
               if (connStatus === 'syncing' || refreshCountdown === null) {
@@ -560,7 +561,8 @@ export default function Home() {
                   border: '1px solid rgba(241, 196, 15, 0.4)',
                   dotColor: '#FFD700',
                   shadow: '0 0 10px rgba(241, 196, 15, 0.3)',
-                  text: '資料同步中...'
+                  text: '資料同步中...',
+                  pulseAnim: 'statusPulse 0.9s ease-in-out infinite'
                 };
               }
               if (connStatus === 'error') {
@@ -570,7 +572,8 @@ export default function Home() {
                   border: '1px solid rgba(231, 76, 60, 0.4)',
                   dotColor: '#E74C3C',
                   shadow: '0 0 10px rgba(231, 76, 60, 0.3)',
-                  text: `連線異常 (${refreshCountdown ? `${refreshCountdown}s` : '60s'})`
+                  text: `連線異常 (${refreshCountdown ? `${refreshCountdown}s` : '60s'})`,
+                  pulseAnim: 'statusPulse 0.8s ease-in-out infinite'
                 };
               }
               if (connStatus === 'nodata') {
@@ -580,7 +583,8 @@ export default function Home() {
                   border: '1px solid rgba(230, 126, 34, 0.4)',
                   dotColor: '#E67E22',
                   shadow: '0 0 10px rgba(230, 126, 34, 0.3)',
-                  text: `連線中 (暫無即時誤點) | ${refreshCountdown}s ✕`
+                  text: `連線中 (暫無即時誤點) | ${refreshCountdown}s ✕`,
+                  pulseAnim: 'statusPulse 1.5s ease-in-out infinite'
                 };
               }
               return {
@@ -589,7 +593,8 @@ export default function Home() {
                 border: '1px solid rgba(46, 204, 113, 0.4)',
                 dotColor: '#2ECC71',
                 shadow: '0 0 10px rgba(46, 204, 113, 0.2)',
-                text: `連線中 (${formatTimeLeft(connectionTimeLeft)}) | ${refreshCountdown}s ✕`
+                text: `連線中 (${formatTimeLeft(connectionTimeLeft)}) | ${refreshCountdown}s ✕`,
+                pulseAnim: 'statusPulse 2s ease-in-out infinite'
               };
             })();
 
@@ -607,6 +612,8 @@ export default function Home() {
                 <span style={{
                   display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
                   background: badge.dotColor,
+                  color: badge.dotColor,
+                  animation: badge.pulseAnim,
                   boxShadow: badge.dotColor !== '#7F8C8D' ? `0 0 8px ${badge.dotColor}` : 'none',
                 }}></span>
                 <span>{badge.text}</span>
