@@ -17,16 +17,22 @@ const TrainBogie = ({ x }) => (
   </g>
 );
 
-const TrainPantograph = ({ x }) => (
-  <g stroke="#7F8C8D" strokeWidth={2} fill="none">
-    <rect x={x - 20} y="46" width="40" height="4" fill="#555" stroke="none" />
-    <line x1={x - 15} y1="46" x2={x} y2="30" />
-    <line x1={x} y1="30" x2={x + 15} y2="46" />
-    <line x1={x} y1="30" x2={x - 10} y2="22" />
-    <line x1={x - 10} y1="22" x2={x + 10} y2="22" />
-    <line x1={x - 15} y1="22" x2={x + 15} y2="22" strokeWidth={3} />
-  </g>
-);
+const TrainPantograph = ({ x, color = "#7F8C8D", frameColor = null }) => {
+  const strokeColor = frameColor || color;
+  return (
+    <g stroke={strokeColor} strokeWidth={2} fill="none">
+      <rect x={x - 22} y="46" width="44" height="4" fill="#333" stroke="none" />
+      <line x1={x - 16} y1="46" x2={x} y2="30" />
+      <line x1={x} y1="30" x2={x + 16} y2="46" />
+      <line x1={x} y1="30" x2={x - 10} y2="20" />
+      <line x1={x - 10} y1="20" x2={x + 10} y2="20" />
+      <line x1={x - 16} y1="20" x2={x + 16} y2="20" strokeWidth={3} stroke="#C0392B" />
+      {/* Insulators / Mounting feet */}
+      <circle cx={x - 16} cy="48" r="2.5" fill="#E74C3C" stroke="none" />
+      <circle cx={x + 16} cy="48" r="2.5" fill="#E74C3C" stroke="none" />
+    </g>
+  );
+};
 
 const GangwayConnector = () => (
   <g>
@@ -57,14 +63,15 @@ const PassengerCar = ({ model }) => {
       {/* Passenger Car Body */}
       {isTaroko ? (
         <>
-          {/* Lower body (Hiun White) */}
-          <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
-          {/* Upper body (Tokiwa Green) */}
-          <path d="M 0,50 L 440,50 L 440,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
-          {/* Azalea Pink Stripe */}
-          <rect x="0" y="136" width="440" height="4.5" fill="#E93B8E" />
-          {/* Shinkansen grey/silver metal roof panel */}
-          <path d="M 0,50 L 440,50 L 440,65 L 0,65 Z" fill="#2C3E50" opacity="0.3" />
+          {/* Lower & Upper body (Series 0 Ivory White) */}
+          <rect x="0" y="50" width="440" height="140" fill="url(#shinkansen0Ivory)" rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
+          {/* Classic JNR Deep Blue Window Band */}
+          <rect x="0" y="78" width="440" height="56" fill="url(#jnrBlue)" />
+          {/* Classic JNR Deep Blue Skirt Band */}
+          <rect x="0" y="164" width="440" height="26" fill="url(#jnrBlue)" rx={2} />
+          {/* Metal roof panel and ventilation strip */}
+          <path d="M 0,50 L 440,50 L 440,64 L 0,64 Z" fill="#2C3E50" opacity="0.25" />
+          <line x1="0" y1="64" x2="440" y2="64" stroke="#143B73" strokeWidth="1" />
         </>
       ) : (
         <rect x="0" y="50" width="440" height="140" fill={bodyFill} rx={6} stroke="rgba(0,0,0,0.15)" strokeWidth={1} />
@@ -101,7 +108,7 @@ const PassengerCar = ({ model }) => {
           <TrainPantograph x={360} />
         </>
       )}
-      {isTaroko && <TrainPantograph x={220} />}
+      {isTaroko && <TrainPantograph x={220} frameColor="#C0392B" />}
       {isEMU800 && <TrainPantograph x={220} />}
 
       {/* Doors - Model Specific */}
@@ -128,14 +135,20 @@ const PassengerCar = ({ model }) => {
       )}
 
       {isTaroko && (
-        // Shinkansen E5: 2 single narrow end doors with split color
+        // Series 0 Shinkansen: Single passenger doors at ends with JNR Blue bands
         [15, 395].map((pos, idx) => (
           <g key={idx}>
-            <rect x={pos} y={75} width={30} height={112} fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
-            <path d={`M ${pos},75 L ${pos+30},75 L ${pos+30},136 L ${pos},136 Z`} fill="url(#hayabusaGreen)" />
-            <rect x={pos} y={136} width={30} height={5} fill="#E93B8E" />
-            <rect x={pos + 6} y={83} width={18} height={40} fill="#1A1A1A" rx={1} />
-            <line x1={pos + 15} y1={75} x2={pos + 15} y2={187} stroke="#4A5668" strokeWidth={0.8} opacity="0.5" />
+            <rect x={pos} y={75} width={30} height={113} fill="url(#shinkansen0Ivory)" rx={1} stroke="#143B73" strokeWidth={0.8} />
+            <rect x={pos} y={78} width={30} height={56} fill="url(#jnrBlue)" />
+            <rect x={pos} y={164} width={30} height={24} fill="url(#jnrBlue)" />
+            <rect x={pos + 6} y={83} width={18} height="44" fill="#1B242F" rx={2} stroke="#143B73" strokeWidth="1" />
+            <path d={`M ${pos + 6},85 L ${pos + 16},85 L ${pos + 6},110 Z`} fill="rgba(255,255,255,0.15)" />
+            <line x1={pos + 15} y1={75} x2={pos + 15} y2={188} stroke="#0B2349" strokeWidth="0.8" opacity="0.6" />
+            <rect x={pos + 24} y={125} width={2} height={14} fill="#BDC3C7" rx={0.5} />
+            {/* Destination Sign (東海道新幹線 ひかり) */}
+            <rect x={pos > 200 ? pos - 32 : pos + 34} y={82} width={28} height={12} fill="#143B73" rx={1} stroke="#FFF" strokeWidth={0.6} />
+            <rect x={pos > 200 ? pos - 30 : pos + 36} y={84} width={24} height={8} fill="#FFF" rx={0.5} />
+            <text x={pos > 200 ? pos - 18 : pos + 48} y={90.5} fill="#143B73" fontSize="5.5" fontWeight="bold" textAnchor="middle">ひかり</text>
           </g>
         ))
       )}
@@ -171,13 +184,14 @@ const PassengerCar = ({ model }) => {
       )}
 
       {isTaroko && (
-        // Shinkansen E5: 7 small windows inside the green section
-        [65, 115, 165, 215, 265, 315, 365].map((pos, idx) => (
+        // Series 0 Shinkansen: 6 classic wide panoramic rectangular windows inside the JNR Blue band
+        [60, 120, 180, 240, 300, 360].map((pos, idx) => (
           <g key={idx}>
-            <rect x={pos} y={80} width={22} height={24} fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
-            {/* Passenger seat silhouette */}
-            <rect x={pos + 4} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
-            <rect x={pos + 13} y={93} width={5} height="8" fill="#455A64" opacity="0.4" rx="0.5" />
+            <rect x={pos} y={82} width={42} height={46} fill="url(#cabinGlowWarm)" rx={4} stroke="#0B2349" strokeWidth={1.5} />
+            {/* Seat silhouettes with warm glow */}
+            <rect x={pos + 6} y={102} width={12} height="22" fill="#2C3E50" opacity="0.45" rx="1" />
+            <rect x={pos + 24} y={102} width={12} height="22" fill="#2C3E50" opacity="0.45" rx="1" />
+            <path d={`M ${pos + 3},84 L ${pos + 22},84 L ${pos + 3},114 Z`} fill="rgba(255,255,255,0.2)" />
           </g>
         ))
       )}
@@ -219,23 +233,48 @@ const TrainCab = ({ model, side }) => {
 
   return (
     <g>
-      {/* Cab Body Shape (EMU3000 slanted, EMU800 round front, Taroko sleek white bullet front) */}
+      {/* Cab Body Shape */}
       {isEMU3000 ? (
         <path d="M 0,50 L 220,50 L 335,115 L 335,175 L 285,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
       ) : isEMU800 ? (
         <path d="M 0,50 L 170,50 C 230,50 300,70 320,115 C 332,145 315,180 290,190 L 0,190 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
       ) : (
         <>
-          {/* Shinkansen E5 Series aerodynamic duckbill bullet nose base (Hiun White) */}
-          <path d="M 0,50 L 70,50 C 110,62 155,90 235,130 C 275,150 310,162 335,166 L 255,188 L 0,188 Z" fill={bodyFill} stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
-          {/* Upper body Tokiwa Green paint overlay */}
-          <path d="M 0,50 L 70,50 C 110,62 145,80 180,96 C 220,114 265,135 305,150 Q 322,156 335,166 C 295,150 250,136 200,132 C 150,126 90,126 0,126 Z" fill="url(#hayabusaGreen)" />
-          {/* Azalea Pink Stripe (#E93B8E) flowing along character line directly to the nose tip */}
-          <path d="M 0,126 Q 100,126 195,132 Q 275,144 335,166" fill="none" stroke="#E93B8E" strokeWidth="5" strokeLinecap="round" />
-          {/* Underbody dark skirt trim */}
-          <path d="M 0,188 L 255,188 L 335,166 L 315,188 Z" fill="#212529" opacity="0.9" />
-          {/* Aerodynamic side fender character line */}
-          <path d="M 130,105 Q 190,122 245,138" fill="none" stroke="#00796B" strokeWidth="1.5" opacity="0.6" />
+          {/* Series 0 Shinkansen rounded bullet-nose ivory body */}
+          <path d="M 0,50 L 80,50 C 130,50 180,58 230,82 C 265,100 290,122 308,138 L 308,162 L 280,188 L 0,188 Z" fill="url(#shinkansen0Ivory)" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5" />
+          
+          {/* Classic JNR Deep Blue window band curving down to the nose (Wing Swoop) */}
+          <path d="M 0,78 L 150,78 C 185,78 215,86 242,106 C 265,122 282,142 292,156 L 278,166 C 262,154 238,138 212,130 C 172,122 90,132 0,132 Z" fill="url(#jnrBlue)" />
+
+          {/* Classic JNR Deep Blue skirt (Front Plow) */}
+          <path d="M 0,162 L 276,162 C 290,162 305,166 324,174 L 324,184 Q 306,188 276,188 L 0,188 Z" fill="url(#jnrBlue)" />
+          
+          {/* Front skirt rivets and plow details */}
+          <line x1="280" y1="184" x2="320" y2="184" stroke="#0B2349" strokeWidth="1" strokeDasharray="3, 3" />
+          <circle cx="295" cy="180" r="1.2" fill="#BDC3C7" />
+          <circle cx="305" cy="181" r="1.2" fill="#BDC3C7" />
+          <circle cx="315" cy="182" r="1.2" fill="#BDC3C7" />
+
+          {/* Classic White JNR Wings Logo */}
+          <g transform="translate(165, 136)" opacity="0.95">
+            <path d="M 0,9 L 14,2 L 34,9 L 24,13 L 34,17 L 14,13 Z" fill="#FFFFFF" />
+            <text x="17" y="12" fill="#143B73" fontSize="7" fontWeight="900" textAnchor="middle" fontStyle="italic">JNR</text>
+          </g>
+
+          {/* Classic Translucent Lighted Nose Dome Cone */}
+          <g>
+            <circle cx="308" cy="144" r="23" fill="none" stroke="#0B2349" strokeWidth="2.5" />
+            <circle cx="308" cy="144" r="22.5" fill="none" stroke="#D4B860" strokeWidth="1" strokeDasharray="2, 4" />
+            <circle cx="308" cy="144" r="21" fill="url(#shinkansen0NoseDome)" filter="drop-shadow(0 0 10px rgba(255,235,150,0.75))" />
+            <path d="M 292,135 A 15 15 0 0 1 318,133 A 18 18 0 0 0 292,135 Z" fill="rgba(255,255,255,0.7)" />
+          </g>
+
+          {/* Classic Embedded Round Headlights */}
+          <g transform="translate(252, 148)">
+            <circle cx="0" cy="0" r="9" fill="#0B2349" stroke="#B0C4DE" strokeWidth="1.2" />
+            <circle cx="0" cy="0" r="6.5" fill="#FFF59D" filter="drop-shadow(0 0 5px #FFD54F)" />
+            <circle cx="0" cy="0" r="3.2" fill="#FFFFFF" />
+          </g>
         </>
       )}
       
@@ -252,11 +291,6 @@ const TrainCab = ({ model, side }) => {
         <>
           {/* Driver's side window */}
           <rect x="122" y="86" width="18" height="24" fill="#1A1A1A" rx={1} stroke="#111" strokeWidth={1} />
-          {/* Hayabusa Falcon emblem on the green side panel */}
-          <g transform="translate(85, 95)" opacity="0.95">
-            <path d="M 0,10 L 15,2 L 30,12 L 12,20 Z" fill="#FFFFFF" />
-            <path d="M 5,12 L 12,9 L 20,15 Z" fill="#E93B8E" />
-          </g>
         </>
       )}
       {isEMU800 && (
@@ -288,10 +322,12 @@ const TrainCab = ({ model, side }) => {
         </g>
       ) : isTaroko ? (
         <g transform="translate(15, 0)">
-          <rect x="0" y="75" width="30" height="112" fill="url(#hayabusaWhite)" rx={1} stroke="#4A5668" strokeWidth={0.8} />
-          <path d="M 0,75 L 30,75 L 30,136 L 0,136 Z" fill="url(#hayabusaGreen)" />
-          <rect x="0" y="136" width="30" height="5" fill="#E93B8E" />
-          <rect x="6" y="83" width="18" height="40" fill="#1A1A1A" rx={1} />
+          <rect x="0" y="75" width="30" height="113" fill="url(#shinkansen0Ivory)" rx={1} stroke="#143B73" strokeWidth={0.8} />
+          <rect x="0" y="78" width="30" height="56" fill="url(#jnrBlue)" />
+          <rect x="0" y="164" width="30" height="24" fill="url(#jnrBlue)" />
+          <rect x="6" y="83" width="18" height="44" fill="#1B242F" rx={2} stroke="#143B73" strokeWidth="1" />
+          <line x1="15" y1="75" x2="15" y2="188" stroke="#0B2349" strokeWidth="0.8" opacity="0.6" />
+          <rect x="24" y="125" width="2" height="14" fill="#BDC3C7" rx={0.5} />
         </g>
       ) : (
         <g transform="translate(110, 0)">
@@ -311,7 +347,8 @@ const TrainCab = ({ model, side }) => {
         </g>
       ) : isTaroko ? (
         <g transform="translate(0, 0)">
-          <rect x="55" y="80" width="22" height="24" fill={windowFill} rx={3} stroke="#1A1A1A" strokeWidth={1.5} />
+          <rect x="55" y="82" width="28" height="46" fill="url(#cabinGlowWarm)" rx={4} stroke="#0B2349" strokeWidth={1.5} />
+          <rect x="60" y="102" width="18" height="22" fill="#2C3E50" opacity="0.45" rx="1" />
         </g>
       ) : (
         <g transform="translate(30, 0)">
@@ -337,26 +374,23 @@ const TrainCab = ({ model, side }) => {
           </>
         ) : (
           <>
-            {/* Shinkansen E5 fighter-jet style cockpit canopy */}
-            <g transform="translate(0, 0)">
-              {/* Outer dark frame */}
-              <path d="M 102,94 C 118,72 150,72 176,96 C 156,104 128,104 102,94 Z" fill="#0D131A" stroke="#004D40" strokeWidth="1.2" />
-              {/* Glass window with cool blue glow */}
-              <path d="M 106,93 C 120,76 146,76 170,95 C 152,101 128,101 106,93 Z" fill="url(#cabinGlowCool)" opacity="0.85" />
-              {/* Glass sheen highlight */}
-              <path d="M 112,88 Q 128,78 145,84 Z" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-              {/* Center divider pillar */}
-              <path d="M 138,76 L 138,102" stroke="#0D131A" strokeWidth="1.5" />
+            {/* Series 0 Shinkansen classic cockpit windows & top fin antenna */}
+            <g>
+              {/* Slanted multi-pane cockpit windshield */}
+              <path d="M 195,68 L 262,76 L 254,94 L 190,88 Z" fill="#0B2349" stroke="#143B73" strokeWidth="1" />
+              <path d="M 198,70 L 258,77 L 251,91 L 193,86 Z" fill="url(#cabinGlowWarm)" opacity="0.85" />
+              {/* Driver silhouette with cap */}
+              <circle cx="218" cy="79" r="3.5" fill="#2C3E50" />
+              <rect x="213" y="76" width="10" height="2" fill="#143B73" rx="0.5" />
+              {/* Roof Fin Antenna */}
+              <path d="M 175,44 L 188,44 L 182,50 L 175,50 Z" fill="#D9D0BE" stroke="#143B73" strokeWidth="0.8" />
+              {/* Tokaido Shinkansen Hikari Board */}
+              <g transform="translate(182, 56)">
+                <rect x="0" y="0" width="46" height="11" fill="#143B73" rx="1.5" stroke="#FFFFFF" strokeWidth="0.6" />
+                <rect x="2" y="1.5" width="42" height="8" fill="#FFFFFF" rx="0.5" />
+                <text x="23" y="8" fill="#143B73" fontSize="6" fontWeight="bold" textAnchor="middle">東海道新幹線 ひかり</text>
+              </g>
             </g>
-            {/* Slanted dual-LED eagle headlights along side nose */}
-            <g transform="translate(0, 0)">
-              <polygon points="230,150 258,157 256,161 228,154" fill="#FFF" filter="drop-shadow(0 0 5px #00F0FF)" />
-              <polygon points="232,151 256,157 254,159 230,153" fill="#E0F7FA" />
-            </g>
-            {/* Streamlined nose cone seam line */}
-            <path d="M 280,144 Q 308,154 330,164" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="0.8" />
-            {/* Front coupler hatch cover */}
-            <path d="M 298,168 L 322,166 L 314,180 L 295,180 Z" fill="#1C232A" stroke="#004D40" strokeWidth="0.6" />
           </>
         )}
       </g>
@@ -370,10 +404,9 @@ const TrainCab = ({ model, side }) => {
             <path d="M 10,0 L 250,-20 L 250,35 Z" fill="url(#headlightBeam)" opacity="0.35" pointerEvents="none" />
           </g>
         ) : isTaroko ? (
-          <g transform="translate(244, 155)">
-            <ellipse cx="0" cy="0" rx="10" ry="2.2" fill="rgba(255,255,255,0.8)" transform="rotate(14, 0, 0)" filter="drop-shadow(0 0 6px #FFF)" />
-            <ellipse cx="0" cy="0" rx="5" ry="1" fill="#FFF" transform="rotate(14, 0, 0)" />
-            <path d="M 0,0 L 250,-15 L 250,30 Z" fill="url(#headlightBeam)" opacity="0.45" pointerEvents="none" />
+          <g transform="translate(252, 148)">
+            <circle cx="0" cy="0" r="9" fill="rgba(255,245,157,0.9)" filter="drop-shadow(0 0 8px #FFD54F)" />
+            <path d="M 0,0 L 250,-12 L 250,28 Z" fill="url(#warmHeadlightBeam)" opacity="0.6" pointerEvents="none" />
           </g>
         ) : null
       )}
@@ -383,7 +416,7 @@ const TrainCab = ({ model, side }) => {
         isEMU3000 ? (
           <rect x="320" y="145" width="6" height="3" fill="#FF3333" filter="drop-shadow(0 0 3px #FF0000)" />
         ) : isTaroko ? (
-          <polygon points="230,150 258,157 256,161 228,154" fill="#FF3333" filter="drop-shadow(0 0 4px #FF0000)" />
+          <circle cx="252" cy="148" r="5" fill="#FF3333" filter="drop-shadow(0 0 6px #FF0000)" />
         ) : null
       )}
 
@@ -719,6 +752,32 @@ export default function MaintenanceDepot({ show }) {
               <linearGradient id="emuDoorGlass" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#1B242F" />
                 <stop offset="100%" stopColor="#0D131A" />
+              </linearGradient>
+
+              <linearGradient id="shinkansen0Ivory" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="30%" stopColor="#FAF7EB" />
+                <stop offset="75%" stopColor="#ECE6D7" />
+                <stop offset="100%" stopColor="#D9D0BE" />
+              </linearGradient>
+
+              <linearGradient id="jnrBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#215193" />
+                <stop offset="45%" stopColor="#143B73" />
+                <stop offset="100%" stopColor="#0B2349" />
+              </linearGradient>
+
+              <radialGradient id="shinkansen0NoseDome" cx="40%" cy="40%" r="60%">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="35%" stopColor="#FFF9CF" />
+                <stop offset="75%" stopColor="#F5DF93" />
+                <stop offset="100%" stopColor="#C9A348" />
+              </radialGradient>
+
+              <linearGradient id="warmHeadlightBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFE082" stopOpacity="0.6" />
+                <stop offset="35%" stopColor="#FFD54F" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#FFC107" stopOpacity="0" />
               </linearGradient>
 
               <linearGradient id="hayabusaGreen" x1="0%" y1="0%" x2="0%" y2="100%">

@@ -4,20 +4,70 @@
 body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  background: #0B132B;
+}
+
+/* ⚡ 120fps 極致硬體加速動態流體漸層背景 */
+body.fluid-gradient-theme::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  z-index: -9999;
+  background: radial-gradient(circle at 20% 20%, #00C6FF 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #0072FF 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, #00F2FE 0%, transparent 50%),
+              radial-gradient(circle at 20% 80%, #4FACFE 0%, transparent 50%);
+  background-color: #0072FF;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  animation: gpuFluidSpin 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes gpuFluidSpin {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(-3%, -4%, 0) rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg) scale(1);
+  }
 }
 
 /* ========================================================== */
 /* 🛡️ 全域響應式控制按鈕樣式 */
 /* ========================================================== */
 
-.global-conn-btn {
+.global-header-btn-group {
   position: fixed;
   top: 10px;
   left: 10px;
+  right: 10px;
   z-index: 9999;
   display: flex;
-  align-items: center;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.global-header-left-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+  pointer-events: auto;
+}
+
+.global-conn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
@@ -25,33 +75,28 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.3s ease;
 }
 
 .global-refresh-btn {
-  position: fixed;
-  top: 50px;
-  left: 10px;
-  z-index: 9999;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
   transition: all 0.3s ease;
 }
 
 .global-theme-selector {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 9999;
   display: flex;
   gap: 5px;
+  pointer-events: auto;
 }
 
 .theme-select-btn {
@@ -65,27 +110,21 @@ body {
 }
 
 /* 手機響應式排版優化：防重疊、防字體擠壓 */
-@media (max-width: 480px) {
-  .global-conn-btn {
+@media (max-width: 640px) {
+  .global-header-btn-group {
     top: 8px;
     left: 8px;
-    padding: 4px 10px;
-    font-size: 10px;
-    gap: 6px;
+    right: 8px;
   }
   
-  .global-refresh-btn {
-    top: 38px; /* 向上移動，緊貼連線按鈕 */
-    left: 8px;
+  .global-conn-btn, .global-refresh-btn, .global-depot-toggle-btn {
     padding: 4px 10px;
     font-size: 10px;
-    gap: 6px;
+    gap: 4px;
   }
   
   .global-theme-selector {
-    top: 8px;
-    right: 8px;
-    gap: 4px;
+    gap: 3px;
   }
   
   .theme-select-btn {
@@ -93,8 +132,8 @@ body {
     font-size: 10px;
   }
 
-  /* 核心防護：為所有主題根節點加上足夠的頂部 Padding，防止與 Fixed 按鈕重疊 */
+  /* 核心防護：為所有主題根節點加上足夠的頂部 Padding，防止與 Header 按鈕重疊 */
   .theme1-root, .theme2-root, .theme3-root {
-    padding-top: 80px !important;
+    padding-top: 60px !important;
   }
 }

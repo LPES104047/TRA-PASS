@@ -132,9 +132,26 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           cursor: pointer;
         }
         .theme1-root .train-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-          background: rgba(255, 255, 255, 0.25);
+          transform: translateY(-4px) scale(1.015);
+          box-shadow: 0 12px 30px rgba(0, 114, 255, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+          background: rgba(255, 255, 255, 0.32);
+        }
+        .theme1-root .train-card::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+          will-change: transform;
+          transform: skewX(-25deg) translate3d(-150%, 0, 0);
+          transition: none;
+          pointer-events: none;
+        }
+        .theme1-root .train-card:hover::after {
+          transform: skewX(-25deg) translate3d(150%, 0, 0);
+          transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .theme1-root .train-card.clicked {
           transform: scale(0.96);

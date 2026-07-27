@@ -19,6 +19,8 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isTomorrow, setIsTomorrow] = useState(false);
   const [activeTrain, setActiveTrain] = useState(null);
+  const [forceDepotPreview, setForceDepotPreview] = useState(false);
+  const [connStatus, setConnStatus] = useState('idle'); // 'idle' | 'syncing' | 'live' | 'nodata' | 'error'
 
   // 智慧防護與節流狀態
   const [isLiveConnected, setIsLiveConnected] = useState(false);
@@ -65,7 +67,18 @@ export default function Home() {
       }
     }
 
+    const handleUnhandledRejection = (event) => {
+      if (!event.reason || event.reason?.name === 'AbortError' || event.reason === 'canceled' || event.reason?.message === 'canceled') {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
     requestAnimationFrame(() => setIsLoaded(true));
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
   }, []);
 
   useEffect(() => {
@@ -73,9 +86,13 @@ export default function Home() {
     localStorage.setItem("train_theme", theme);
 
     if (theme === 1) {
-      document.body.style.background = 'linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%)';
-      document.body.style.backgroundAttachment = 'fixed';
-    } else if (theme === 2) {
+      document.body.classList.add('fluid-gradient-theme');
+      document.body.style.background = '#0B132B';
+    } else {
+      document.body.classList.remove('fluid-gradient-theme');
+    }
+
+    if (theme === 2) {
       document.body.style.background = '#ebeff7';
       document.body.style.backgroundAttachment = 'fixed';
     } else if (theme === 3) {
@@ -87,6 +104,7 @@ export default function Home() {
   const isLiveRef = useRef(isLiveConnected);
   useEffect(() => {
     isLiveRef.current = isLiveConnected;
+    if (!isLiveConnected) setConnStatus('idle');
   }, [isLiveConnected]);
 
   // 跨分頁快取同步監聽器
@@ -98,6 +116,7 @@ export default function Home() {
           const parsedData = JSON.parse(e.newValue);
           if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
             setLiveData(parsedData);
+            setConnStatus(Object.keys(parsedData).length > 0 ? 'live' : 'nodata');
           }
         } catch {}
       }
@@ -121,6 +140,7 @@ export default function Home() {
           setConnectionTimeLeft(Math.ceil((savedConn - now) / 1000));
         } else {
           setIsLiveConnected(false);
+          setConnStatus('idle');
           localStorage.removeItem("live_connection_expire_time");
           setConnectionTimeLeft(0);
         }
@@ -142,6 +162,7 @@ export default function Home() {
         }
       } else {
         setRefreshCountdown(null);
+        setConnStatus('idle');
       }
     }, 1000);
     return () => clearInterval(interval);
@@ -171,20 +192,20 @@ export default function Home() {
     const fetchLive = async (bypass = false) => {
       if (!isCurrent) return;
 
-      // 🛡️ 終極跨分頁/重整防禦：確保全域 20 秒內不重複發送 API，徹底阻擋漏洞！
       const now = Date.now();
       const globalLastFetch = Number(localStorage.getItem('traPass_global_last_fetch') || 0);
       if (!bypass && now - globalLastFetch < 20000) {
-        console.log("🛡️ 跨分頁防禦啟動：20秒內已有請求，強制阻斷伺服器喚醒。");
         const cached = localStorage.getItem(`live_data_cache_${origin}`);
         if (cached) {
           try {
             const parsedData = JSON.parse(cached);
-            requestAnimationFrame(() => setLiveData(parsedData));
+            requestAnimationFrame(() => {
+              setLiveData(parsedData);
+              setConnStatus(Object.keys(parsedData).length > 0 ? 'live' : 'nodata');
+            });
           } catch {}
         }
         const timePassed = Math.floor((now - globalLastFetch) / 1000);
-        // 如果被擋下，繼續原有的倒數
         updateCountdown(180 - timePassed > 0 ? 180 - timePassed : 180);
         return;
       }
@@ -193,15 +214,14 @@ export default function Home() {
       abortControllerRef.current = new AbortController();
       
       updateCountdown(null); // UI 顯示同步中
+      if (isCurrent) setConnStatus('syncing');
 
       try {
-        // 🛡️ 資安升級：對 origin 進行 encodeURIComponent 防止 URL 參數污染
         const safeOrigin = encodeURIComponent(origin);
         const url = `/api/trains?origin=${safeOrigin}&_t=${Date.now()}${bypass ? '&bypass=true' : ''}`;
         
         const res = await fetch(url, { signal: abortControllerRef.current.signal });
         
-        // 🌟 狀態判斷：檢查 HTTP 狀態碼是否正常
         if (!res.ok) {
           throw new Error(`HTTP Error: ${res.status}`);
         }
@@ -209,26 +229,21 @@ export default function Home() {
         const result = await res.json();
         if (!isCurrent) return;
 
-        // 🌟 嚴格驗證資料結構：確認是否「真正」刷新成功
         if (result && result.data) {
+          const hasKeys = Object.keys(result.data).length > 0;
           setLiveData(result.data);
-          // 🌟 升級為 localStorage，新開分頁與重整 F5 依然能秒讀快取，不打 API！
+          setConnStatus(hasKeys ? 'live' : 'nodata');
           localStorage.setItem(`live_data_cache_${origin}`, JSON.stringify(result.data));
           localStorage.setItem('traPass_global_last_fetch', String(Date.now()));
-          
-          // ✅ 成功獲取：標準 180 秒冷卻
           updateCountdown(180);
         } else {
-          // ⚠️ API 雖然通了但沒給資料（可能被你的 20 秒限流鎖擋下）
-          console.warn("⚠️ 刷新未成功 (無有效資料)，啟動短期重試機制");
-          // 降級退避：只等 30 秒就再試一次，讓 UI 計時器從 30 開始跳！
+          setConnStatus('nodata');
           updateCountdown(30); 
         }
       } catch (e) {
-        if (e.name === 'AbortError') return;
+        if (!e || e.name === 'AbortError' || e.message === 'canceled') return;
         console.error("Live fetch error", e);
-        
-        // 🚨 網路斷線或伺服器 500 錯誤：啟動 60 秒避讓期，防止前端 DdoS 自家伺服器
+        if (isCurrent) setConnStatus('error');
         updateCountdown(60); 
       }
     };
@@ -525,47 +540,99 @@ export default function Home() {
   return (
     <div className="global-page-container">
       <div className="global-header-btn-group">
-        {isLoaded && (
-          <button
-            onClick={toggleLiveConnection}
-            className="global-conn-btn"
-            style={{
-              background: isLiveConnected ? 'rgba(46, 204, 113, 0.15)' : 'rgba(127, 140, 141, 0.2)',
-              color: isLiveConnected ? '#2ECC71' : '#BDC3C7',
-              border: isLiveConnected ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(127, 140, 141, 0.3)',
-              boxShadow: isLiveConnected ? '0 0 10px rgba(46, 204, 113, 0.1)' : 'none'
-            }}
-          >
-            <span style={{
-              display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-              background: isLiveConnected ? (refreshCountdown === null ? '#FFD700' : '#2ECC71') : '#7F8C8D',
-              boxShadow: isLiveConnected ? `0 0 8px ${refreshCountdown === null ? '#FFD700' : '#2ECC71'}` : 'none',
-            }}></span >
-            {isLiveConnected ? (
-              <span>連線中 ({formatTimeLeft(connectionTimeLeft)}) | {refreshCountdown === null ? '同步中' : `${refreshCountdown}s`} ✕ </span>
-            ) : (
-              <span>● 離線模式 (點擊連線)</span>
-            )}
-          </button>
-        )}
+        <div className="global-header-left-group">
+          {isLoaded && (() => {
+            const badge = (() => {
+              if (!isLiveConnected || connStatus === 'idle') {
+                return {
+                  color: '#BDC3C7',
+                  bg: 'rgba(127, 140, 141, 0.2)',
+                  border: '1px solid rgba(127, 140, 141, 0.3)',
+                  dotColor: '#7F8C8D',
+                  shadow: 'none',
+                  text: '離線模式 (點擊連線)'
+                };
+              }
+              if (connStatus === 'syncing' || refreshCountdown === null) {
+                return {
+                  color: '#FFD700',
+                  bg: 'rgba(241, 196, 15, 0.18)',
+                  border: '1px solid rgba(241, 196, 15, 0.4)',
+                  dotColor: '#FFD700',
+                  shadow: '0 0 10px rgba(241, 196, 15, 0.3)',
+                  text: '資料同步中...'
+                };
+              }
+              if (connStatus === 'error') {
+                return {
+                  color: '#E74C3C',
+                  bg: 'rgba(231, 76, 60, 0.18)',
+                  border: '1px solid rgba(231, 76, 60, 0.4)',
+                  dotColor: '#E74C3C',
+                  shadow: '0 0 10px rgba(231, 76, 60, 0.3)',
+                  text: `連線異常 (${refreshCountdown ? `${refreshCountdown}s` : '60s'})`
+                };
+              }
+              if (connStatus === 'nodata') {
+                return {
+                  color: '#E67E22',
+                  bg: 'rgba(230, 126, 34, 0.18)',
+                  border: '1px solid rgba(230, 126, 34, 0.4)',
+                  dotColor: '#E67E22',
+                  shadow: '0 0 10px rgba(230, 126, 34, 0.3)',
+                  text: `連線中 (暫無即時誤點) | ${refreshCountdown}s ✕`
+                };
+              }
+              return {
+                color: '#2ECC71',
+                bg: 'rgba(46, 204, 113, 0.15)',
+                border: '1px solid rgba(46, 204, 113, 0.4)',
+                dotColor: '#2ECC71',
+                shadow: '0 0 10px rgba(46, 204, 113, 0.2)',
+                text: `連線中 (${formatTimeLeft(connectionTimeLeft)}) | ${refreshCountdown}s ✕`
+              };
+            })();
 
-        {isLoaded && (
-          <button
-            onClick={handleManualRefresh}
-            disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
-            className="global-refresh-btn"
-            style={{
-              background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'),
-              color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'),
-              border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
-              cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer',
-              opacity: isLiveConnected ? 1 : 0.5,
-              pointerEvents: isLiveConnected ? 'auto' : 'none'
-            }}
-          >
-            <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '立即手動更新'}</span>
-          </button>
-        )}
+            return (
+              <button
+                onClick={toggleLiveConnection}
+                className="global-conn-btn"
+                style={{
+                  background: badge.bg,
+                  color: badge.color,
+                  border: badge.border,
+                  boxShadow: badge.shadow
+                }}
+              >
+                <span style={{
+                  display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                  background: badge.dotColor,
+                  boxShadow: badge.dotColor !== '#7F8C8D' ? `0 0 8px ${badge.dotColor}` : 'none',
+                }}></span>
+                <span>{badge.text}</span>
+              </button>
+            );
+          })()}
+
+          {isLoaded && (
+            <button
+              onClick={handleManualRefresh}
+              disabled={(!isLiveConnected && cooldownTimeLeft === 0) || cooldownTimeLeft > 0}
+              className="global-refresh-btn"
+              style={{
+                background: cooldownTimeLeft > 0 ? 'rgba(230, 126, 34, 0.15)' : (!isLiveConnected ? 'rgba(127, 140, 141, 0.2)' : 'rgba(52, 152, 219, 0.15)'),
+                color: cooldownTimeLeft > 0 ? '#E67E22' : (!isLiveConnected ? '#BDC3C7' : '#3498DB'),
+                border: cooldownTimeLeft > 0 ? '1px solid rgba(230, 126, 34, 0.4)' : (!isLiveConnected ? '1px solid rgba(127, 140, 141, 0.3)' : '1px solid rgba(52, 152, 219, 0.4)'),
+                cursor: (!isLiveConnected || cooldownTimeLeft > 0) ? 'not-allowed' : 'pointer',
+                opacity: isLiveConnected ? 1 : 0.5,
+                pointerEvents: isLiveConnected ? 'auto' : 'none'
+              }}
+            >
+              <span>{cooldownTimeLeft > 0 ? `⏳ 鎖定中 (${cooldownTimeLeft}s)` : '立即手動更新'}</span>
+            </button>
+          )}
+        </div>
+
         <div className="global-theme-selector">
           <button onClick={() => setTheme(1)} className="theme-select-btn" style={{background: theme===1?'#00F2FE':'#333'}}>極簡風</button>
           <button onClick={() => setTheme(2)} className="theme-select-btn" style={{background: theme===2?'#1B3B6F':'#333'}}>車票風</button>
