@@ -7,6 +7,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
   const destRef = useRef(null);
 
   const [clickedTrainNo, setClickedTrainNo] = useState(null);
+
   const handleCardClick = (t) => {
     if (clickedTrainNo) return;
     setClickedTrainNo(t.number);
@@ -83,12 +84,14 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           display: flex; justify-content: center; align-items: center; position: relative;
         }
         .theme1-root .select-trigger::after { content: '▼'; font-size: 10px; color: var(--text-muted); margin-left: 8px; }
+        
+        /* 下拉選單：精準3欄網格與安全寬度控制 */
         .theme1-root .select-options {
           position: absolute; top: calc(100% + 5px); left: 0;
-          background: rgba(11, 19, 43, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+          background: rgba(11, 19, 43, 0.96); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
           max-height: 250px; overflow-y: auto; z-index: 1000; display: none;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); padding: 10px;
-          backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           width: 300px;
           max-width: calc(100vw - 30px);
         }
@@ -112,6 +115,11 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         }
         .theme1-root .swap-btn:hover { transform: translateY(10px) scale(1.1) rotate(180deg); }
         
+        .theme1-root .date-toggle-container { display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px; }
+        .theme1-root .date-toggle { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 2px; display: flex; width: 220px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
+        .theme1-root .toggle-btn { flex: 1; border: none; background: transparent; color: rgba(255, 255, 255, 0.7); padding: 8px 12px; border-radius: 17px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+        .theme1-root .toggle-btn.active { background: #FFFFFF; color: #0072FF; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+
         .theme1-root .next-train-card { text-align: center; margin-bottom: 45px; margin-top: 10px; }
         .theme1-root .countdown { font-size: 80px; font-weight: 800; line-height: 0.95; margin: 15px 0; color: #FFFFFF; text-shadow: 0 0 25px rgba(255, 255, 255, 0.25); font-variant-numeric: tabular-nums; }
         .theme1-root .countdown span { font-size: 24px; color: var(--accent); font-weight: 600; margin-left: 4px; text-shadow: none; }
@@ -122,46 +130,27 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         
         .theme1-root .train-card {
           position: relative;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
-          padding: 22px 28px; border-radius: 40px 10px 40px 10px; display: flex; justify-content: space-between; align-items: center;
-          margin-bottom: 20px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.5);
-          border: 1px solid rgba(255, 255, 255, 0.3); border-left: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+          padding: 22px 28px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center;
+          margin-bottom: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.25);
           backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+          transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
           overflow: hidden;
           cursor: pointer;
         }
         .theme1-root .train-card:hover {
-          transform: translateY(-4px) scale(1.015);
+          transform: translateY(-3px);
           box-shadow: 0 12px 30px rgba(0, 114, 255, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.8);
-          background: rgba(255, 255, 255, 0.32);
-        }
-        .theme1-root .train-card::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-          will-change: transform;
-          transform: skewX(-25deg) translate3d(-150%, 0, 0);
-          transition: none;
-          pointer-events: none;
-        }
-        .theme1-root .train-card:hover::after {
-          transform: skewX(-25deg) translate3d(150%, 0, 0);
-          transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+          background: rgba(255, 255, 255, 0.3);
         }
         .theme1-root .train-card.clicked {
-          transform: scale(0.96);
+          transform: scale(0.97);
           opacity: 0.7;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         .theme1-root .train-card::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 6px; background: var(--train-local); border-radius: 6px; box-shadow: 0 0 15px var(--train-local); }
         .theme1-root .train-card.fast::before { background: var(--train-fast); box-shadow: 0 0 15px var(--train-fast); }
         .theme1-root .train-card.express::before { background: var(--train-express); box-shadow: 0 0 15px var(--train-express); }
-        .theme1-root .train-card.express { border-left-color: var(--train-express); }
         
         .theme1-root .train-details h3 { margin: 0; font-size: 22px; font-weight: 800; color: #fff; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
         .theme1-root .train-details p { margin: 8px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; }
@@ -170,14 +159,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
         .theme1-root .train-time { font-size: 22px; font-weight: 800; color: #fff; text-align: right; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
         .theme1-root .train-time span { display: block; font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         .theme1-root .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; }
-        
         .theme1-root .delay-text { color: #FF6B6B; font-size: 11px; font-weight: bold; margin-left: 5px; }
-        
-        /* Date Toggle Base Styles for Mobile */
-        .theme1-root .date-toggle-container { display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px; }
-        .theme1-root .date-toggle { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 2px; display: flex; width: 220px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); }
-        .theme1-root .toggle-btn { flex: 1; border: none; background: transparent; color: rgba(255, 255, 255, 0.7); padding: 8px 12px; border-radius: 17px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
-        .theme1-root .toggle-btn.active { background: #FFFFFF; color: #0072FF; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
 
         @media (min-width: 768px) {
           .theme1-root .container { max-width: 650px; padding: 40px; }
@@ -193,43 +175,6 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           .theme1-root .countdown { font-size: 110px; }
           .theme1-root .countdown span { font-size: 32px; }
           .theme1-root .subtitle { font-size: 15px; }
-        
-          .theme1-root .date-toggle-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 25px;
-            margin-top: 10px;
-          }
-
-          .theme1-root .date-toggle {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 2px;
-            display: flex;
-            width: 200px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-          }
-
-          .theme1-root .toggle-btn {
-            flex: 1;
-            border: none;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.7);
-            padding: 6px 12px;
-            border-radius: 17px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-          }
-
-          .theme1-root .toggle-btn.active {
-            background: #FFFFFF;
-            color: #0072FF;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          }
         }
       `}</style>
       

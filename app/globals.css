@@ -8,36 +8,14 @@ body {
   background: #0B132B;
 }
 
-/* ⚡ 120fps 極致硬體加速動態流體漸層背景 */
-body.fluid-gradient-theme::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  z-index: -9999;
-  background: radial-gradient(circle at 20% 20%, #00C6FF 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, #0072FF 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, #00F2FE 0%, transparent 50%),
-              radial-gradient(circle at 20% 80%, #4FACFE 0%, transparent 50%);
-  background-color: #0072FF;
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
-  animation: gpuFluidSpin 22s ease-in-out infinite alternate;
-  pointer-events: none;
+/* ⚡ 極簡風亮麗湛藍靜態漸層背景 (無方塊、無旋轉、鮮豔天藍) */
+body.fluid-gradient-theme {
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 50%, #00F2FE 100%) !important;
+  background-attachment: fixed !important;
 }
 
-@keyframes gpuFluidSpin {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-  }
-  50% {
-    transform: translate3d(-3%, -4%, 0) rotate(180deg) scale(1.15);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(360deg) scale(1);
-  }
+body.fluid-gradient-theme::before {
+  display: none !important;
 }
 
 /* 🌟 全域狀態燈號呼吸 (Breathing Indicator) 動畫 */
