@@ -6,19 +6,22 @@ import staticData from '../../../public/data.json';
 // ==========================================
 const apiCache = new Map();
 const fetchPromises = new Map();
-const GLOBAL_CACHE_KEY = 'ALL_STATIONS_LIVE_BOARD'; // 全域快取鍵值
+const GLOBAL_CACHE_KEY = 'ALL_STATIONS_LIVE_BOARD';
 
-// 1. 動態讀取有效車站名單
+// 1. 動態讀取有效車站名單（啟動時只計算一次）
 let VALID_STATIONS = new Set();
 try {
-  const allStations = [...(staticData.Northbound?.stations || []), ...(staticData.Southbound?.stations || [])];
+  const allStations = [
+    ...(staticData.Northbound?.stations || []),
+    ...(staticData.Southbound?.stations || [])
+  ];
   VALID_STATIONS = new Set(allStations);
 } catch (e) {
   console.error("解析 data.json 失敗，使用預設白名單防護", e);
-  VALID_STATIONS = new Set(["桃園", "基隆", "臺北", "板橋"]); 
+  VALID_STATIONS = new Set(["桃園", "基隆", "臺北", "板橋"]);
 }
 
-// 2. Token 記憶體管理 (為了捕捉 401 錯誤並強制刷新)
+// 2. Token 記憶體管理（捕捉 401 強制刷新）
 let tokenCache = { token: null, expiresAt: 0 };
 
 async function getTdxToken(forceRefresh = false) {
@@ -30,7 +33,11 @@ async function getTdxToken(forceRefresh = false) {
   const clientId = process.env.TDX_CLIENT_ID;
   const clientSecret = process.env.TDX_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) return null;
+  // 🛡️ 漏洞修補 #1：防止無憑證時仍繼續執行後續邏輯
+  if (!clientId || !clientSecret) {
+    console.error('[TDX Auth] 環境變數 TDX_CLIENT_ID / TDX_CLIENT_SECRET 未設定，拒絕請求');
+    return null;
+  }
 
   const authUrl = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
   const params = new URLSearchParams({
@@ -45,12 +52,17 @@ async function getTdxToken(forceRefresh = false) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
       cache: 'no-store',
-      signal: AbortSignal.timeout(5000) // 🛡️ 5秒強制超時防掛起
+      signal: AbortSignal.timeout(5000)
     });
     
-    if (!res.ok) throw new Error('Failed to fetch TDX token');
+    if (!res.ok) throw new Error(`Failed to fetch TDX token: ${res.status}`);
     const data = await res.json();
     
+    // 🛡️ 漏洞修補 #2：驗證 Token 回應欄位是否合法，防止格式異常造成 undefined 快取
+    if (!data.access_token || typeof data.access_token !== 'string' || !data.expires_in) {
+      throw new Error('TDX token response has invalid shape');
+    }
+
     tokenCache = {
       token: data.access_token,
       expiresAt: now + (data.expires_in - 60) * 1000
@@ -58,30 +70,33 @@ async function getTdxToken(forceRefresh = false) {
     return data.access_token;
   } catch (error) {
     console.error('Error fetching TDX token:', error);
+    // 🛡️ 漏洞修補 #3：Token 取得失敗時清除舊快取，避免用過期 Token 重試
+    tokenCache = { token: null, expiresAt: 0 };
     return null;
   }
 }
 
 export async function GET(request) {
-  // 🛡️ 邊界防禦與安全驗證：修補 Host Header 偽造與子網域萬用比對漏洞
+  // ========================================
+  // 🛡️ 第一道防線：來源驗證 (Host + Referer)
+  // ========================================
   const referer = request.headers.get('referer');
   const host = request.headers.get('host');
-  
-  // 精確白名單 (Exact Match)：全面禁止萬用字元與模糊匹配，避免攻擊者以自訂子網域繞過
+
+  // 精確白名單（Exact Match），全面禁止萬用字元與模糊匹配
   const allowedHosts = new Set(
-    process.env.ALLOWED_HOSTS 
-      ? process.env.ALLOWED_HOSTS.split(',').map(h => h.trim()) 
+    process.env.ALLOWED_HOSTS
+      ? process.env.ALLOWED_HOSTS.split(',').map(h => h.trim())
       : ['localhost:3000', 'taiwan-train-live.web.app', 'lpes104047.web.app', 'tra-pass.vercel.app']
   );
 
   if (process.env.NODE_ENV === 'production') {
     const isHostAllowed = host && allowedHosts.has(host);
-    
+
     let isValidReferer = true;
     if (referer) {
       try {
         const refererUrl = new URL(referer);
-        // 嚴格核對 Referer 的 host 是否也在精確白名單內
         isValidReferer = allowedHosts.has(refererUrl.host);
       } catch {
         isValidReferer = false;
@@ -94,6 +109,9 @@ export async function GET(request) {
     }
   }
 
+  // ========================================
+  // 🛡️ 第二道防線：輸入驗證
+  // ========================================
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('origin');
   const bypass = searchParams.get('bypass') === 'true';
@@ -102,54 +120,67 @@ export async function GET(request) {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
     'Expires': '0',
+    // 🛡️ 漏洞修補 #4：在每個 API 回應中明確加上 X-Content-Type-Options，防止 MIME sniffing
+    'X-Content-Type-Options': 'nosniff',
   };
 
-  if (!origin || !VALID_STATIONS.has(origin)) {
+  // 🛡️ 漏洞修補 #5：origin 需同時通過「非空」、「非陣列」、「白名單比對」三道驗證，
+  //                  防止攻擊者傳入 origin[]=... 等陣列型 query string 繞過比對
+  if (!origin || typeof origin !== 'string' || !VALID_STATIONS.has(origin)) {
     return NextResponse.json({ error: 'Invalid origin station' }, { status: 400, headers: noCacheHeaders });
   }
 
+  // ========================================
+  // 🛡️ 第三道防線：速率限制與全域快取
+  // ========================================
   const nowMs = Date.now();
   const cachedData = apiCache.get(GLOBAL_CACHE_KEY);
 
   if (cachedData) {
     const timeDiff = nowMs - cachedData.timestamp;
-    
-    // 🛡️【20 秒絕對極限防護】：對齊前端按鈕冷卻時間。
-    // 無論駭客怎麼帶 bypass 參數，距離上次更新小於 20 秒絕對不准碰 TDX！
-    // 這確保了 Vercel 每分鐘最高只會呼叫 TDX 3 次 (低於每分鐘 5 次的極限限制)
+
+    // 🛡️【20 秒絕對極限防護】：無論 bypass 參數，距離上次 TDX 請求 < 20 秒絕對不放行
     if (timeDiff < 20000) {
       return NextResponse.json({ data: cachedData.data[origin] || {} }, { headers: noCacheHeaders });
     }
-    
-    // 🛡️【180 秒常規快取】：如果使用者沒有要求強制更新 (bypass=false)，3 分鐘內都給舊資料
+
+    // 🛡️【180 秒常規快取】：bypass=false 時，3 分鐘內直接回傳快取資料
     if (!bypass && timeDiff < 180000) {
       return NextResponse.json({ data: cachedData.data[origin] || {} }, { headers: noCacheHeaders });
     }
   }
 
-  // 🛡️ 防止快取擊穿的全域鎖 (多請求同時湧入時，只讓第一個去打 TDX)
+  // ========================================
+  // 🛡️ 第四道防線：防快取擊穿 Promise 鎖
+  // ========================================
   if (fetchPromises.has(GLOBAL_CACHE_KEY)) {
     try {
       const globalData = await fetchPromises.get(GLOBAL_CACHE_KEY);
-      return NextResponse.json({ data: globalData[origin] || {} }, { headers: noCacheHeaders });
-    } catch {}
+      return NextResponse.json({ data: (globalData || {})[origin] || {} }, { headers: noCacheHeaders });
+    } catch {
+      // 即使等待中的 Promise 失敗，也不向外傳播，直接降回快取兜底
+    }
   }
 
+  // ========================================
+  // 🌟 核心：向 TDX 取得全台即時動態
+  // ========================================
   const fetchTask = (async () => {
     let token = await getTdxToken();
     if (!token) return {};
 
-    // 🌟 核心進化：移除單站 filter，一次呼叫取得全台即時動態
     const tdxUrl = `https://tdx.transportdata.tw/api/basic/v2/Rail/TRA/LiveBoard?$format=JSON`;
-    
+
     let res = await fetch(tdxUrl, {
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store',
-      signal: AbortSignal.timeout(8000) // 🛡️ 8秒強制超時
+      signal: AbortSignal.timeout(8000)
     });
 
     if (res.status === 401) {
       token = await getTdxToken(true);
+      // 🛡️ 漏洞修補 #6：Token 刷新失敗（null）時提早 throw，避免帶 undefined Token 繼續請求
+      if (!token) throw new Error('TDX token refresh failed after 401');
       res = await fetch(tdxUrl, {
         headers: { 'Authorization': `Bearer ${token}` },
         cache: 'no-store',
@@ -159,15 +190,18 @@ export async function GET(request) {
 
     if (!res.ok) throw new Error(`TDX fetch failed: ${res.status}`);
     const data = await res.json();
-    
-    // 🌟 在記憶體中進行分組轉換 (O(N) 效能極高)
+
+    // 🌟 O(N) 記憶體分組轉換
     const globalDelayMap = {};
     if (Array.isArray(data)) {
       data.forEach(train => {
         const station = train.StationName?.Zh_tw;
-        if (station) {
+        // 僅接受已在白名單內的車站資料，丟棄陌生欄位
+        if (station && typeof station === 'string' && VALID_STATIONS.has(station)) {
           if (!globalDelayMap[station]) globalDelayMap[station] = {};
-          globalDelayMap[station][train.TrainNo] = train.DelayTime || 0;
+          // 強制型別確認：DelayTime 必須是數字
+          const delay = typeof train.DelayTime === 'number' ? train.DelayTime : 0;
+          globalDelayMap[station][train.TrainNo] = delay;
         }
       });
     }
@@ -180,10 +214,9 @@ export async function GET(request) {
 
   try {
     const globalDelayMap = await fetchTask;
-    return NextResponse.json({ data: globalDelayMap[origin] || {} }, { headers: noCacheHeaders });
+    return NextResponse.json({ data: (globalDelayMap || {})[origin] || {} }, { headers: noCacheHeaders });
   } catch (error) {
     console.error('TDX API Error:', error);
-    // 發生錯誤時，若有舊的全台資料快取，優先使用舊資料墊檔，確保畫面不白屏
     const fallback = apiCache.get(GLOBAL_CACHE_KEY);
     if (fallback) {
       return NextResponse.json({ data: fallback.data[origin] || {} }, { headers: noCacheHeaders });

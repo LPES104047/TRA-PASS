@@ -38,9 +38,17 @@ export default function Home() {
     const savedTheme = localStorage.getItem("train_theme");
 
     requestAnimationFrame(() => {
-      if (savedOrigin) setOrigin(savedOrigin);
-      if (savedDest) setDest(savedDest);
-      if (savedTheme) setTheme(Number(savedTheme));
+      // 🛡️ 安全修補：從 LocalStorage 讀取的車站值，必須經過靜態白名單比對，
+      //               防止攻擊者透過 localStorage 注入偽造車站名稱（Storage Poisoning）
+      const allowedStations = new Set(
+        ["桃園","鳳鳴","鶯歌","山佳","南樹林","樹林","浮洲","板橋","萬華","臺北",
+         "松山","南港","汐科","汐止","五堵","百福","七堵","八堵","三坑","基隆"]
+      );
+      if (savedOrigin && allowedStations.has(savedOrigin)) setOrigin(savedOrigin);
+      if (savedDest && allowedStations.has(savedDest)) setDest(savedDest);
+      // 主題只允許 1, 2, 3 三個合法值
+      const parsedTheme = Number(savedTheme);
+      if ([1, 2, 3].includes(parsedTheme)) setTheme(parsedTheme);
     });
 
     const nowMs = Date.now();
