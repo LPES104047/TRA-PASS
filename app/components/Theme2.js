@@ -79,7 +79,7 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
       align-items: center;
       padding: 20px;
       color: #333;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
       position: relative;
       z-index: 10;
      }
@@ -230,12 +230,12 @@ export default function Theme2({ origin, setOrigin, dest, setDest, handleSwap, a
      }
      .theme2-root .ticket-header { padding: 25px 25px 35px 25px; position: relative; }
      .theme2-root .top-row { display: flex; justify-content: space-between; align-items: center; position: relative; margin-bottom: 20px; border-bottom: 2px solid #222; padding-bottom: 10px; }
-     .theme2-root .top-row .logo { font-weight: 700; font-family: 'Space Grotesk', sans-serif; letter-spacing: 1px; color: #1B3B6F; }
+     .theme2-root .top-row .logo { font-weight: 700; font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); letter-spacing: 1px; color: #1B3B6F; }
      .theme2-root .top-row .date { font-size: 12px; color: #555; text-align: right; }
      
      .theme2-root .route-row { display: flex; justify-content: space-between; align-items: center; position: relative; }
      .theme2-root .station-col { text-align: center; flex: 1; }
-     .theme2-root .station-en { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: #1B3B6F; text-transform: uppercase; }
+     .theme2-root .station-en { font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); font-size: 24px; font-weight: 700; color: #1B3B6F; text-transform: uppercase; }
      .theme2-root .station-zh { font-size: 18px; font-weight: 600; color: #1B3B6F; margin-top: 5px; }
      .theme2-root .arrow { font-size: 24px; color: #888; text-align: center; width: 40px; font-weight: normal; transform: translateY(-12px); }
      

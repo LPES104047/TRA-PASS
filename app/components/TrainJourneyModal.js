@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 export default function TrainJourneyModal({ train, onClose, stations, isTomorrow, origin, dest, theme }) {
   const [animationClass, setAnimationClass] = useState('');
 
+  const closeTimerRef = React.useRef(null);
+
   useEffect(() => {
     // 進入時的動畫類別，產生順暢展開效果
     requestAnimationFrame(() => {
@@ -11,12 +13,14 @@ export default function TrainJourneyModal({ train, onClose, stations, isTomorrow
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
 
   const handleClose = () => {
     setAnimationClass('');
-    setTimeout(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
       onClose();
     }, 300);
   };

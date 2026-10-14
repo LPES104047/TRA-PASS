@@ -65,7 +65,7 @@ export default function Theme1({ origin, setOrigin, dest, setDest, handleSwap, a
           flex-direction: column;
           align-items: center;
           padding: 20px;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
           position: relative;
           z-index: 10;
         }

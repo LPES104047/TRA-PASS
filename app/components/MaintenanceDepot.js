@@ -223,7 +223,6 @@ const TrainCab = ({ model, side }) => {
   const isEMU800 = model === 'emu800';
 
   const bodyFill = isEMU3000 ? 'url(#emu3000Body)' : isTaroko ? 'url(#hayabusaWhite)' : 'url(#emu800Body)';
-  const windowFill = isTaroko ? 'url(#cabinGlowCool)' : 'url(#cabinGlowWarm)';
   
   // Driving cabs are dark when off-duty/parked/repaired
 

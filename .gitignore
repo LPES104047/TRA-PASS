@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI Teamwork & Temporary Artifacts
+.agents/
+ORIGINAL_REQUEST.md
+system_architecture_flowchart_v2.md
+tests/

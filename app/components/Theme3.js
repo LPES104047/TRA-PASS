@@ -52,7 +52,7 @@ export default function Theme3({ origin, setOrigin, dest, setDest, handleSwap, a
       align-items: center;
       padding: 20px;
       color: #FFF;
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
       position: relative;
       z-index: 10;
      }
